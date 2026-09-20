@@ -1,0 +1,2261 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Domowe Sprawy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #E8F1FC; --bg-grad: #F7FAFF; --surface: #FFFFFF; --surface-alt: #DCEAFB;
+    --column-bg: #F1F7FD; --primary: #7FA9E0; --primary-deep: #4E74A8; --secondary: #F8DCE7;
+    --lavender: #C6B4EA; --lavender-deep: #9A81C9; --gold: #F3C25E; --gold-bg: #FCEAC0; --gold-text: #93701E;
+    --text: #3C4A5E; --text-soft: #7E90A6; --border: #DCE8F8; --shadow: rgba(90, 130, 180, 0.14);
+    --done-bg: #E1F0E4; --done-text: #4C7A55; --danger: #D97B7B; --danger-bg: #F9DCDC;
+  }
+
+  * { box-sizing: border-box; }
+  button, input, textarea, select { font-family: inherit; color: inherit; }
+  body {
+    margin: 0; font-family: 'Nunito', sans-serif;
+    background: radial-gradient(circle at 90% -5%, color-mix(in srgb, var(--secondary) 55%, transparent), transparent 45%),
+                radial-gradient(circle at 8% 0%, var(--bg-grad), var(--bg) 55%);
+    color: var(--text); min-height: 100vh; padding-bottom: 60px;
+  }
+  h1, h2, h3, .display { font-family: 'Fredoka', sans-serif; }
+
+  header.top { padding: 20px 20px 8px; max-width: 1100px; margin: 0 auto; }
+  .brand-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { margin: 0; font-size: 24px; font-weight: 600; color: var(--primary-deep); }
+  .brand svg { width: 36px; height: 36px; flex-shrink: 0; }
+  .tagline { margin: 2px 0 0; color: var(--text-soft); font-size: 13.5px; }
+  .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .icon-round-btn {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border);
+    color: var(--primary-deep); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .icon-round-btn:hover { background: var(--surface-alt); }
+  .icon-round-btn svg { width: 18px; height: 18px; }
+
+  .reminder-banner {
+    max-width: 1100px; margin: 14px auto 0; padding: 12px 16px; background: var(--surface-alt);
+    border: 1px solid var(--border); border-radius: 16px; display: none; gap: 10px; align-items: flex-start;
+  }
+  .reminder-banner.show { display: flex; }
+  .reminder-banner svg { width: 22px; flex-shrink: 0; margin-top: 2px; }
+  .reminder-banner b { color: var(--primary-deep); }
+  .reminder-list { font-size: 13.5px; color: var(--text-soft); margin-top: 3px; line-height: 1.5; }
+
+  .projects-row {
+    max-width: 1100px; margin: 16px auto 0; padding: 0 20px; display: flex; gap: 8px;
+    overflow-x: auto; scrollbar-width: thin;
+  }
+  .proj-tab {
+    flex-shrink: 0; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-soft); font-weight: 700; font-size: 14px;
+    cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  }
+  .proj-tab:hover { background: var(--surface-alt); }
+  .proj-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .proj-tab.add { background: transparent; border-style: dashed; color: var(--primary-deep); }
+  .proj-tab svg { width: 15px; height: 15px; }
+
+  .breadcrumb {
+    max-width: 1100px; margin: 12px auto 0; padding: 0 20px; display: flex; align-items: center; gap: 8px;
+  }
+  .breadcrumb button.back {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px 6px 8px;
+    color: var(--primary-deep); font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .breadcrumb button.back svg { width: 15px; height: 15px; }
+  .breadcrumb .crumb-title { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 17px; color: var(--text); }
+
+  .sub-nav { max-width: 1100px; margin: 12px auto 0; padding: 0 20px; display: flex; gap: 6px; overflow-x: auto; }
+  .sub-tab {
+    flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px;
+    border: none; background: transparent; color: var(--text-soft); font-weight: 700; font-size: 13.5px; cursor: pointer;
+  }
+  .sub-tab svg { width: 15px; height: 15px; }
+  .sub-tab.active { background: var(--surface); color: var(--primary-deep); box-shadow: 0 2px 8px var(--shadow); }
+
+  main { max-width: 1100px; margin: 16px auto 0; padding: 0 20px; }
+
+  .empty-state { text-align: center; padding: 46px 20px; color: var(--text-soft); }
+  .empty-state svg { width: 110px; margin-bottom: 6px; }
+  .empty-state h2 { color: var(--primary-deep); margin: 6px 0 4px; font-size: 19px; }
+  .empty-state p.small { font-size: 13.5px; }
+  .empty-state button { margin-top: 14px; }
+
+  /* ---- Dashboard ---- */
+  .dash-grid { display: grid; gap: 16px; }
+  .dash-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px 18px;
+  }
+  .dash-card h3 { margin: 0 0 10px; font-size: 16px; color: var(--primary-deep); display: flex; align-items: center; gap: 7px; }
+  .dash-card h3 svg { width: 18px; height: 18px; }
+  .quicknote-preview {
+    font-size: 13.5px; color: var(--text-soft); line-height: 1.5; max-height: 60px; overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .dash-row {
+    display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .dash-row:last-child { border-bottom: none; }
+  .dash-row:hover { background: var(--column-bg); border-radius: 10px; }
+  .dash-row .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dash-row .dot.high { background: var(--danger); }
+  .dash-row .dot.medium { background: var(--gold); }
+  .dash-row .dot.low { background: var(--text-soft); }
+  .dash-row .info { flex: 1; min-width: 0; }
+  .dash-row .info .t { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dash-row .info .p { font-size: 12px; color: var(--text-soft); }
+  .stats-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat-pill { background: var(--column-bg); border-radius: 14px; padding: 10px 14px; text-align: center; flex: 1; min-width: 90px; }
+  .stat-pill .n { font-family: 'Fredoka', sans-serif; font-size: 22px; color: var(--primary-deep); font-weight: 600; }
+  .stat-pill .l { font-size: 11.5px; color: var(--text-soft); font-weight: 700; }
+
+  /* ---- Section cards ---- */
+  .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .section-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px;
+    cursor: pointer; box-shadow: 0 3px 10px var(--shadow);
+  }
+  .section-card:hover { transform: translateY(-2px); }
+  .section-card .emoji { font-size: 26px; }
+  .section-card h3 { margin: 8px 0 4px; font-size: 16px; }
+  .section-card .counts { font-size: 12px; color: var(--text-soft); }
+  .section-card.add-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    border-style: dashed; color: var(--primary-deep); font-weight: 700; box-shadow: none;
+  }
+  .section-card.add-card svg { width: 26px; height: 26px; }
+
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .board { grid-template-columns: 1fr; } }
+  .column { background: var(--column-bg); border-radius: 20px; padding: 14px; min-height: 160px; border: 1px solid var(--border); }
+  .column.dragover { outline: 2px dashed var(--primary); outline-offset: -6px; }
+  .col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 0 4px; }
+  .col-head h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+  .col-count { background: var(--surface); border-radius: 999px; font-size: 12px; font-weight: 800; padding: 2px 9px; color: var(--text-soft); }
+
+  .card { background: var(--surface); border-radius: 16px; padding: 12px 13px; margin-bottom: 10px; box-shadow: 0 3px 10px var(--shadow); cursor: grab; }
+  .card:active { cursor: grabbing; }
+  .card.done { opacity: 0.75; }
+  .card-title { font-weight: 700; font-size: 14.5px; margin: 0 0 8px; line-height: 1.35; }
+  .card.done .card-title { text-decoration: line-through; color: var(--text-soft); }
+  .card-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+  .due-badge { font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--surface-alt); color: var(--text-soft); }
+  .due-badge.overdue { background: var(--danger-bg); color: var(--danger); }
+  .due-badge.today { background: var(--gold-bg); color: var(--gold-text); }
+  .priority-badge { font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+  .priority-badge.high { background: var(--danger-bg); color: var(--danger); }
+  .priority-badge.medium { background: var(--gold-bg); color: var(--gold-text); }
+  .priority-badge.low { background: var(--surface-alt); color: var(--text-soft); }
+  .priority-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .gcal-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; color: var(--primary-deep); text-decoration: none; margin-top: 10px; }
+  .gcal-link svg { width: 14px; height: 14px; }
+
+  .fab {
+    position: fixed; right: 18px; bottom: 20px; width: 52px; height: 52px; min-width: 52px; min-height: 52px;
+    max-width: 52px; max-height: 52px; border-radius: 50%; padding: 0; box-sizing: border-box;
+    background: var(--primary); color: white; border: none; font-size: 26px; line-height: 1;
+    box-shadow: 0 4px 14px var(--shadow); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20;
+  }
+  .fab:hover { background: var(--primary-deep); }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(40, 60, 90, 0.28); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
+  @media (min-width: 620px) { .modal-overlay { align-items: center; } }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--surface); width: 100%; max-width: 460px; border-radius: 22px 22px 0 0; padding: 22px 20px 26px; max-height: 88vh; overflow-y: auto; }
+  @media (min-width: 620px) { .modal { border-radius: 22px; } }
+  .modal.wide { max-width: 640px; }
+  .modal h2 { margin: 0 0 16px; color: var(--primary-deep); font-size: 20px; }
+  label { display: block; font-size: 12.5px; font-weight: 800; color: var(--text-soft); margin: 14px 0 5px; }
+  label:first-of-type { margin-top: 0; }
+  input[type=text], input[type=date], input[type=url], select, textarea {
+    width: 100%; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text); font: inherit; font-size: 14.5px;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
+  .seg { display: flex; gap: 8px; margin-top: 2px; }
+  .seg button {
+    flex: 1; padding: 9px 6px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text-soft); font-weight: 700; font-size: 13.5px; cursor: pointer;
+  }
+  .seg button.active.p1 { background: var(--primary); border-color: var(--primary); color: white; }
+  .seg button.active.p2 { background: var(--lavender); border-color: var(--lavender); color: white; }
+  .seg button.active.status { background: var(--primary); border-color: var(--primary); color: white; }
+  .seg button.active.pri-low { background: var(--text-soft); border-color: var(--text-soft); color: white; }
+  .seg button.active.pri-medium { background: var(--gold); border-color: var(--gold); color: white; }
+  .seg button.active.pri-high { background: var(--danger); border-color: var(--danger); color: white; }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  button.primary { flex: 1; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 14px; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; }
+  button.primary:hover { background: var(--primary-deep); }
+  button.ghost { background: none; border: 1.5px solid var(--border); color: var(--text-soft); padding: 12px 16px; border-radius: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  button.text-danger { color: var(--danger); background: none; border: none; font-weight: 700; cursor: pointer; font-size: 13.5px; padding: 8px; }
+
+  .notes-toolbar { display: flex; gap: 6px; margin-bottom: 10px; background: var(--surface); padding: 6px; border-radius: 14px; border: 1px solid var(--border); flex-wrap: wrap; }
+  .notes-toolbar button { background: var(--column-bg); border: 1px solid var(--border); border-radius: 9px; width: 34px; height: 34px; cursor: pointer; color: var(--text); font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; font-family: 'Fredoka', sans-serif; }
+  .notes-toolbar button:hover { background: var(--surface-alt); }
+  .notes-editor { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px; min-height: 220px; font-size: 15px; line-height: 1.6; outline: none; }
+  .notes-editor:empty::before { content: attr(data-placeholder); color: var(--text-soft); }
+  .notes-editor h3 { font-family: 'Fredoka', sans-serif; color: var(--primary-deep); margin: 14px 0 6px; }
+  .notes-editor ul, .notes-editor ol { padding-left: 22px; margin: 8px 0; }
+  .save-hint { text-align: right; font-size: 11.5px; color: var(--text-soft); margin-top: 6px; }
+
+  .simple-list { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 8px; }
+  .simple-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  .simple-row:last-child { border-bottom: none; }
+  .simple-row input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer; }
+  .simple-row .row-label { flex: 1; font-weight: 600; font-size: 14.5px; }
+  .simple-row.checked .row-label { text-decoration: line-through; color: var(--text-soft); }
+  .simple-row a.row-label { color: var(--primary-deep); text-decoration: none; word-break: break-all; }
+  .simple-row a.row-label:hover { text-decoration: underline; }
+  .row-del { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .row-del:hover { color: var(--danger); }
+  .row-del svg { width: 16px; height: 16px; }
+  .add-inline { display: flex; gap: 8px; padding: 10px 6px 4px; flex-wrap: wrap; }
+  .add-inline input { flex: 1; min-width: 120px; }
+  .add-inline button { background: var(--primary); color: white; border: none; border-radius: 10px; padding: 0 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
+
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .photo-tile { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 1; background: var(--surface-alt); border: 1px solid var(--border); }
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-del { position: absolute; top: 6px; right: 6px; background: rgba(20,20,30,0.55); border: none; color: white; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .photo-del svg { width: 14px; height: 14px; }
+  .upload-tile { aspect-ratio: 1; border-radius: 16px; border: 2px dashed var(--border); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--text-soft); cursor: pointer; font-size: 12px; font-weight: 700; }
+  .upload-tile:hover { background: var(--surface-alt); }
+  .upload-tile svg { width: 26px; height: 26px; }
+
+  .backup-list button.backup-opt {
+    width: 100%; display: flex; align-items: center; gap: 12px; background: var(--column-bg); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; font-family: inherit; text-align: left;
+  }
+  .backup-opt svg { width: 20px; height: 20px; color: var(--primary-deep); flex-shrink: 0; }
+  .backup-opt .bo-title { font-weight: 800; font-size: 14px; color: var(--text); }
+  .backup-opt .bo-sub { font-size: 11.5px; color: var(--text-soft); }
+  .backup-opt:hover { background: var(--surface-alt); }
+
+  .crumb-title.editable { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .crumb-title.editable svg { width: 13px; height: 13px; color: var(--text-soft); }
+  .mini-due { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--surface-alt); color: var(--text-soft); }
+  .mini-due.overdue { background: var(--danger-bg); color: var(--danger); }
+  .mini-due.today { background: var(--gold-bg); color: var(--gold-text); }
+
+  .section-card { position: relative; }
+  .section-edit-btn {
+    position: absolute; top: 10px; right: 10px; background: var(--column-bg); border: 1px solid var(--border);
+    border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-soft);
+  }
+  .section-edit-btn svg { width: 13px; height: 13px; }
+  .section-card .counts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .task-photo-wrap img { width: 90px; height: 90px; object-fit: cover; border-radius: 14px; border: 1px solid var(--border); display: block; }
+  .task-photo-tile { position: relative; width: 90px; }
+  .task-photo-remove {
+    position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--danger); color: white; border: none; cursor: pointer; font-size: 13px; line-height: 1;
+  }
+  .row-thumb { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; cursor: pointer; flex-shrink: 0; }
+  .row-photo-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px; flex-shrink: 0; color: var(--text-soft); }
+  .row-photo-btn:hover { color: var(--primary-deep); }
+
+  .notes-editor img { max-width: 100%; border-radius: 12px; margin: 8px 0; display: block; }
+
+  .lightbox-content { background: transparent; box-shadow: none; padding: 0; max-width: 92vw; }
+  .lightbox-content img { max-width: 92vw; max-height: 80vh; border-radius: 16px; display: block; margin: 0 auto; }
+  .hidden-file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* ---- Calendar ---- */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .cal-nav { display: flex; align-items: center; gap: 6px; }
+  .cal-nav button.arrow { background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; color: var(--primary-deep); display: flex; align-items: center; justify-content: center; }
+  .cal-nav button.arrow svg { width: 15px; height: 15px; }
+  .cal-title { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 17px; min-width: 150px; text-align: center; }
+  .cal-today-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: var(--primary-deep); cursor: pointer; }
+  .cal-mode-seg { display: flex; gap: 4px; background: var(--column-bg); border-radius: 12px; padding: 4px; }
+  .cal-mode-seg button { border: none; background: transparent; padding: 6px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700; color: var(--text-soft); cursor: pointer; }
+  .cal-mode-seg button.active { background: var(--surface); color: var(--primary-deep); box-shadow: 0 2px 6px var(--shadow); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-dow { text-align: center; font-size: 11px; font-weight: 800; color: var(--text-soft); padding-bottom: 4px; }
+  .cal-day { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px; min-height: 68px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+  .cal-day.outside { opacity: 0.35; }
+  .cal-day.today { border-color: var(--primary); border-width: 2px; }
+  .cal-day .num { font-size: 12px; font-weight: 800; color: var(--text); }
+  .cal-chip { font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 6px; background: var(--surface-alt); color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-chip.high { background: var(--danger-bg); color: var(--danger); }
+  .cal-chip.medium { background: var(--gold-bg); color: var(--gold-text); }
+  .cal-chip-more { font-size: 9.5px; color: var(--text-soft); font-weight: 700; }
+  .cal-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .cal-week-col { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px; min-height: 140px; }
+  .cal-week-col.today { border-color: var(--primary); border-width: 2px; }
+  .cal-week-col .dow-label { font-size: 11px; font-weight: 800; color: var(--text-soft); margin-bottom: 6px; }
+  .cal-day-list { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 6px; }
+  .cal-item-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .cal-item-row:last-child { border-bottom: none; }
+  .cal-item-row:hover { background: var(--column-bg); }
+  .cal-item-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cal-item-row .dot.high { background: var(--danger); } .cal-item-row .dot.medium { background: var(--gold); } .cal-item-row .dot.low { background: var(--text-soft); }
+  .cal-item-row .info { flex: 1; min-width: 0; }
+  .cal-item-row .info .t { font-weight: 700; font-size: 14px; }
+  .cal-item-row .info .p { font-size: 11.5px; color: var(--text-soft); }
+
+  /* ---- AI ---- */
+  .ai-btn {
+    display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, var(--primary), var(--lavender));
+    color: white; border: none; border-radius: 12px; padding: 9px 14px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .ai-btn:hover { filter: brightness(1.06); }
+  .ai-btn:disabled { opacity: 0.6; cursor: default; }
+  .ai-btn svg { width: 15px; height: 15px; }
+  .ai-link-btn { background: none; border: none; color: var(--primary-deep); font-weight: 800; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; }
+  .ai-link-btn svg { width: 14px; height: 14px; }
+  .task-tab-bar { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+  .task-tab-bar button { flex-shrink: 0; padding: 7px 12px; border-radius: 10px; border: none; background: var(--column-bg); color: var(--text-soft); font-weight: 700; font-size: 12.5px; cursor: pointer; }
+  .task-tab-bar button.active { background: var(--primary); color: white; }
+
+  #printArea { display: none; }
+  @media print {
+    body.printing > *:not(#printArea) { display: none !important; }
+    body.printing #printArea { display: block !important; }
+    #printArea h1 { font-family: sans-serif; }
+    #printArea table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    #printArea th, #printArea td { border: 1px solid #ccc; padding: 5px 8px; font-size: 12px; text-align: left; }
+  }
+
+  ::selection { background: var(--secondary); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand-row">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="24" fill="var(--secondary)"/>
+        <path d="M10 41c0-9.5 6.3-15.5 14-15.5S38 31.5 38 41c0 2.2-1.8 3-4 3H14c-2.2 0-4-.8-4-3Z" fill="var(--primary)"/>
+        <path d="M15 40.5c.3-6.3 4-10.5 9-10.5s8.7 4.2 9 10.5" stroke="var(--surface)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+        <circle cx="18" cy="39.5" r="3.3" fill="var(--surface)"/>
+        <circle cx="30" cy="39.5" r="3.3" fill="var(--surface)"/>
+        <path d="M12.5 16c-2-5-1-8.6 1.3-9.6 3 1 5 4.8 3.8 9.6-.8 3-4.2 3-5.1 0Z" fill="var(--primary)"/>
+        <path d="M35.5 16c2-5 1-8.6-1.3-9.6-3 1-5 4.8-3.8 9.6.8 3 4.2 3 5.1 0Z" fill="var(--primary)"/>
+        <circle cx="24" cy="21.5" r="12" fill="var(--surface)"/>
+        <circle cx="17.3" cy="24.5" r="2.2" fill="var(--secondary)" opacity="0.85"/>
+        <circle cx="30.7" cy="24.5" r="2.2" fill="var(--secondary)" opacity="0.85"/>
+        <circle cx="19.3" cy="20.5" r="1.7" fill="var(--text)"/>
+        <circle cx="28.7" cy="20.5" r="1.7" fill="var(--text)"/>
+        <ellipse cx="24" cy="25" rx="2" ry="1.4" fill="var(--primary-deep)"/>
+        <path d="M24 26.2c-1.1 1.3-2.8 1.5-3.8.6M24 26.2c1.1 1.3 2.8 1.5 3.8.6" stroke="var(--text)" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      <div><h1>Domowe Sprawy</h1><p class="tagline">Wasza wspólna tablica zadań</p></div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-round-btn" id="backupHeaderBtn" title="Eksport i kopia zapasowa">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-round-btn" id="settingsHeaderBtn" title="Ustawienia">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M19.4 13.5a1.7 1.7 0 000-3l1-1.7-1.7-1.7-1.7 1a1.7 1.7 0 00-3 0l-1-1.7H10l-1 1.7a1.7 1.7 0 00-3 0l-1.7-1L2.6 8.8l1 1.7a1.7 1.7 0 000 3l-1 1.7 1.7 1.7 1.7-1a1.7 1.7 0 003 0l1 1.7h2.7l1-1.7a1.7 1.7 0 003 0l1.7 1 1.7-1.7-1-1.7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="reminder-banner" id="reminderBanner">
+  <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 0-6 6v3.6l-1.6 3.2A1 1 0 0 0 5.3 17h13.4a1 1 0 0 0 .9-1.45L18 12.6V9a6 6 0 0 0-6-6Z" stroke="var(--primary-deep)" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.5 20a2.7 2.7 0 0 0 5 0" stroke="var(--primary-deep)" stroke-width="1.6" stroke-linecap="round"/></svg>
+  <div><b id="reminderTitle">Masz zaległe zadania</b><div class="reminder-list" id="reminderList"></div></div>
+</div>
+
+<div class="projects-row" id="projectsRow"></div>
+<div class="breadcrumb" id="breadcrumbArea"></div>
+<div class="sub-nav" id="subNav"></div>
+
+<main id="mainArea"></main>
+
+<button class="fab" id="fabAdd" title="Dodaj" style="display:none">+</button>
+
+<!-- Modal: settings -->
+<div class="modal-overlay" id="settingsModalOverlay">
+  <div class="modal">
+    <h2>Ustawienia</h2>
+    <label>Imię osoby 1</label>
+    <input type="text" id="p1NameInput">
+    <label>Imię osoby 2</label>
+    <input type="text" id="p2NameInput">
+    <label>Powiadomienia przeglądarki</label>
+    <button class="ghost" id="notifBtn" style="width:100%;">Włącz powiadomienia</button>
+    <div class="modal-actions"><button class="primary" id="settingsCloseBtn">Gotowe</button></div>
+  </div>
+</div>
+
+<!-- Modal: backup / export -->
+<div class="modal-overlay" id="backupModalOverlay">
+  <div class="modal">
+    <h2>Eksport i kopia zapasowa</h2>
+    <div class="backup-list">
+      <button class="backup-opt" id="exportJsonBtn">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <div><div class="bo-title">Kopia zapasowa aplikacji (.json)</div><div class="bo-sub">Pełne dane — można wczytać z powrotem</div></div>
+      </button>
+      <button class="backup-opt" id="importJsonBtn">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 20V9m0 0l-4 4m4-4l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 5v-2a0 0 0 010 0" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="3" width="16" height="4" rx="1" stroke="currentColor" stroke-width="1.6"/></svg>
+        <div><div class="bo-title">Wczytaj kopię zapasową</div><div class="bo-sub">Wybierz wcześniej zapisany plik .json</div></div>
+      </button>
+      <button class="backup-opt" id="exportExcelBtn">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div><div class="bo-title">Eksport do Excela (.xlsx)</div><div class="bo-sub">Wszystkie zadania w arkuszu</div></div>
+      </button>
+      <button class="backup-opt" id="exportWordBtn">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16H5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div><div class="bo-title">Eksport do Worda (.docx)</div><div class="bo-sub">Czytelny raport projektów i zadań</div></div>
+      </button>
+      <button class="backup-opt" id="exportPdfBtn">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div><div class="bo-title">Eksport do PDF</div><div class="bo-sub">Otworzy okno drukowania — wybierz "Zapisz jako PDF"</div></div>
+      </button>
+    </div>
+    <div class="modal-actions"><button class="ghost" id="backupCloseBtn" style="width:100%;">Zamknij</button></div>
+  </div>
+</div>
+
+<!-- Modal: add/edit project -->
+<div class="modal-overlay" id="projectModalOverlay">
+  <div class="modal">
+    <h2 id="projectModalTitle">Nowy projekt</h2>
+    <label>Nazwa projektu</label>
+    <input type="text" id="projectNameInput" placeholder="np. Remont mieszkania">
+    <label>Emoji (opcjonalnie)</label>
+    <input type="text" id="projectEmojiInput" placeholder="🏠" maxlength="4">
+    <label>Termin projektu (opcjonalnie)</label>
+    <input type="date" id="projectDueInput">
+    <button type="button" class="ai-link-btn" id="aiPasteFromProjectModalBtn" style="margin-top:10px;">✨ Zamiast tego: wklej opis, niech AI utworzy projekt</button>
+    <div class="modal-actions">
+      <button class="ghost" id="projectCancelBtn">Anuluj</button>
+      <button class="primary" id="projectSaveBtn">Utwórz projekt</button>
+    </div>
+    <div style="text-align:center; margin-top:6px;"><button class="text-danger" id="projectDeleteBtn" style="display:none">Usuń projekt</button></div>
+  </div>
+</div>
+
+<!-- Modal: add/edit section -->
+<div class="modal-overlay" id="sectionModalOverlay">
+  <div class="modal">
+    <h2 id="sectionModalTitle">Nowe podzadanie</h2>
+    <label>Nazwa (np. Ściany, Podłoga, Łazienka)</label>
+    <input type="text" id="sectionNameInput" placeholder="np. Ściany">
+    <label>Emoji (opcjonalnie)</label>
+    <input type="text" id="sectionEmojiInput" placeholder="🎨" maxlength="4">
+    <label>Termin podzadania (opcjonalnie)</label>
+    <input type="date" id="sectionDueInput">
+    <div class="modal-actions">
+      <button class="ghost" id="sectionCancelBtn">Anuluj</button>
+      <button class="primary" id="sectionSaveBtn">Utwórz podzadanie</button>
+    </div>
+    <div style="text-align:center; margin-top:6px;"><button class="text-danger" id="sectionDeleteBtn" style="display:none">Usuń podzadanie</button></div>
+  </div>
+</div>
+
+<!-- Modal: AI paste-to-structure -->
+<div class="modal-overlay" id="aiPasteModalOverlay">
+  <div class="modal wide">
+    <h2 id="aiPasteTitle">Stwórz z opisu (AI)</h2>
+    <label id="aiPasteLabel">Wklej opis</label>
+    <textarea id="aiPasteTextarea" rows="8" placeholder="Wklej opis projektu, tekstem ciągłym — AI podzieli go na sekcje i zadania…"></textarea>
+    <div class="modal-actions">
+      <button class="ghost" id="aiPasteCancelBtn">Anuluj</button>
+      <button class="ai-btn" id="aiPasteSubmitBtn" style="flex:1;justify-content:center;">✨ Stwórz</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: image lightbox -->
+<div class="modal-overlay" id="imageLightboxOverlay">
+  <div class="modal lightbox-content"><img id="imageLightboxImg" src=""></div>
+</div>
+
+<input type="file" id="photoInput" accept="image/*" class="hidden-file-input">
+<input type="file" id="taskPhotoInput" accept="image/*" class="hidden-file-input">
+<input type="file" id="importFileInput" accept="application/json" class="hidden-file-input">
+<div id="printArea"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+<script>
+const PAW = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;display:inline"><circle cx="6" cy="9" r="2.1"/><circle cx="12" cy="6.5" r="2.1"/><circle cx="18" cy="9" r="2.1"/><ellipse cx="12" cy="15.5" rx="6" ry="4.8"/></svg>';
+const ICONS = {
+  tasks: '<svg viewBox="0 0 24 24" fill="none"><path d="M9 11l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="4" width="18" height="17" rx="3" stroke="currentColor" stroke-width="1.6"/></svg>',
+  notes: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16H5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  checklist: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 6h4M4 12h4M4 18h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11 6h9M11 12h9M11 18h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  links: '<svg viewBox="0 0 24 24" fill="none"><path d="M9 15l6-6M10 6l1-1a4 4 0 0 1 6 6l-1 1M14 18l-1 1a4 4 0 0 1-6-6l1-1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  gallery: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="15" rx="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.7" stroke="currentColor" stroke-width="1.5"/><path d="M4 17l5-5 4 4 3-3 4 4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.3" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 119.5 4 6.8 6.8 0 0020 14.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  auto: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 3.5a8.5 8.5 0 000 17Z" fill="currentColor"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  ai: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M19 15l0.8 2.2L22 18l-2.2 0.8L19 21l-0.8-2.2L16 18l2.2-0.8Z" fill="currentColor"/></svg>',
+  chevleft: '<svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  chevright: '<svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+const SUB_TABS = [
+  { key: 'tasks', label: 'Zadania' }, { key: 'notes', label: 'Notatki' }, { key: 'checklist', label: 'Checklista' },
+  { key: 'links', label: 'Linki' }, { key: 'gallery', label: 'Galeria' }
+];
+const PRIORITY_LABEL = { low: 'Niski', medium: 'Średni', high: 'Wysoki' };
+const PRIORITY_RANK = { high: 3, medium: 2, low: 1 };
+const STATUS_LABEL = { todo: 'Do zrobienia', progress: 'W trakcie', done: 'Zrobione' };
+
+let db = null, downloads = null;
+let projects = [], sections = [], tasks = [], checklistItems = [], links = [], photos = [];
+let notesCache = {}, quickNotesList = [], currentNoteId = null;
+let settings = { person1Name: 'Osoba 1', person2Name: 'Osoba 2' };
+
+let activeView = 'dashboard'; // dashboard | calendar | sections | section
+let calMode = 'month', calDate = new Date();
+let currentProjectId = null, currentSectionId = null, currentSubTab = 'tasks';
+let editingTaskId = null, selectedPerson = 1, selectedStatus = 'todo', selectedPriority = 'medium', pendingTaskPhoto = null;
+let editingProjectId = null, editingSectionId = null;
+let aiPasteContext = null; // 'newProject' | 'project' | 'section'
+let sampleFnPromise = null;
+let taskDetailTab = 'details';
+let taskNotesCache = {};
+let notifiedToday = new Set();
+let notesSaveTimer = null, notesUnsub = null, qnSaveTimer = null;
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function dueClass(dateStr, status){
+  if(status === 'done' || !dateStr) return '';
+  const t = todayStr();
+  if(dateStr < t) return 'overdue';
+  if(dateStr === t) return 'today';
+  return '';
+}
+function formatDue(dateStr){
+  if(!dateStr) return 'bez terminu';
+  const [y,m,d] = dateStr.split('-');
+  const months = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  return d + ' ' + months[parseInt(m,10)-1];
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function stripHtml(html){ const d = document.createElement('div'); d.innerHTML = html||''; return d.textContent || ''; }
+function personName(p){ return p === 2 ? settings.person2Name : settings.person1Name; }
+function projectName(id){ const p = projects.find(x=>x.id===id); return p ? p.name : ''; }
+function sectionName(id){ const s = sections.find(x=>x.id===id); return s ? s.name : ''; }
+function gcalUrl(title, dueDate, details){
+  if(!dueDate) return null;
+  const start = dueDate.replace(/-/g,'');
+  const d = new Date(dueDate + 'T00:00:00'); d.setDate(d.getDate()+1);
+  const end = d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
+  const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: start + '/' + end, details: details || '' });
+  return 'https://calendar.google.com/calendar/render?' + params.toString();
+}
+function getCollectionOnce(path){
+  return new Promise((resolve) => {
+    let done = false;
+    const unsub = db.collection(path).onSnapshot(snap => {
+      if(done) return; done = true;
+      try{ unsub(); }catch(e){}
+      resolve(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, () => { if(done) return; done = true; resolve([]); });
+  });
+}
+function getDocOnce(path){
+  return new Promise((resolve) => {
+    let done = false;
+    const unsub = db.doc(path).onSnapshot(snap => {
+      if(done) return; done = true;
+      try{ unsub(); }catch(e){}
+      resolve(snap.exists ? snap.data() : null);
+    }, () => { if(done) return; done = true; resolve(null); });
+  });
+}
+function compressImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > maxDim || height > maxDim){
+          if(width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function getEditorSelectionRange(editor){
+  const sel = window.getSelection();
+  if(sel && sel.rangeCount > 0){
+    const r = sel.getRangeAt(0);
+    if(editor.contains(r.commonAncestorContainer)) return r.cloneRange();
+  }
+  const r = document.createRange();
+  r.selectNodeContents(editor);
+  r.collapse(false);
+  return r;
+}
+function insertNodeAtSavedRange(editor, range, node){
+  editor.focus();
+  try {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    range.deleteContents();
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch(e){
+    editor.appendChild(node);
+  }
+}
+function cycleImageSize(img){
+  const sizes = ['33%', '60%', '100%'];
+  const cur = img.dataset.size || '100%';
+  const idx = sizes.indexOf(cur);
+  const next = sizes[(idx + 1) % sizes.length];
+  img.style.width = next;
+  img.style.height = 'auto';
+  img.dataset.size = next;
+}
+function wireImageResize(editor, onSave){
+  editor.addEventListener('click', e => {
+    const img = e.target.closest('img');
+    if(img && editor.contains(img)){
+      cycleImageSize(img);
+      onSave();
+    }
+  });
+}
+function runEditorCommand(cmd, editor, onDone){
+  if(cmd === 'h3') document.execCommand('formatBlock', false, 'H3');
+  else if(cmd === 'ul') document.execCommand('insertUnorderedList');
+  else if(cmd === 'ol') document.execCommand('insertOrderedList');
+  else if(cmd === 'fontsmall' || cmd === 'fontnormal' || cmd === 'fontlarge'){
+    try { document.execCommand('styleWithCSS', false, true); } catch(e){}
+    document.execCommand('fontSize', false, cmd === 'fontsmall' ? '2' : cmd === 'fontlarge' ? '5' : '3');
+  } else if(cmd === 'image'){
+    const savedRange = getEditorSelectionRange(editor);
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.className = 'hidden-file-input';
+    document.body.appendChild(input);
+    input.onchange = async () => {
+      const file = input.files[0];
+      input.remove();
+      if(!file) return;
+      try {
+        const dataUrl = await compressImageFile(file, 600, 0.55);
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.style.width = '60%';
+        img.dataset.size = '60%';
+        img.title = 'Dotknij, aby zmienić rozmiar';
+        insertNodeAtSavedRange(editor, savedRange, img);
+        onDone();
+      } catch(e){ console.error(e); alert('Nie udało się wstawić zdjęcia.'); }
+    };
+    input.click();
+    return;
+  } else document.execCommand(cmd);
+  onDone();
+}
+function openLightbox(src){
+  document.getElementById('imageLightboxImg').src = src;
+  document.getElementById('imageLightboxOverlay').classList.add('show');
+}
+
+// ---- AI (sample capability) ----
+async function getSample(){
+  if(sampleFnPromise === null){
+    sampleFnPromise = (typeof claude !== 'undefined' && claude.use) ? claude.use('sample').catch(() => null) : Promise.resolve(null);
+  }
+  return sampleFnPromise;
+}
+function aiErrorMessage(e){
+  const code = e && e.code;
+  if(code === 'not_granted') return 'Musisz zezwolić na użycie AI, żeby ta funkcja zadziałała.';
+  if(code === 'rate_limited') return 'Zbyt wiele zapytań naraz — spróbuj za chwilę.';
+  if(code === 'images_unavailable' || code === 'image_rejected') return 'Problem ze zdjęciem.';
+  if(code === 'prompt_too_large') return 'Tekst jest za długi — spróbuj skrócić opis.';
+  if(code === 'cancelled') return 'Przerwano.';
+  return 'Nie udało się uzyskać odpowiedzi AI. Spróbuj ponownie.';
+}
+async function askAiJson(prompt){
+  const sample = await getSample();
+  if(!sample) throw { code: 'unavailable', message: 'AI niedostępne w tym miejscu.' };
+  return sample.json(prompt, { modelTier: 'default' });
+}
+async function askAiText(prompt){
+  const sample = await getSample();
+  if(!sample) throw { code: 'unavailable', message: 'AI niedostępne w tym miejscu.' };
+  const { text } = await sample(prompt, { modelTier: 'default' });
+  return text;
+}
+
+function openAiPasteModal(context){
+  aiPasteContext = context;
+  const title = document.getElementById('aiPasteTitle');
+  const label = document.getElementById('aiPasteLabel');
+  document.getElementById('aiPasteTextarea').value = '';
+  if(context === 'newProject'){ title.textContent = 'Stwórz projekt z opisu (AI)'; label.textContent = 'Opisz projekt — AI stworzy sekcje i zadania'; }
+  else if(context === 'project'){ title.textContent = 'Dodaj z opisu (AI)'; label.textContent = 'Opisz co dodać — AI doda nowe sekcje i zadania do tego projektu'; }
+  else { title.textContent = 'Dodaj zadania z opisu (AI)'; label.textContent = 'Opisz co dodać — AI doda nowe zadania do tego podzadania'; }
+  document.getElementById('projectModalOverlay').classList.remove('show');
+  document.getElementById('aiPasteModalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('aiPasteTextarea').focus(), 50);
+}
+function closeAiPasteModal(){ document.getElementById('aiPasteModalOverlay').classList.remove('show'); }
+async function submitAiPaste(){
+  const text = document.getElementById('aiPasteTextarea').value.trim();
+  if(!text) return;
+  const btn = document.getElementById('aiPasteSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Myślę…';
+  try {
+    if(aiPasteContext === 'newProject'){
+      const prompt = `Podziel poniższy opis projektu domowego na strukturę. Odpowiedz WYŁĄCZNIE jednym obiektem JSON, bez żadnego innego tekstu, w formacie:
+{"name": string, "emoji": string (jedno emoji pasujące), "sections": [{"name": string, "emoji": string, "tasks": [{"title": string, "priority": "low"|"medium"|"high"}]}]}
+Sekcje to logiczne części projektu (np. pomieszczenia, etapy). Zadania to konkretne czynności. Priorytet dobierz sensownie na podstawie opisu.
+
+Opis:
+${text}`;
+      const data = await askAiJson(prompt);
+      const ref = await db.collection('projects').add({ name: data.name || 'Nowy projekt', emoji: data.emoji || '', due: null, createdAt: Date.now() });
+      for(const s of (data.sections || [])){
+        const secRef = await db.collection('sections').add({ name: s.name || 'Sekcja', emoji: s.emoji || '', due: null, projectId: ref.id, createdAt: Date.now() });
+        for(const tk of (s.tasks || [])){
+          await db.collection('tasks').add({ title: tk.title || 'Zadanie', due: null, person: 1, status: 'todo', priority: tk.priority || 'medium', photo: null, sectionId: secRef.id, projectId: ref.id, createdAt: Date.now() });
+        }
+      }
+      currentProjectId = ref.id; currentSectionId = null; activeView = 'sections';
+      closeAiPasteModal(); renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+    } else if(aiPasteContext === 'project'){
+      const prompt = `Do istniejącego projektu domowego "${projectName(currentProjectId)}" dodaj nowe elementy na podstawie opisu. Odpowiedz WYŁĄCZNIE jednym obiektem JSON:
+{"sections": [{"name": string, "emoji": string, "tasks": [{"title": string, "priority": "low"|"medium"|"high"}]}]}
+
+Opis:
+${text}`;
+      const data = await askAiJson(prompt);
+      for(const s of (data.sections || [])){
+        const secRef = await db.collection('sections').add({ name: s.name || 'Sekcja', emoji: s.emoji || '', due: null, projectId: currentProjectId, createdAt: Date.now() });
+        for(const tk of (s.tasks || [])){
+          await db.collection('tasks').add({ title: tk.title || 'Zadanie', due: null, person: 1, status: 'todo', priority: tk.priority || 'medium', photo: null, sectionId: secRef.id, projectId: currentProjectId, createdAt: Date.now() });
+        }
+      }
+      closeAiPasteModal();
+    } else if(aiPasteContext === 'section'){
+      const prompt = `Do istniejącego podzadania "${sectionName(currentSectionId)}" (część projektu "${projectName(currentProjectId)}") dodaj nowe zadania na podstawie opisu. Odpowiedz WYŁĄCZNIE jednym obiektem JSON:
+{"tasks": [{"title": string, "priority": "low"|"medium"|"high"}]}
+
+Opis:
+${text}`;
+      const data = await askAiJson(prompt);
+      for(const tk of (data.tasks || [])){
+        await db.collection('tasks').add({ title: tk.title || 'Zadanie', due: null, person: 1, status: 'todo', priority: tk.priority || 'medium', photo: null, sectionId: currentSectionId, projectId: currentProjectId, createdAt: Date.now() });
+      }
+      closeAiPasteModal();
+    }
+  } catch(e){ console.error(e); alert(aiErrorMessage(e)); }
+  finally { btn.disabled = false; btn.textContent = '✨ Stwórz'; }
+}
+
+// ==== jsonbin.io — konfiguracja ====
+// Wklej tutaj swój Access Key z jsonbin.io (Account → API Keys). Użyj OSOBNEGO klucza niż w planerze,
+// ograniczonego (jeśli to możliwe) tylko do bina tej aplikacji.
+const JSONBIN_API_KEY = '$2a$10$W148CMyGUUl1iGtoArLw0Oq7sQ49NyL/WoL0agc3g/rWvSXdbCvdK';
+// Zostaw puste przy pierwszym uruchomieniu — aplikacja sama utworzy bin i pokaże Ci jego ID
+// do wklejenia tutaj na stałe (inaczej przy każdym odświeżeniu powstanie nowy, pusty magazyn).
+let JSONBIN_BIN_ID = '';
+
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
+const JSONBIN_POLL_MS = 4000;
+
+function jsonbinEmptyState(){
+  return { projects:{}, sections:{}, tasks:{}, checklist:{}, links:{}, photos:{}, notes:{}, tasknotes:{}, quicknotes:{}, meta:{} };
+}
+function genId(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
+
+function showJsonbinConfigWarning(msg){
+  const main = document.getElementById('mainArea');
+  if(main) main.innerHTML = `<div class="empty-state"><h2>Konfiguracja jsonbin.io</h2><p class="small">${msg}</p></div>`;
+}
+function showBinIdBanner(id){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,30,50,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:18px;padding:22px;max-width:420px;font-family:'Nunito',sans-serif;">
+    <h2 style="margin:0 0 10px;color:#4E74A8;font-family:'Fredoka',sans-serif;">Pierwsze uruchomienie</h2>
+    <p style="font-size:14px;line-height:1.5;color:#3C4A5E;">Utworzono nowy magazyn danych na jsonbin.io. Skopiuj poniższe ID i wklej je jako wartość <code>JSONBIN_BIN_ID</code> na górze pliku — inaczej przy kolejnym otwarciu powstanie kolejny, pusty magazyn.</p>
+    <input readonly value="${id}" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;margin:10px 0;" onclick="this.select()">
+    <button id="binIdBannerCloseBtn" style="width:100%;padding:10px;border-radius:10px;border:none;background:#7FA9E0;color:#fff;font-weight:800;cursor:pointer;">Rozumiem, zapisałem</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#binIdBannerCloseBtn').addEventListener('click', () => overlay.remove());
+}
+
+function createJsonBinDb(){
+  let state = jsonbinEmptyState();
+  let pendingSave = false;
+  let saveTimer = null;
+  const collectionListeners = {};
+  const docListeners = {};
+
+  function notifyCollection(name){
+    const set = collectionListeners[name];
+    if(!set) return;
+    set.forEach(entry => {
+      let ids = Object.keys(state[name] || {});
+      if(entry.orderField){
+        ids.sort((a,b) => {
+          const av = (state[name][a]||{})[entry.orderField], bv = (state[name][b]||{})[entry.orderField];
+          if(av === bv) return 0;
+          if(av === undefined) return entry.orderDir === 'desc' ? 1 : -1;
+          if(bv === undefined) return entry.orderDir === 'desc' ? -1 : 1;
+          return entry.orderDir === 'desc' ? (av < bv ? 1 : -1) : (av > bv ? 1 : -1);
+        });
+      }
+      const docs = ids.map(id => ({ id, data: () => state[name][id] }));
+      entry.cb({ docs });
+    });
+  }
+  function notifyDoc(path){
+    const set = docListeners[path];
+    if(!set) return;
+    const [coll, id] = path.split('/');
+    const data = state[coll] && state[coll][id];
+    set.forEach(cb => cb({ exists: !!data, data: () => data }));
+  }
+  function notifyAll(){
+    Object.keys(collectionListeners).forEach(notifyCollection);
+    Object.keys(docListeners).forEach(notifyDoc);
+  }
+
+  async function ensureBin(){
+    if(JSONBIN_BIN_ID) return true;
+    try {
+      const res = await fetch(JSONBIN_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Name': 'domowe-sprawy' },
+        body: JSON.stringify(jsonbinEmptyState())
+      });
+      const json = await res.json();
+      if(json && json.metadata && json.metadata.id){
+        JSONBIN_BIN_ID = json.metadata.id;
+        showBinIdBanner(JSONBIN_BIN_ID);
+        return true;
+      }
+    } catch(e){ console.error('jsonbin create error', e); }
+    return false;
+  }
+  async function pullRemote(){
+    try {
+      const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+      if(!res.ok) return;
+      const json = await res.json();
+      if(pendingSave) return;
+      state = Object.assign(jsonbinEmptyState(), json.record || {});
+      notifyAll();
+    } catch(e){ console.error('jsonbin pull error', e); }
+  }
+  function schedulePush(){
+    pendingSave = true;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+          body: JSON.stringify(state)
+        });
+      } catch(e){ console.error('jsonbin push error', e); }
+      pendingSave = false;
+    }, 350);
+  }
+
+  function docRef(coll, id){
+    const path = coll + '/' + id;
+    return {
+      onSnapshot(cb){
+        if(!docListeners[path]) docListeners[path] = new Set();
+        docListeners[path].add(cb);
+        const data = state[coll] && state[coll][id];
+        cb({ exists: !!data, data: () => data });
+        return () => docListeners[path].delete(cb);
+      },
+      async set(data){
+        if(!state[coll]) state[coll] = {};
+        state[coll][id] = { ...data };
+        notifyDoc(path); notifyCollection(coll); schedulePush();
+      },
+      async update(patch){
+        if(!state[coll]) state[coll] = {};
+        state[coll][id] = { ...(state[coll][id]||{}), ...patch };
+        notifyDoc(path); notifyCollection(coll); schedulePush();
+      },
+      async delete(){
+        if(state[coll]) delete state[coll][id];
+        notifyDoc(path); notifyCollection(coll); schedulePush();
+      }
+    };
+  }
+  function collectionRef(name, orderField, orderDir){
+    return {
+      orderBy(field, dir){ return collectionRef(name, field, dir || 'asc'); },
+      onSnapshot(cb){
+        const entry = { cb, orderField, orderDir };
+        if(!collectionListeners[name]) collectionListeners[name] = new Set();
+        collectionListeners[name].add(entry);
+        notifyCollection(name);
+        return () => collectionListeners[name].delete(entry);
+      },
+      async add(data){
+        const id = genId();
+        if(!state[name]) state[name] = {};
+        state[name][id] = { ...data };
+        notifyCollection(name); schedulePush();
+        return { id };
+      }
+    };
+  }
+
+  (async () => {
+    if(!JSONBIN_API_KEY){ showJsonbinConfigWarning('Uzupełnij stałą <code>JSONBIN_API_KEY</code> na górze pliku (Twój klucz z jsonbin.io) i odśwież stronę.'); return; }
+    const ok = await ensureBin();
+    if(!ok){ showJsonbinConfigWarning('Nie udało się połączyć z jsonbin.io — sprawdź klucz API i połączenie z internetem.'); return; }
+    await pullRemote();
+    setInterval(pullRemote, JSONBIN_POLL_MS);
+  })();
+
+  return {
+    doc(path){ const [coll, id] = path.split('/'); return docRef(coll, id); },
+    collection(name){ return collectionRef(name); }
+  };
+}
+
+async function init(){
+  document.getElementById('imageLightboxOverlay').addEventListener('click', e => { if(e.target.id === 'imageLightboxOverlay') e.currentTarget.classList.remove('show'); });
+  document.getElementById('taskPhotoInput').addEventListener('change', handleTaskPhotoUpload);
+  document.getElementById('projectDeleteBtn').addEventListener('click', deleteCurrentProject);
+  document.getElementById('sectionDeleteBtn').addEventListener('click', deleteCurrentSection);
+  document.getElementById('aiPasteCancelBtn').addEventListener('click', closeAiPasteModal);
+  document.getElementById('aiPasteSubmitBtn').addEventListener('click', submitAiPaste);
+  document.getElementById('aiPasteFromProjectModalBtn').addEventListener('click', () => openAiPasteModal('newProject'));
+  db = createJsonBinDb();
+  downloads = null;
+  if(!db){
+    document.getElementById('mainArea').innerHTML = '<div class="empty-state"><h2>Brak połączenia z bazą</h2><p>Odśwież stronę, aby spróbować ponownie.</p></div>';
+    return;
+  }
+  db.doc('meta/settings').onSnapshot(snap => {
+    if(snap.exists){
+      const d = snap.data();
+      settings.person1Name = d.person1Name || 'Osoba 1';
+      settings.person2Name = d.person2Name || 'Osoba 2';
+    }
+    syncSettingsInputs();
+    renderMain();
+  });
+  db.collection('quicknotes').onSnapshot(snap => {
+    quickNotesList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(activeView === 'dashboard' || activeView === 'notes-list') renderMain();
+    if(activeView === 'note-detail'){
+      const n = quickNotesList.find(x => x.id === currentNoteId);
+      const titleInput = document.getElementById('noteTitleInput');
+      const editor = document.getElementById('noteEditor');
+      if(n && titleInput && document.activeElement !== titleInput && titleInput.value !== (n.title||'')) titleInput.value = n.title || '';
+      if(n && editor && document.activeElement !== editor && editor.innerHTML !== (n.html||'')) editor.innerHTML = n.html || '';
+    }
+  });
+  db.collection('projects').orderBy('createdAt','asc').onSnapshot(snap => {
+    projects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentProjectId && !projects.find(p => p.id === currentProjectId)){ currentProjectId = null; activeView = 'dashboard'; }
+    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+  });
+  db.collection('sections').onSnapshot(snap => {
+    sections = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if(currentSectionId && !sections.find(s => s.id === currentSectionId)){ currentSectionId = null; if(activeView==='section') activeView='sections'; }
+    renderBreadcrumb(); renderMain();
+  });
+  db.collection('tasks').onSnapshot(snap => {
+    tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderMain(); renderReminders();
+  });
+  db.collection('checklist').onSnapshot(snap => { checklistItems = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(currentSubTab==='checklist') renderMain(); if(editingTaskId && taskDetailTab==='checklist') renderTaskChecklistTab(); });
+  db.collection('links').onSnapshot(snap => { links = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(currentSubTab==='links') renderMain(); if(editingTaskId && taskDetailTab==='links') renderTaskLinksTab(); });
+  db.collection('photos').onSnapshot(snap => { photos = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(currentSubTab==='gallery') renderMain(); });
+  db.collection('tasknotes').onSnapshot(snap => {
+    taskNotesCache = {};
+    snap.docs.forEach(d => { taskNotesCache[d.id] = d.data().html || ''; });
+    if(editingTaskId && taskDetailTab==='notes'){
+      const ed = document.getElementById('taskNotesEditor');
+      if(ed && document.activeElement !== ed) ed.innerHTML = taskNotesCache[editingTaskId] || '';
+    }
+  });
+
+  document.getElementById('fabAdd').addEventListener('click', handleFabClick);
+  document.getElementById('projectCancelBtn').addEventListener('click', closeProjectModal);
+  document.getElementById('projectSaveBtn').addEventListener('click', saveProject);
+  document.getElementById('sectionCancelBtn').addEventListener('click', closeSectionModal);
+  document.getElementById('sectionSaveBtn').addEventListener('click', saveSection);
+  document.getElementById('photoInput').addEventListener('change', handlePhotoUpload);
+  document.getElementById('importFileInput').addEventListener('change', handleImportFile);
+
+  document.getElementById('settingsHeaderBtn').addEventListener('click', () => document.getElementById('settingsModalOverlay').classList.add('show'));
+  document.getElementById('settingsCloseBtn').addEventListener('click', () => document.getElementById('settingsModalOverlay').classList.remove('show'));
+  document.getElementById('p1NameInput').addEventListener('change', e => saveSettings({person1Name: e.target.value || 'Osoba 1'}));
+  document.getElementById('p2NameInput').addEventListener('change', e => saveSettings({person2Name: e.target.value || 'Osoba 2'}));
+  document.getElementById('notifBtn').addEventListener('click', requestNotifications);
+  updateNotifBtnLabel();
+
+  document.getElementById('backupHeaderBtn').addEventListener('click', () => document.getElementById('backupModalOverlay').classList.add('show'));
+  document.getElementById('backupCloseBtn').addEventListener('click', () => document.getElementById('backupModalOverlay').classList.remove('show'));
+  document.getElementById('exportJsonBtn').addEventListener('click', exportBackupJson);
+  document.getElementById('importJsonBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+  document.getElementById('exportExcelBtn').addEventListener('click', exportExcel);
+  document.getElementById('exportWordBtn').addEventListener('click', exportWord);
+  document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
+  renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+}
+
+function syncSettingsInputs(){
+  const p1 = document.getElementById('p1NameInput'), p2 = document.getElementById('p2NameInput');
+  if(p1 && document.activeElement !== p1) p1.value = settings.person1Name;
+  if(p2 && document.activeElement !== p2) p2.value = settings.person2Name;
+}
+function updateNotifBtnLabel(){
+  const btn = document.getElementById('notifBtn'); if(!btn) return;
+  try { if('Notification' in window && Notification.permission === 'granted'){ btn.textContent = '🔔 Powiadomienia włączone'; } } catch(e){}
+}
+async function saveSettings(patch){ try { await db.doc('meta/settings').set({ ...settings, ...patch }); } catch(e){ console.error(e); } }
+function requestNotifications(){
+  try {
+    if(!('Notification' in window)){ alert('Ta przeglądarka nie obsługuje powiadomień.'); return; }
+    Notification.requestPermission().then(perm => {
+      updateNotifBtnLabel();
+      if(perm === 'granted'){ new Notification('Domowe Sprawy', { body: 'Powiadomienia włączone.' }); }
+    });
+  } catch(e){ console.error(e); }
+}
+
+// ---- Top navigation ----
+function renderProjectsRow(){
+  const row = document.getElementById('projectsRow');
+  let html = `<button class="proj-tab ${activeView==='dashboard'?'active':''}" id="startTab">${ICONS.home} Start</button>
+    <button class="proj-tab ${activeView==='calendar'?'active':''}" id="calendarTab">${ICONS.calendar} Kalendarz</button>`;
+  projects.forEach(p => {
+    const active = (activeView==='sections'||activeView==='section') && currentProjectId===p.id;
+    html += `<button class="proj-tab ${active?'active':''}" data-id="${p.id}">${p.emoji ? p.emoji+' ' : ''}${escapeHtml(p.name)}</button>`;
+  });
+  html += `<button class="proj-tab add" id="addProjectTab">+ Nowy projekt</button>`;
+  row.innerHTML = html;
+  document.getElementById('startTab').addEventListener('click', () => { activeView='dashboard'; currentProjectId=null; currentSectionId=null; renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain(); });
+  document.getElementById('calendarTab').addEventListener('click', () => { activeView='calendar'; currentProjectId=null; currentSectionId=null; renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain(); });
+  row.querySelectorAll('.proj-tab[data-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentProjectId = btn.dataset.id; currentSectionId = null; activeView = 'sections';
+      renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+    });
+  });
+  document.getElementById('addProjectTab').addEventListener('click', () => openProjectModal());
+}
+
+function dueBadgeHtml(due){
+  if(!due) return '';
+  const dc = dueClass(due, '');
+  return `<span class="mini-due ${dc}">${formatDue(due)}</span>`;
+}
+function renderBreadcrumb(){
+  const el = document.getElementById('breadcrumbArea');
+  if(activeView === 'sections'){
+    const p = projects.find(x => x.id === currentProjectId);
+    el.innerHTML = `<span class="crumb-title editable" id="editProjectCrumb">${escapeHtml(projectName(currentProjectId))}${ICONS.edit}</span>${dueBadgeHtml(p && p.due)}`;
+    document.getElementById('editProjectCrumb').addEventListener('click', () => openProjectModal(currentProjectId));
+  } else if(activeView === 'section'){
+    const s = sections.find(x => x.id === currentSectionId);
+    el.innerHTML = `<button class="back" id="backToSectionsBtn">${ICONS.back} Sekcje</button><span class="crumb-title editable" id="editSectionCrumb">${escapeHtml(sectionName(currentSectionId))}${ICONS.edit}</span>${dueBadgeHtml(s && s.due)}`;
+    document.getElementById('backToSectionsBtn').addEventListener('click', () => {
+      activeView = 'sections'; currentSectionId = null;
+      renderBreadcrumb(); renderSubNav(); renderMain();
+    });
+    document.getElementById('editSectionCrumb').addEventListener('click', () => openSectionModal(currentSectionId));
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function renderSubNav(){
+  const nav = document.getElementById('subNav');
+  if(activeView !== 'section' || !currentSectionId){ nav.innerHTML = ''; return; }
+  nav.innerHTML = SUB_TABS.map(t => `<button class="sub-tab ${t.key===currentSubTab?'active':''}" data-key="${t.key}">${ICONS[t.key]}${t.label}</button>`).join('');
+  nav.querySelectorAll('.sub-tab').forEach(btn => {
+    btn.addEventListener('click', () => { currentSubTab = btn.dataset.key; renderSubNav(); renderMain(); });
+  });
+}
+
+function handleFabClick(){
+  if(activeView === 'notes-list') createNewNote();
+  else if(activeView === 'sections') openSectionModal(undefined);
+  else if(activeView === 'section'){
+    if(currentSubTab === 'tasks') goToTaskPage();
+    else if(currentSubTab === 'checklist') focusInlineAdd('checklistAddInput');
+    else if(currentSubTab === 'links') focusInlineAdd('linkLabelInput');
+    else if(currentSubTab === 'gallery') document.getElementById('photoInput').click();
+  }
+}
+function focusInlineAdd(id){ const el = document.getElementById(id); if(el) el.focus(); }
+
+// ---- Main dispatcher ----
+function renderMain(){
+  const main = document.getElementById('mainArea');
+  const fab = document.getElementById('fabAdd');
+  if(activeView === 'dashboard'){ fab.style.display = 'none'; return renderDashboard(main); }
+  if(activeView === 'calendar'){ fab.style.display = 'none'; return renderCalendar(main); }
+  if(activeView === 'notes-list'){ fab.style.display = 'flex'; return renderNotesListView(main); }
+  if(activeView === 'note-detail'){ fab.style.display = 'none'; return renderNoteDetailView(main); }
+  if(activeView === 'priority-list'){ fab.style.display = 'none'; return renderPriorityListView(main); }
+  if(activeView === 'due-list'){ fab.style.display = 'none'; return renderDueListView(main); }
+  if(!projects.length){
+    fab.style.display = 'none';
+    main.innerHTML = emptyProjectsHtml();
+    document.getElementById('emptyAddProjectBtn').addEventListener('click', () => openProjectModal());
+    return;
+  }
+  if(activeView === 'sections'){ fab.style.display = 'flex'; return renderSectionsGrid(main); }
+  if(activeView === 'task'){ fab.style.display = 'none'; return renderTaskPage(main); }
+  if(activeView === 'section'){
+    fab.style.display = 'flex';
+    if(!currentSectionId) return;
+    if(currentSubTab === 'tasks') return renderTasksView(main);
+    if(currentSubTab === 'notes') return renderNotesView(main);
+    if(currentSubTab === 'checklist') return renderChecklistView(main);
+    if(currentSubTab === 'links') return renderLinksView(main);
+    if(currentSubTab === 'gallery') return renderGalleryView(main);
+  }
+}
+function emptyProjectsHtml(){
+  return `<div class="empty-state">
+    <svg viewBox="0 0 120 90" fill="none">
+      <ellipse cx="60" cy="70" rx="45" ry="8" fill="var(--secondary)" opacity="0.5"/>
+      <ellipse cx="60" cy="46" rx="30" ry="26" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/>
+      <ellipse cx="35" cy="26" rx="11" ry="15" fill="var(--primary)" transform="rotate(-20 35 26)"/>
+      <ellipse cx="85" cy="26" rx="11" ry="15" fill="var(--primary)" transform="rotate(20 85 26)"/>
+      <circle cx="49" cy="48" r="4" fill="var(--text)"/><circle cx="71" cy="48" r="4" fill="var(--text)"/>
+      <ellipse cx="60" cy="58" rx="5" ry="3.5" fill="var(--primary-deep)"/>
+    </svg>
+    <h2>Nie macie jeszcze żadnego projektu</h2>
+    <p class="small">Stwórzcie pierwszy — np. remont, zakupy albo sprawy urzędowe.</p>
+    <button class="primary" id="emptyAddProjectBtn" style="max-width:220px;margin:14px auto 0;">Dodaj projekt</button>
+  </div>`;
+}
+
+// ---- Dashboard ----
+function renderDashboard(main){
+  const openTasks = tasks.filter(t => t.status !== 'done');
+  const t = todayStr();
+  const items = [
+    ...openTasks.map(x => ({ kind: 'task', id: x.id, title: x.title, due: x.due, priority: x.priority, loc: [projectName(x.projectId), sectionName(x.sectionId)].filter(Boolean).join(' › ') })),
+    ...projects.filter(p => p.due).map(p => ({ kind: 'project', id: p.id, title: p.name, due: p.due, priority: null, loc: 'Projekt' })),
+    ...sections.filter(s => s.due).map(s => ({ kind: 'section', id: s.id, title: s.name, due: s.due, priority: null, loc: 'Podzadanie · ' + projectName(s.projectId) }))
+  ];
+  const topPriority = openTasks
+    .map(x => ({ kind: 'task', id: x.id, title: x.title, due: x.due, priority: x.priority, loc: [projectName(x.projectId), sectionName(x.sectionId)].filter(Boolean).join(' › ') }))
+    .sort((a,b) => {
+      const pr = (PRIORITY_RANK[b.priority]||0) - (PRIORITY_RANK[a.priority]||0);
+      if(pr !== 0) return pr;
+      return (a.due || '9999-99-99').localeCompare(b.due || '9999-99-99');
+    }).slice(0, 6);
+  const topDue = items.filter(x => x.due).sort((a,b) => a.due.localeCompare(b.due)).slice(0, 6);
+  const doneCount = tasks.filter(t=>t.status==='done').length;
+
+  const recentNotes = [...quickNotesList].sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0)).slice(0,3);
+  main.innerHTML = `
+    <div class="dash-grid">
+      <div class="dash-card">
+        <h3>${ICONS.notes} Szybkie notatki (${quickNotesList.length})</h3>
+        ${recentNotes.length ? recentNotes.map(n => `<div class="dash-row" data-note-id="${n.id}"><div class="info"><div class="t">${escapeHtml(n.title)||'Bez tytułu'}</div><div class="p">${escapeHtml(stripHtml(n.html)).slice(0,60)||'Pusta notatka'}</div></div></div>`).join('') : '<p style="color:var(--text-soft);font-size:13.5px;">Brak notatek — dodaj pierwszą.</p>'}
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="ghost" id="viewAllNotesBtn" style="flex:1;">Zobacz wszystkie</button>
+          <button class="ghost" id="newNoteBtnDash" style="flex:1;">+ Nowa</button>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3>🔥 Największy priorytet</h3>
+        ${topPriority.length ? topPriority.map(x => dashRowHtml(x, 'priority')).join('') : '<p style="color:var(--text-soft);font-size:13.5px;">Brak otwartych zadań ' + PAW + '</p>'}
+        <button class="ghost" id="viewAllPriorityBtn" style="width:100%;margin-top:8px;">Zobacz wszystkie</button>
+      </div>
+      <div class="dash-card">
+        <h3>📅 Najbliższe terminy</h3>
+        ${topDue.length ? topDue.map(x => dashRowHtml(x, 'due')).join('') : '<p style="color:var(--text-soft);font-size:13.5px;">Brak zbliżających się terminów ' + PAW + '</p>'}
+        <button class="ghost" id="viewAllDueBtn" style="width:100%;margin-top:8px;">Zobacz wszystkie</button>
+      </div>
+      <div class="dash-card">
+        <h3>📊 W skrócie</h3>
+        <div class="stats-row">
+          <div class="stat-pill"><div class="n">${projects.length}</div><div class="l">Projekty</div></div>
+          <div class="stat-pill"><div class="n">${sections.length}</div><div class="l">Podzadania</div></div>
+          <div class="stat-pill"><div class="n">${openTasks.length}</div><div class="l">Otwarte zadania</div></div>
+          <div class="stat-pill"><div class="n">${doneCount}</div><div class="l">Zrobione</div></div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('viewAllNotesBtn').addEventListener('click', () => { activeView='notes-list'; renderMain(); });
+  document.getElementById('newNoteBtnDash').addEventListener('click', createNewNote);
+  document.getElementById('viewAllPriorityBtn').addEventListener('click', () => { activeView='priority-list'; renderMain(); });
+  document.getElementById('viewAllDueBtn').addEventListener('click', () => { activeView='due-list'; renderMain(); });
+  main.querySelectorAll('[data-note-id]').forEach(row => row.addEventListener('click', () => openNoteDetail(row.dataset.noteId)));
+  main.querySelectorAll('.dash-row[data-id]').forEach(row => {
+    row.addEventListener('click', () => handleDashRowClick(row.dataset.id, row.dataset.kind));
+  });
+}
+function daysLeftLabel(due){
+  if(!due) return '';
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(due + 'T00:00:00');
+  const diff = Math.round((d - now) / 86400000);
+  if(diff === 0) return 'dziś';
+  if(diff === 1) return 'jutro';
+  if(diff === -1) return 'wczoraj';
+  if(diff > 1) return `za ${diff} dni`;
+  return `${Math.abs(diff)} dni temu`;
+}
+function dashRowHtml(x, mode){
+  const dc = dueClass(x.due, '');
+  const icon = x.kind === 'project' ? '📁 ' : x.kind === 'section' ? '📂 ' : '';
+  const rightBadge = mode === 'priority'
+    ? `<span class="priority-badge ${x.priority||'medium'}"><span class="dot"></span>${PRIORITY_LABEL[x.priority||'medium']}</span>`
+    : `<span class="due-badge ${dc}">${daysLeftLabel(x.due)}</span>`;
+  return `<div class="dash-row" data-id="${x.id}" data-kind="${x.kind}">
+    <span class="dot ${x.priority||(x.kind==='task'?'medium':'low')}"></span>
+    <div class="info"><div class="t">${icon}${escapeHtml(x.title)}</div><div class="p">${escapeHtml(x.loc)}</div></div>
+    ${rightBadge}
+  </div>`;
+}
+function handleDashRowClick(id, kind){
+  if(kind === 'task'){
+    const task = tasks.find(x=>x.id===id); if(!task) return;
+    currentProjectId = task.projectId; currentSectionId = task.sectionId;
+    renderProjectsRow();
+    goToTaskPage(id);
+  } else if(kind === 'project'){
+    currentProjectId = id; currentSectionId = null; activeView = 'sections';
+    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+  } else if(kind === 'section'){
+    const sec = sections.find(x=>x.id===id); if(!sec) return;
+    currentProjectId = sec.projectId; currentSectionId = id; activeView = 'section'; currentSubTab = 'tasks';
+    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+  }
+}
+function renderPriorityListView(main){
+  const openTasks = tasks.filter(t => t.status !== 'done');
+  const list = openTasks.map(x => ({ kind: 'task', id: x.id, title: x.title, due: x.due, priority: x.priority, loc: [projectName(x.projectId), sectionName(x.sectionId)].filter(Boolean).join(' › ') }))
+    .sort((a,b) => {
+      const pr = (PRIORITY_RANK[b.priority]||0) - (PRIORITY_RANK[a.priority]||0);
+      if(pr !== 0) return pr;
+      return (a.due || '9999-99-99').localeCompare(b.due || '9999-99-99');
+    });
+  main.innerHTML = `
+    <div class="breadcrumb" style="padding:0 0 14px;"><button class="back" id="priBackBtn">${ICONS.back} Start</button><span class="crumb-title">🔥 Największy priorytet</span></div>
+    <div class="dash-card">${list.length ? list.map(x => dashRowHtml(x,'priority')).join('') : '<p style="color:var(--text-soft);font-size:13.5px;">Brak otwartych zadań ' + PAW + '</p>'}</div>`;
+  document.getElementById('priBackBtn').addEventListener('click', () => { activeView='dashboard'; renderMain(); });
+  main.querySelectorAll('.dash-row[data-id]').forEach(row => row.addEventListener('click', () => handleDashRowClick(row.dataset.id, row.dataset.kind)));
+}
+function renderDueListView(main){
+  const openTasks = tasks.filter(t => t.status !== 'done');
+  const items = [
+    ...openTasks.map(x => ({ kind: 'task', id: x.id, title: x.title, due: x.due, priority: x.priority, loc: [projectName(x.projectId), sectionName(x.sectionId)].filter(Boolean).join(' › ') })),
+    ...projects.filter(p => p.due).map(p => ({ kind: 'project', id: p.id, title: p.name, due: p.due, priority: null, loc: 'Projekt' })),
+    ...sections.filter(s => s.due).map(s => ({ kind: 'section', id: s.id, title: s.name, due: s.due, priority: null, loc: 'Podzadanie · ' + projectName(s.projectId) }))
+  ];
+  const list = items.filter(x => x.due).sort((a,b) => a.due.localeCompare(b.due));
+  main.innerHTML = `
+    <div class="breadcrumb" style="padding:0 0 14px;"><button class="back" id="dueBackBtn">${ICONS.back} Start</button><span class="crumb-title">📅 Najbliższe terminy</span></div>
+    <div class="dash-card">${list.length ? list.map(x => dashRowHtml(x,'due')).join('') : '<p style="color:var(--text-soft);font-size:13.5px;">Brak zbliżających się terminów ' + PAW + '</p>'}</div>`;
+  document.getElementById('dueBackBtn').addEventListener('click', () => { activeView='dashboard'; renderMain(); });
+  main.querySelectorAll('.dash-row[data-id]').forEach(row => row.addEventListener('click', () => handleDashRowClick(row.dataset.id, row.dataset.kind)));
+}
+function openNoteDetail(id){ currentNoteId = id; activeView = 'note-detail'; renderMain(); }
+async function createNewNote(){
+  try {
+    const ref = await db.collection('quicknotes').add({ title: '', html: '', createdAt: Date.now(), updatedAt: Date.now() });
+    openNoteDetail(ref.id);
+  } catch(e){ console.error(e); alert('Nie udało się utworzyć notatki.'); }
+}
+function scheduleNoteSave(){
+  const hint = document.getElementById('noteSaveHint'); if(hint) hint.textContent = 'Zapisywanie…';
+  clearTimeout(qnSaveTimer);
+  const nid = currentNoteId;
+  qnSaveTimer = setTimeout(async () => {
+    const title = document.getElementById('noteTitleInput').value;
+    const html = document.getElementById('noteEditor').innerHTML;
+    try { await db.doc('quicknotes/'+nid).update({ title, html, updatedAt: Date.now() }); const h = document.getElementById('noteSaveHint'); if(h) h.textContent = 'Zapisano'; } catch(e){ console.error(e); }
+  }, 600);
+}
+async function deleteCurrentNote(){
+  if(!currentNoteId) return;
+  if(!confirm('Usunąć tę notatkę?')) return;
+  try { await db.doc('quicknotes/'+currentNoteId).delete(); activeView = 'notes-list'; currentNoteId = null; renderMain(); } catch(e){ console.error(e); }
+}
+function renderNotesListView(main){
+  const list = [...quickNotesList].sort((a,b) => (b.updatedAt||0)-(a.updatedAt||0));
+  main.innerHTML = `
+    <div class="breadcrumb" style="padding:0 0 14px;"><button class="back" id="notesBackBtn">${ICONS.back} Start</button><span class="crumb-title">Szybkie notatki</span></div>
+    <div style="margin-bottom:12px;"><button class="ai-btn" id="newNoteBtn" style="background:var(--primary);">+ Nowa notatka</button></div>
+    <div class="simple-list">
+      ${list.length ? list.map(n => `<div class="simple-row" data-id="${n.id}" style="cursor:pointer;">
+          <div class="info" style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14.5px;">${escapeHtml(n.title) || 'Bez tytułu'}</div>
+            <div style="font-size:12px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(stripHtml(n.html)).slice(0,80) || 'Pusta notatka'}</div>
+          </div>
+        </div>`).join('') : '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:20px;">Brak notatek ' + PAW + '</div>'}
+    </div>`;
+  document.getElementById('notesBackBtn').addEventListener('click', () => { activeView='dashboard'; renderProjectsRow(); renderMain(); });
+  document.getElementById('newNoteBtn').addEventListener('click', createNewNote);
+  main.querySelectorAll('.simple-row[data-id]').forEach(row => row.addEventListener('click', () => openNoteDetail(row.dataset.id)));
+}
+function renderNoteDetailView(main){
+  const n = quickNotesList.find(x => x.id === currentNoteId);
+  main.innerHTML = `
+    <div class="breadcrumb" style="padding:0 0 14px;"><button class="back" id="noteDetailBackBtn">${ICONS.back} Notatki</button></div>
+    <input type="text" id="noteTitleInput" placeholder="Tytuł notatki" style="font-family:'Fredoka',sans-serif;font-size:19px;font-weight:600;border:none;background:none;padding:4px 2px;margin-bottom:12px;">
+    <div class="notes-toolbar" id="noteToolbar">
+      <button type="button" data-cmd="bold" title="Pogrubienie"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Kursywa"><i>i</i></button>
+      <button type="button" data-cmd="h3" title="Nagłówek">H</button>
+      <button type="button" data-cmd="ul" title="Lista punktowana">•≡</button>
+      <button type="button" data-cmd="ol" title="Lista numerowana">1.≡</button>
+      <button type="button" data-cmd="fontsmall" title="Mniejszy tekst" style="font-size:11px;">A</button>
+      <button type="button" data-cmd="fontnormal" title="Normalny tekst" style="font-size:14px;">A</button>
+      <button type="button" data-cmd="fontlarge" title="Większy tekst" style="font-size:18px;">A</button>
+      <button type="button" data-cmd="image" title="Wstaw zdjęcie">🖼</button>
+    </div>
+    <div class="notes-editor" id="noteEditor" contenteditable="true" data-placeholder="Zanotuj coś…" style="min-height:260px;"></div>
+    <div class="save-hint" id="noteSaveHint">Zapisano</div>
+    <div style="text-align:center; margin-top:14px;"><button class="text-danger" id="noteDeleteBtn">Usuń notatkę</button></div>`;
+  document.getElementById('noteTitleInput').value = n ? (n.title||'') : '';
+  document.getElementById('noteEditor').innerHTML = n ? (n.html||'') : '';
+  document.getElementById('noteDetailBackBtn').addEventListener('click', () => { activeView='notes-list'; renderMain(); });
+  document.getElementById('noteDeleteBtn').addEventListener('click', deleteCurrentNote);
+  document.getElementById('noteTitleInput').addEventListener('input', scheduleNoteSave);
+  const editor = document.getElementById('noteEditor');
+  editor.addEventListener('input', scheduleNoteSave);
+  wireImageResize(editor, scheduleNoteSave);
+  document.querySelectorAll('#noteToolbar button').forEach(btn => {
+    btn.addEventListener('click', () => { if(btn.dataset.cmd !== 'image') editor.focus(); runEditorCommand(btn.dataset.cmd, editor, scheduleNoteSave); });
+  });
+}
+
+// ---- Calendar ----
+function collectCalendarItems(){
+  const items = [];
+  tasks.forEach(t => { if(t.due) items.push({ kind: 'task', id: t.id, title: t.title, due: t.due, priority: t.priority, status: t.status, loc: [projectName(t.projectId), sectionName(t.sectionId)].filter(Boolean).join(' › '), projectId: t.projectId, sectionId: t.sectionId }); });
+  projects.forEach(p => { if(p.due) items.push({ kind: 'project', id: p.id, title: p.name, due: p.due, priority: null, loc: 'Projekt', projectId: p.id }); });
+  sections.forEach(s => { if(s.due) items.push({ kind: 'section', id: s.id, title: s.name, due: s.due, priority: null, loc: 'Podzadanie · ' + projectName(s.projectId), projectId: s.projectId, sectionId: s.id }); });
+  return items;
+}
+function calItemsForDate(items, dateStr){ return items.filter(x => x.due === dateStr); }
+function navigateToCalItem(x){
+  if(x.kind === 'task'){
+    currentProjectId = x.projectId; currentSectionId = x.sectionId;
+    renderProjectsRow();
+    goToTaskPage(x.id);
+  } else if(x.kind === 'project'){
+    currentProjectId = x.id; currentSectionId = null; activeView = 'sections';
+    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+  } else if(x.kind === 'section'){
+    currentProjectId = x.projectId; currentSectionId = x.id; activeView = 'section'; currentSubTab = 'tasks';
+    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+  }
+}
+function calMonthLabel(d){ const months=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień']; return months[d.getMonth()] + ' ' + d.getFullYear(); }
+function calMondayIndex(jsDay){ return (jsDay + 6) % 7; } // Monday=0
+function renderCalendar(main){
+  const items = collectCalendarItems();
+  const t = todayStr();
+  let header = `<div class="cal-header">
+    <div class="cal-nav">
+      <button class="arrow" id="calPrevBtn">${ICONS.chevleft}</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="arrow" id="calNextBtn">${ICONS.chevright}</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="cal-today-btn" id="calTodayBtn">Dziś</button>
+      <div class="cal-mode-seg">
+        <button data-mode="month" class="${calMode==='month'?'active':''}">Miesiąc</button>
+        <button data-mode="week" class="${calMode==='week'?'active':''}">Tydzień</button>
+        <button data-mode="day" class="${calMode==='day'?'active':''}">Dzień</button>
+      </div>
+    </div>
+  </div>`;
+  let body = '';
+  if(calMode === 'month'){
+    const y = calDate.getFullYear(), m = calDate.getMonth();
+    const first = new Date(y, m, 1);
+    const startOffset = calMondayIndex(first.getDay());
+    const gridStart = new Date(y, m, 1 - startOffset);
+    const dows = ['Pon','Wt','Śr','Czw','Pt','Sob','Nd'];
+    body += '<div class="cal-grid">' + dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+    for(let i=0;i<42;i++){
+      const d = new Date(gridStart); d.setDate(gridStart.getDate()+i);
+      const ds = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      const outside = d.getMonth() !== m;
+      const dayItems = calItemsForDate(items, ds);
+      body += `<div class="cal-day ${outside?'outside':''} ${ds===t?'today':''}" data-date="${ds}">
+        <span class="num">${d.getDate()}</span>
+        ${dayItems.slice(0,2).map(x => `<span class="cal-chip ${x.priority||''}">${escapeHtml(x.title)}</span>`).join('')}
+        ${dayItems.length>2 ? `<span class="cal-chip-more">+${dayItems.length-2} więcej</span>` : ''}
+      </div>`;
+    }
+    body += '</div>';
+  } else if(calMode === 'week'){
+    const startOffset = calMondayIndex(calDate.getDay());
+    const weekStart = new Date(calDate); weekStart.setDate(calDate.getDate()-startOffset);
+    const dows = ['Pon','Wt','Śr','Czw','Pt','Sob','Nd'];
+    body += '<div class="cal-week-grid">';
+    for(let i=0;i<7;i++){
+      const d = new Date(weekStart); d.setDate(weekStart.getDate()+i);
+      const ds = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      const dayItems = calItemsForDate(items, ds);
+      body += `<div class="cal-week-col ${ds===t?'today':''}" data-date="${ds}">
+        <div class="dow-label">${dows[i]} ${d.getDate()}</div>
+        ${dayItems.map(x => `<span class="cal-chip ${x.priority||''}" style="display:block;margin-bottom:4px;">${escapeHtml(x.title)}</span>`).join('') || ''}
+      </div>`;
+    }
+    body += '</div>';
+  } else {
+    const ds = calDate.getFullYear()+'-'+pad(calDate.getMonth()+1)+'-'+pad(calDate.getDate());
+    const dayItems = calItemsForDate(items, ds);
+    body += `<div class="cal-day-list">${dayItems.length ? dayItems.map(x => calItemRowHtml(x)).join('') : '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:20px;">Brak terminów tego dnia ' + PAW + '</div>'}</div>`;
+  }
+  main.innerHTML = header + body;
+  document.getElementById('calTitle').textContent = calMode === 'month' ? calMonthLabel(calDate)
+    : calMode === 'week' ? 'Tydzień · ' + calMonthLabel(calDate)
+    : calDate.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('calPrevBtn').addEventListener('click', () => { calShift(-1); });
+  document.getElementById('calNextBtn').addEventListener('click', () => { calShift(1); });
+  document.getElementById('calTodayBtn').addEventListener('click', () => { calDate = new Date(); renderMain(); });
+  main.querySelectorAll('.cal-mode-seg button').forEach(btn => btn.addEventListener('click', () => { calMode = btn.dataset.mode; renderMain(); }));
+  main.querySelectorAll('.cal-day[data-date], .cal-week-col[data-date]').forEach(el => {
+    el.addEventListener('click', () => { calDate = new Date(el.dataset.date + 'T00:00:00'); calMode = 'day'; renderMain(); });
+  });
+  main.querySelectorAll('.cal-item-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const items2 = collectCalendarItems();
+      const x = items2.find(i => i.kind === row.dataset.kind && i.id === row.dataset.id);
+      if(x) navigateToCalItem(x);
+    });
+  });
+}
+function calItemRowHtml(x){
+  const icon = x.kind === 'project' ? '📁 ' : x.kind === 'section' ? '📂 ' : '';
+  return `<div class="cal-item-row" data-id="${x.id}" data-kind="${x.kind}">
+    <span class="dot ${x.priority||(x.kind==='task'?'medium':'low')}"></span>
+    <div class="info"><div class="t">${icon}${escapeHtml(x.title)}</div><div class="p">${escapeHtml(x.loc)}</div></div>
+  </div>`;
+}
+function calShift(dir){
+  const d = new Date(calDate);
+  if(calMode === 'month') d.setMonth(d.getMonth()+dir);
+  else if(calMode === 'week') d.setDate(d.getDate()+dir*7);
+  else d.setDate(d.getDate()+dir);
+  calDate = d; renderMain();
+}
+
+// ---- Sections grid ----
+function renderSectionsGrid(main){
+  const list = sections.filter(s => s.projectId === currentProjectId);
+  let html = '<div class="section-grid">';
+  list.forEach(s => {
+    const secTasks = tasks.filter(t => t.sectionId === s.id);
+    const doneN = secTasks.filter(t=>t.status==='done').length;
+    html += `<div class="section-card" data-id="${s.id}">
+      <button class="section-edit-btn" data-edit-id="${s.id}" title="Edytuj podzadanie">${ICONS.edit}</button>
+      <div class="emoji">${s.emoji || '📁'}</div>
+      <h3>${escapeHtml(s.name)}</h3>
+      <div class="counts">${doneN}/${secTasks.length} zadań zrobionych ${dueBadgeHtml(s.due)}</div>
+    </div>`;
+  });
+  html += `<div class="section-card add-card" id="addSectionCard"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Nowe podzadanie</div>`;
+  html += '</div>';
+  html = `<div style="margin-bottom:12px;"><button class="ai-btn" id="aiAddToProjectBtn">✨ Dodaj z opisu (AI)</button></div>` + html;
+  if(!list.length){
+    main.innerHTML = `<div class="empty-state">
+      <h2>Brak podzadań w tym projekcie</h2>
+      <p class="small">Podziel projekt na mniejsze części, np. "Ściany", "Podłoga", "Łazienka".</p>
+      <button class="primary" id="emptyAddSectionBtn" style="max-width:240px;margin:14px auto 0;">Dodaj podzadanie</button>
+      <div style="margin-top:10px;"><button class="ai-btn" id="aiAddToProjectBtnEmpty">✨ Dodaj z opisu (AI)</button></div>
+    </div>`;
+    document.getElementById('emptyAddSectionBtn').addEventListener('click', () => openSectionModal());
+    document.getElementById('aiAddToProjectBtnEmpty').addEventListener('click', () => openAiPasteModal('project'));
+    return;
+  }
+  main.innerHTML = html;
+  document.getElementById('aiAddToProjectBtn').addEventListener('click', () => openAiPasteModal('project'));
+  main.querySelectorAll('.section-card[data-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      currentSectionId = card.dataset.id; activeView = 'section'; currentSubTab = 'tasks';
+      renderBreadcrumb(); renderSubNav(); renderMain();
+    });
+  });
+  main.querySelectorAll('.section-edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); openSectionModal(btn.dataset.editId); });
+  });
+  document.getElementById('addSectionCard').addEventListener('click', () => openSectionModal());
+}
+
+// ---- Tasks (kanban) ----
+function renderTasksView(main){
+  const sectionTasks = tasks.filter(t => t.sectionId === currentSectionId);
+  const cols = [ { key: 'todo', label: 'Do zrobienia' }, { key: 'progress', label: 'W trakcie' }, { key: 'done', label: 'Zrobione' } ];
+  let html = '<div class="board">';
+  cols.forEach(col => {
+    const colTasks = sectionTasks.filter(t => t.status === col.key).sort((a,b) => (a.due||'9999').localeCompare(b.due||'9999'));
+    html += `<div class="column" data-status="${col.key}">
+      <div class="col-head"><h3>${col.label}</h3><span class="col-count">${colTasks.length}</span></div>
+      ${colTasks.map(t => cardHtml(t)).join('') || '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:20px 6px;">Pusto tu ' + PAW + '</div>'}
+    </div>`;
+  });
+  html += '</div>';
+  main.innerHTML = `<div style="margin-bottom:12px;"><button class="ai-btn" id="aiAddToSectionBtn">✨ Dodaj zadania z opisu (AI)</button></div>` + html;
+  document.getElementById('aiAddToSectionBtn').addEventListener('click', () => openAiPasteModal('section'));
+  main.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', (e) => { if(e.target.closest('.gcal-link')) return; goToTaskPage(card.dataset.id); });
+    card.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', card.dataset.id));
+  });
+  main.querySelectorAll('.column').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('dragover'); });
+    col.addEventListener('dragleave', () => col.classList.remove('dragover'));
+    col.addEventListener('drop', async e => {
+      e.preventDefault(); col.classList.remove('dragover');
+      const id = e.dataTransfer.getData('text/plain');
+      const newStatus = col.dataset.status;
+      const task = tasks.find(t => t.id === id);
+      if(task && task.status !== newStatus){ try { await db.doc('tasks/'+id).update({ status: newStatus }); } catch(err){ console.error(err); } }
+    });
+  });
+}
+function cardHtml(t){
+  const person = personName(t.person);
+  const avatarClass = t.person === 2 ? 'p2' : 'p1';
+  const dc = dueClass(t.due, t.status);
+  const pri = t.priority || 'medium';
+  const gurl = gcalUrl(t.title, t.due, 'Zadanie z aplikacji Domowe Sprawy — odpowiedzialna osoba: ' + person);
+  return `<div class="card ${t.status==='done'?'done':''}" draggable="true" data-id="${t.id}">
+    ${t.photo ? `<img src="${t.photo}" style="width:100%;height:70px;object-fit:cover;border-radius:10px;margin-bottom:8px;">` : ''}
+    <p class="card-title">${escapeHtml(t.title)}</p>
+    <div class="card-meta">
+      <span class="priority-badge ${pri}"><span class="dot"></span>${PRIORITY_LABEL[pri]}</span>
+      <span class="due-badge ${dc}">${formatDue(t.due)}</span>
+      <span class="avatar ${avatarClass}" style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:800;background:var(--${avatarClass==='p2'?'lavender':'primary'});" title="${escapeHtml(person)}">${person.slice(0,1).toUpperCase()}</span>
+    </div>
+    ${gurl ? `<a class="gcal-link" href="${gurl}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Dodaj do Google Kalendarza</a>` : ''}
+  </div>`;
+}
+
+// ---- Notes ----
+function renderNotesView(main){
+  main.innerHTML = `
+    <div class="notes-toolbar">
+      <button type="button" data-cmd="bold" title="Pogrubienie"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Kursywa"><i>i</i></button>
+      <button type="button" data-cmd="h3" title="Nagłówek">H</button>
+      <button type="button" data-cmd="ul" title="Lista punktowana">•≡</button>
+      <button type="button" data-cmd="ol" title="Lista numerowana">1.≡</button>
+      <button type="button" data-cmd="fontsmall" title="Mniejszy tekst" style="font-size:11px;">A</button>
+      <button type="button" data-cmd="fontnormal" title="Normalny tekst" style="font-size:14px;">A</button>
+      <button type="button" data-cmd="fontlarge" title="Większy tekst" style="font-size:18px;">A</button>
+      <button type="button" data-cmd="image" title="Wstaw zdjęcie">🖼</button>
+    </div>
+    <div class="notes-editor" id="notesEditor" contenteditable="true" data-placeholder="Piszcie tu wspólne notatki…"></div>
+    <div class="save-hint" id="notesSaveHint">Zapisano</div>`;
+  const editor = document.getElementById('notesEditor');
+  editor.innerHTML = notesCache[currentSectionId] || '';
+  if(notesUnsub) { try { notesUnsub(); } catch(e){} }
+  notesUnsub = db.doc('notes/'+currentSectionId).onSnapshot(snap => {
+    const html = snap.exists ? (snap.data().html || '') : '';
+    notesCache[currentSectionId] = html;
+    if(document.activeElement !== editor && editor.innerHTML !== html) editor.innerHTML = html;
+  });
+  document.querySelectorAll('.notes-toolbar button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.dataset.cmd !== 'image') editor.focus();
+      runEditorCommand(btn.dataset.cmd, editor, () => scheduleNotesSave(editor));
+    });
+  });
+  editor.addEventListener('input', () => scheduleNotesSave(editor));
+  wireImageResize(editor, () => scheduleNotesSave(editor));
+}
+function scheduleNotesSave(editor){
+  document.getElementById('notesSaveHint').textContent = 'Zapisywanie…';
+  clearTimeout(notesSaveTimer);
+  const sid = currentSectionId;
+  notesSaveTimer = setTimeout(async () => {
+    try { await db.doc('notes/'+sid).set({ html: editor.innerHTML, updatedAt: Date.now() }); const hint = document.getElementById('notesSaveHint'); if(hint) hint.textContent = 'Zapisano'; } catch(e){ console.error(e); }
+  }, 600);
+}
+
+// ---- Checklist ----
+function renderChecklistView(main){
+  const items = checklistItems.filter(i => i.sectionId === currentSectionId && !i.taskId).sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+  main.innerHTML = `<div class="simple-list">
+      ${items.map(i => `<div class="simple-row ${i.checked?'checked':''}" data-id="${i.id}">
+          <input type="checkbox" ${i.checked?'checked':''} data-id="${i.id}">
+          ${i.photo ? `<img class="row-thumb" src="${i.photo}" data-full="${i.photo}">` : ''}
+          <span class="row-label">${escapeHtml(i.label)}</span>
+          <button class="row-photo-btn" data-id="${i.id}" title="Dodaj/zmień zdjęcie">📷</button>
+          <button class="row-del" data-id="${i.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        </div>`).join('') || '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Lista pusta ' + PAW + '</div>'}
+      <div class="add-inline"><input type="text" id="checklistAddInput" placeholder="np. Farba, wałek, taśma…"><button id="checklistAddBtn">Dodaj</button></div>
+    </div>`;
+  main.querySelectorAll('.simple-row input[type=checkbox]').forEach(cb => cb.addEventListener('change', async () => { try { await db.doc('checklist/'+cb.dataset.id).update({ checked: cb.checked }); } catch(e){ console.error(e); } }));
+  main.querySelectorAll('.row-del').forEach(btn => btn.addEventListener('click', async () => { try { await db.doc('checklist/'+btn.dataset.id).delete(); } catch(e){ console.error(e); } }));
+  main.querySelectorAll('.row-thumb').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.full)));
+  main.querySelectorAll('.row-photo-btn').forEach(btn => btn.addEventListener('click', () => {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.className = 'hidden-file-input';
+    document.body.appendChild(input);
+    input.onchange = async () => {
+      const file = input.files[0]; input.remove();
+      if(!file) return;
+      try { const dataUrl = await compressImageFile(file, 600, 0.55); await db.doc('checklist/'+btn.dataset.id).update({ photo: dataUrl }); }
+      catch(e){ console.error(e); alert('Nie udało się zapisać zdjęcia.'); }
+    };
+    input.click();
+  }));
+  const addBtn = document.getElementById('checklistAddBtn'), addInput = document.getElementById('checklistAddInput');
+  const addChecklistItem = async () => {
+    const label = addInput.value.trim(); if(!label) return;
+    addInput.value = '';
+    try { await db.collection('checklist').add({ label, checked: false, sectionId: currentSectionId, createdAt: Date.now() }); } catch(e){ console.error(e); }
+  };
+  addBtn.addEventListener('click', addChecklistItem);
+  addInput.addEventListener('keydown', e => { if(e.key === 'Enter') addChecklistItem(); });
+}
+
+// ---- Links ----
+function renderLinksView(main){
+  const items = links.filter(l => l.sectionId === currentSectionId && !l.taskId).sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+  main.innerHTML = `<div class="simple-list">
+      ${items.map(l => `<div class="simple-row" data-id="${l.id}">
+          ${ICONS.links.replace('viewBox', 'style="color:var(--primary-deep);flex-shrink:0;width:18px;height:18px;" viewBox')}
+          <a class="row-label" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label || l.url)}</a>
+          <button class="row-del" data-id="${l.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        </div>`).join('') || '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Brak linków ' + PAW + '</div>'}
+      <div class="add-inline"><input type="text" id="linkLabelInput" placeholder="Nazwa"><input type="url" id="linkUrlInput" placeholder="https://…"><button id="linkAddBtn">Dodaj</button></div>
+    </div>`;
+  main.querySelectorAll('.row-del').forEach(btn => btn.addEventListener('click', async () => { try { await db.doc('links/'+btn.dataset.id).delete(); } catch(e){ console.error(e); } }));
+  const addBtn = document.getElementById('linkAddBtn');
+  const addLink = async () => {
+    const label = document.getElementById('linkLabelInput').value.trim();
+    let url = document.getElementById('linkUrlInput').value.trim();
+    if(!url) return;
+    if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    document.getElementById('linkLabelInput').value = ''; document.getElementById('linkUrlInput').value = '';
+    try { await db.collection('links').add({ label, url, sectionId: currentSectionId, createdAt: Date.now() }); } catch(e){ console.error(e); }
+  };
+  addBtn.addEventListener('click', addLink);
+  document.getElementById('linkUrlInput').addEventListener('keydown', e => { if(e.key === 'Enter') addLink(); });
+}
+
+// ---- Gallery ----
+function renderGalleryView(main){
+  const items = photos.filter(p => p.sectionId === currentSectionId).sort((a,b) => (b.createdAt||0)-(a.createdAt||0));
+  main.innerHTML = `<div class="gallery-grid">
+      <div class="upload-tile" id="uploadTile"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Dodaj zdjęcie</div>
+      ${items.map(p => `<div class="photo-tile"><img src="${p.data}" loading="lazy"><button class="photo-del" data-id="${p.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>`).join('')}
+    </div>
+    ${!items.length ? '<p style="text-align:center;color:var(--text-soft);font-size:13px;margin-top:14px;">Wrzućcie pierwsze zdjęcie inspiracji ' + PAW + '</p>' : ''}`;
+  document.getElementById('uploadTile').addEventListener('click', () => document.getElementById('photoInput').click());
+  main.querySelectorAll('.photo-del').forEach(btn => btn.addEventListener('click', async () => { try { await db.doc('photos/'+btn.dataset.id).delete(); } catch(e){ console.error(e); } }));
+}
+function handlePhotoUpload(e){
+  const file = e.target.files[0]; e.target.value = '';
+  if(!file || !currentSectionId) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = async () => {
+      const maxDim = 900; let { width, height } = img;
+      if(width > maxDim || height > maxDim){
+        if(width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
+        else { width = Math.round(width * maxDim / height); height = maxDim; }
+      }
+      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.68);
+      try { await db.collection('photos').add({ data: dataUrl, sectionId: currentSectionId, createdAt: Date.now() }); }
+      catch(err){ console.error(err); alert('Nie udało się zapisać zdjęcia — spróbuj mniejszego pliku.'); }
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderReminders(){
+  const t = todayStr();
+  const relevant = tasks.filter(x => x.status !== 'done' && x.due && x.due <= t);
+  const dueProjects = projects.filter(p => p.due && p.due <= t);
+  const dueSections = sections.filter(s => s.due && s.due <= t);
+  const banner = document.getElementById('reminderBanner');
+  const list = document.getElementById('reminderList'); const title = document.getElementById('reminderTitle');
+  const totalCount = relevant.length + dueProjects.length + dueSections.length;
+  if(!totalCount){ banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  const overdue = relevant.filter(x => x.due < t).length + dueProjects.filter(x=>x.due<t).length + dueSections.filter(x=>x.due<t).length;
+  const today = totalCount - overdue;
+  const parts = [];
+  if(overdue) parts.push(overdue + ' zaległ' + (overdue===1?'e':'ych'));
+  if(today) parts.push(today + ' na dziś');
+  title.textContent = 'Masz terminy: ' + parts.join(', ');
+  const lines = [
+    ...relevant.slice(0,5).map(x => escapeHtml(x.title) + ' · ' + escapeHtml(projectName(x.projectId))),
+    ...dueProjects.slice(0,3).map(p => '📁 Projekt: ' + escapeHtml(p.name)),
+    ...dueSections.slice(0,3).map(s => '📂 Podzadanie: ' + escapeHtml(s.name) + ' · ' + escapeHtml(projectName(s.projectId)))
+  ];
+  list.innerHTML = lines.slice(0,6).join('<br>');
+  try {
+    if('Notification' in window && Notification.permission === 'granted'){
+      relevant.forEach(x => {
+        const key = x.id + '_' + t;
+        if(!notifiedToday.has(key)){ notifiedToday.add(key); new Notification('Domowe Sprawy — przypomnienie', { body: x.title + (x.due < t ? ' (zaległe)' : ' (termin dziś)') }); }
+      });
+    }
+  } catch(e){}
+}
+
+// ---- Project modal ----
+function openProjectModal(projectId){
+  editingProjectId = projectId || null;
+  const title = document.getElementById('projectModalTitle');
+  const saveBtn = document.getElementById('projectSaveBtn');
+  const delBtn = document.getElementById('projectDeleteBtn');
+  if(projectId){
+    const p = projects.find(x => x.id === projectId);
+    title.textContent = 'Edytuj projekt'; saveBtn.textContent = 'Zapisz zmiany';
+    document.getElementById('projectNameInput').value = p.name || '';
+    document.getElementById('projectEmojiInput').value = p.emoji || '';
+    document.getElementById('projectDueInput').value = p.due || '';
+    delBtn.style.display = 'inline-block';
+  } else {
+    title.textContent = 'Nowy projekt'; saveBtn.textContent = 'Utwórz projekt';
+    document.getElementById('projectNameInput').value = ''; document.getElementById('projectEmojiInput').value = '';
+    document.getElementById('projectDueInput').value = '';
+    delBtn.style.display = 'none';
+  }
+  document.getElementById('projectModalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('projectNameInput').focus(), 50);
+}
+function closeProjectModal(){ document.getElementById('projectModalOverlay').classList.remove('show'); editingProjectId = null; }
+async function saveProject(){
+  const name = document.getElementById('projectNameInput').value.trim(); if(!name) return;
+  const emoji = document.getElementById('projectEmojiInput').value.trim();
+  const due = document.getElementById('projectDueInput').value || null;
+  try {
+    if(editingProjectId){
+      await db.doc('projects/'+editingProjectId).update({ name, emoji, due });
+      closeProjectModal(); renderProjectsRow(); renderBreadcrumb();
+    } else {
+      const ref = await db.collection('projects').add({ name, emoji, due, createdAt: Date.now() });
+      currentProjectId = ref.id; currentSectionId = null; activeView = 'sections';
+      closeProjectModal(); renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+    }
+  } catch(e){ console.error(e); alert('Nie udało się zapisać projektu, spróbuj ponownie.'); }
+}
+async function deleteCurrentProject(){
+  if(!editingProjectId) return;
+  if(!confirm('Usunąć ten projekt? Podzadania i zadania w nim pozostaną w bazie, ale nie będą już widoczne.')) return;
+  try {
+    await db.doc('projects/'+editingProjectId).delete();
+    if(currentProjectId === editingProjectId){ currentProjectId = null; activeView = 'dashboard'; }
+    closeProjectModal(); renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+  } catch(e){ console.error(e); }
+}
+
+// ---- Section modal ----
+function openSectionModal(sectionId){
+  editingSectionId = sectionId || null;
+  const title = document.getElementById('sectionModalTitle');
+  const saveBtn = document.getElementById('sectionSaveBtn');
+  const delBtn = document.getElementById('sectionDeleteBtn');
+  if(sectionId){
+    const s = sections.find(x => x.id === sectionId);
+    title.textContent = 'Edytuj podzadanie'; saveBtn.textContent = 'Zapisz zmiany';
+    document.getElementById('sectionNameInput').value = s.name || '';
+    document.getElementById('sectionEmojiInput').value = s.emoji || '';
+    document.getElementById('sectionDueInput').value = s.due || '';
+    delBtn.style.display = 'inline-block';
+  } else {
+    title.textContent = 'Nowe podzadanie'; saveBtn.textContent = 'Utwórz podzadanie';
+    document.getElementById('sectionNameInput').value = ''; document.getElementById('sectionEmojiInput').value = '';
+    document.getElementById('sectionDueInput').value = '';
+    delBtn.style.display = 'none';
+  }
+  document.getElementById('sectionModalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('sectionNameInput').focus(), 50);
+}
+function closeSectionModal(){ document.getElementById('sectionModalOverlay').classList.remove('show'); editingSectionId = null; }
+async function saveSection(){
+  const name = document.getElementById('sectionNameInput').value.trim(); if(!name || !currentProjectId) return;
+  const emoji = document.getElementById('sectionEmojiInput').value.trim();
+  const due = document.getElementById('sectionDueInput').value || null;
+  try {
+    if(editingSectionId){
+      await db.doc('sections/'+editingSectionId).update({ name, emoji, due });
+      closeSectionModal(); renderBreadcrumb();
+    } else {
+      await db.collection('sections').add({ name, emoji, due, projectId: currentProjectId, createdAt: Date.now() });
+      closeSectionModal();
+    }
+  } catch(e){ console.error(e); alert('Nie udało się zapisać podzadania, spróbuj ponownie.'); }
+}
+async function deleteCurrentSection(){
+  if(!editingSectionId) return;
+  if(!confirm('Usunąć to podzadanie? Zadania w nim pozostaną w bazie, ale nie będą już widoczne.')) return;
+  try {
+    await db.doc('sections/'+editingSectionId).delete();
+    if(currentSectionId === editingSectionId){ currentSectionId = null; activeView = 'sections'; }
+    closeSectionModal(); renderBreadcrumb(); renderSubNav(); renderMain();
+  } catch(e){ console.error(e); }
+}
+
+// ---- Task modal ----
+function updatePersonSeg(){
+  document.querySelectorAll('#personSeg button').forEach(b => b.classList.toggle('active', parseInt(b.dataset.person,10) === selectedPerson));
+  document.querySelector('#personSeg button[data-person="1"]').textContent = settings.person1Name;
+  document.querySelector('#personSeg button[data-person="2"]').textContent = settings.person2Name;
+}
+function updateStatusSeg(){
+  document.querySelectorAll('#statusSeg button').forEach(b => { b.classList.toggle('active', b.dataset.status === selectedStatus); b.classList.toggle('status', b.dataset.status === selectedStatus); });
+}
+function updatePrioritySeg(){
+  document.querySelectorAll('#prioritySeg button').forEach(b => {
+    const on = b.dataset.priority === selectedPriority;
+    b.classList.toggle('active', on); b.classList.toggle('pri-'+b.dataset.priority, on);
+  });
+}
+function renderTaskPhotoField(){
+  const wrap = document.getElementById('taskPhotoWrap');
+  if(pendingTaskPhoto){
+    wrap.innerHTML = `<div class="task-photo-tile"><img src="${pendingTaskPhoto}"><button type="button" class="task-photo-remove" id="removeTaskPhotoBtn">×</button></div>`;
+    document.getElementById('removeTaskPhotoBtn').addEventListener('click', () => { pendingTaskPhoto = null; renderTaskPhotoField(); });
+  } else {
+    wrap.innerHTML = `<button type="button" class="ghost" id="addTaskPhotoBtn" style="width:100%;">Dodaj zdjęcie</button>`;
+    document.getElementById('addTaskPhotoBtn').addEventListener('click', () => document.getElementById('taskPhotoInput').click());
+  }
+}
+async function handleTaskPhotoUpload(e){
+  const file = e.target.files[0]; e.target.value = '';
+  if(!file) return;
+  try { pendingTaskPhoto = await compressImageFile(file, 800, 0.65); renderTaskPhotoField(); }
+  catch(err){ console.error(err); alert('Nie udało się wczytać zdjęcia.'); }
+}
+function switchTaskTab(tab){
+  taskDetailTab = tab;
+  document.querySelectorAll('#taskTabBar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('taskTabDetails').style.display = tab === 'details' ? 'block' : 'none';
+  document.getElementById('taskTabNotes').style.display = tab === 'notes' ? 'block' : 'none';
+  document.getElementById('taskTabChecklist').style.display = tab === 'checklist' ? 'block' : 'none';
+  document.getElementById('taskTabLinks').style.display = tab === 'links' ? 'block' : 'none';
+  if(tab === 'notes') renderTaskNotesTab();
+  if(tab === 'checklist') renderTaskChecklistTab();
+  if(tab === 'links') renderTaskLinksTab();
+}
+function renderTaskNotesTab(){
+  const editor = document.getElementById('taskNotesEditor');
+  editor.innerHTML = taskNotesCache[editingTaskId] || '';
+}
+function scheduleTaskNotesSave(editor){
+  const hint = document.getElementById('taskNotesSaveHint'); if(hint) hint.textContent = 'Zapisywanie…';
+  clearTimeout(notesSaveTimer);
+  const tid = editingTaskId;
+  notesSaveTimer = setTimeout(async () => {
+    try { await db.doc('tasknotes/'+tid).set({ html: editor.innerHTML, updatedAt: Date.now() }); const h = document.getElementById('taskNotesSaveHint'); if(h) h.textContent = 'Zapisano'; } catch(e){ console.error(e); }
+  }, 600);
+}
+function renderTaskChecklistTab(){
+  const wrap = document.getElementById('taskChecklistList');
+  if(!wrap) return;
+  const items = checklistItems.filter(i => i.taskId === editingTaskId).sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+  wrap.innerHTML = `<div class="simple-list">
+      ${items.map(i => `<div class="simple-row ${i.checked?'checked':''}" data-id="${i.id}">
+          <input type="checkbox" ${i.checked?'checked':''} data-id="${i.id}">
+          <span class="row-label">${escapeHtml(i.label)}</span>
+          <button class="row-del" data-id="${i.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        </div>`).join('') || '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Lista pusta ' + PAW + '</div>'}
+      <div class="add-inline"><input type="text" id="taskChecklistAddInput" placeholder="np. Wybór koloru"><button id="taskChecklistAddBtn">Dodaj</button></div>
+    </div>`;
+  wrap.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', async () => { try { await db.doc('checklist/'+cb.dataset.id).update({ checked: cb.checked }); } catch(e){ console.error(e); } }));
+  wrap.querySelectorAll('.row-del').forEach(btn => btn.addEventListener('click', async () => { try { await db.doc('checklist/'+btn.dataset.id).delete(); } catch(e){ console.error(e); } }));
+  const addBtn = document.getElementById('taskChecklistAddBtn'), addInput = document.getElementById('taskChecklistAddInput');
+  const add = async () => { const label = addInput.value.trim(); if(!label) return; addInput.value=''; try { await db.collection('checklist').add({ label, checked: false, taskId: editingTaskId, sectionId: currentSectionId, createdAt: Date.now() }); } catch(e){ console.error(e); } };
+  addBtn.addEventListener('click', add);
+  addInput.addEventListener('keydown', e => { if(e.key==='Enter') add(); });
+}
+function renderTaskLinksTab(){
+  const wrap = document.getElementById('taskLinksList');
+  if(!wrap) return;
+  const items = links.filter(l => l.taskId === editingTaskId).sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+  wrap.innerHTML = `<div class="simple-list">
+      ${items.map(l => `<div class="simple-row" data-id="${l.id}">
+          ${ICONS.links.replace('viewBox', 'style="color:var(--primary-deep);flex-shrink:0;width:18px;height:18px;" viewBox')}
+          <a class="row-label" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label || l.url)}</a>
+          <button class="row-del" data-id="${l.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        </div>`).join('') || '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Brak linków ' + PAW + '</div>'}
+      <div class="add-inline"><input type="text" id="taskLinkLabelInput" placeholder="Nazwa"><input type="url" id="taskLinkUrlInput" placeholder="https://…"><button id="taskLinkAddBtn">Dodaj</button></div>
+    </div>`;
+  wrap.querySelectorAll('.row-del').forEach(btn => btn.addEventListener('click', async () => { try { await db.doc('links/'+btn.dataset.id).delete(); } catch(e){ console.error(e); } }));
+  const addBtn = document.getElementById('taskLinkAddBtn');
+  const add = async () => {
+    const label = document.getElementById('taskLinkLabelInput').value.trim();
+    let url = document.getElementById('taskLinkUrlInput').value.trim(); if(!url) return;
+    if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    document.getElementById('taskLinkLabelInput').value=''; document.getElementById('taskLinkUrlInput').value='';
+    try { await db.collection('links').add({ label, url, taskId: editingTaskId, sectionId: currentSectionId, createdAt: Date.now() }); } catch(e){ console.error(e); }
+  };
+  addBtn.addEventListener('click', add);
+  document.getElementById('taskLinkUrlInput').addEventListener('keydown', e => { if(e.key==='Enter') add(); });
+}
+async function taskNotesAiPropose(){
+  const btn = document.getElementById('taskNotesAiBtn');
+  const t = tasks.find(x => x.id === editingTaskId);
+  const title = t ? t.title : document.getElementById('taskTitleInput').value;
+  btn.disabled = true; btn.textContent = '✨ Myślę…';
+  try {
+    const prompt = `Krótko (2-4 zdania, po polsku) doradź coś praktycznego dla zadania domowego: "${title}" (kontekst: podzadanie "${sectionName(currentSectionId)}", projekt "${projectName(currentProjectId)}"). Bez wstępu, sama treść.`;
+    const text = await askAiText(prompt);
+    const editor = document.getElementById('taskNotesEditor');
+    editor.innerHTML += (editor.innerHTML ? '<br>' : '') + '<p>' + escapeHtml(text).replace(/\n/g,'<br>') + '</p>';
+    scheduleTaskNotesSave(editor);
+  } catch(e){ console.error(e); alert(aiErrorMessage(e)); }
+  finally { btn.disabled = false; btn.textContent = '✨ Zaproponuj'; }
+}
+async function taskChecklistAiPropose(){
+  const btn = document.getElementById('taskChecklistAiBtn');
+  const t = tasks.find(x => x.id === editingTaskId);
+  const title = t ? t.title : document.getElementById('taskTitleInput').value;
+  btn.disabled = true; btn.textContent = '✨ Myślę…';
+  try {
+    const prompt = `Zaproponuj do 6 krótkich, konkretnych pozycji checklisty (po polsku) dla zadania domowego: "${title}" (kontekst: podzadanie "${sectionName(currentSectionId)}", projekt "${projectName(currentProjectId)}"). Odpowiedz WYŁĄCZNIE jednym JSON-owym tablicą krótkich stringów, np. ["Kupić farbę", "Zabezpieczyć podłogę"].`;
+    const items = await askAiJson(prompt);
+    for(const label of (Array.isArray(items) ? items : [])){
+      if(typeof label === 'string' && label.trim()){
+        await db.collection('checklist').add({ label: label.trim(), checked: false, taskId: editingTaskId, sectionId: currentSectionId, createdAt: Date.now() });
+      }
+    }
+  } catch(e){ console.error(e); alert(aiErrorMessage(e)); }
+  finally { btn.disabled = false; btn.textContent = '✨ Zaproponuj'; }
+}
+
+function goToTaskPage(taskId){
+  editingTaskId = taskId || null;
+  taskDetailTab = taskId ? 'notes' : 'details';
+  activeView = 'task';
+  renderBreadcrumb(); renderSubNav(); renderMain();
+}
+function goBackFromTaskPage(){
+  editingTaskId = null;
+  activeView = 'section'; currentSubTab = 'tasks';
+  renderBreadcrumb(); renderSubNav(); renderMain();
+}
+function renderTaskPage(main){
+  const taskId = editingTaskId;
+  const t = taskId ? tasks.find(x => x.id === taskId) : null;
+  const isNew = !taskId;
+  main.innerHTML = `
+    <div class="breadcrumb" style="padding:0 0 14px;"><button class="back" id="taskBackBtn">${ICONS.back} ${escapeHtml(sectionName(currentSectionId)) || 'Zadania'}</button></div>
+    <h2 style="color:var(--primary-deep);margin:0 0 14px;font-size:20px;font-family:'Fredoka',sans-serif;">${isNew ? 'Nowe zadanie' : 'Edytuj zadanie'}</h2>
+    <div class="task-tab-bar" id="taskTabBar" style="${isNew ? 'display:none;' : 'display:flex;'}">
+      <button data-tab="details">Szczegóły</button>
+      <button data-tab="notes">Notatki</button>
+      <button data-tab="checklist">Checklista</button>
+      <button data-tab="links">Linki</button>
+    </div>
+
+    <div id="taskTabDetails">
+      <label>Nazwa zadania</label>
+      <input type="text" id="taskTitleInput" placeholder="np. Wybór koloru farby">
+      <label>Kto odpowiada?</label>
+      <div class="seg" id="personSeg">
+        <button type="button" data-person="1" class="p1">— osoba 1 —</button>
+        <button type="button" data-person="2" class="p2">— osoba 2 —</button>
+      </div>
+      <label>Termin</label>
+      <input type="date" id="taskDueInput">
+      <label>Priorytet</label>
+      <div class="seg" id="prioritySeg">
+        <button type="button" data-priority="low">Niski</button>
+        <button type="button" data-priority="medium">Średni</button>
+        <button type="button" data-priority="high">Wysoki</button>
+      </div>
+      <label>Status</label>
+      <div class="seg" id="statusSeg">
+        <button type="button" data-status="todo">Do zrobienia</button>
+        <button type="button" data-status="progress">W trakcie</button>
+        <button type="button" data-status="done">Zrobione</button>
+      </div>
+      <label>Zdjęcie (opcjonalnie)</label>
+      <div class="task-photo-wrap" id="taskPhotoWrap"></div>
+      <div class="modal-actions">
+        <button class="ghost" id="taskCancelBtn">Anuluj</button>
+        <button class="primary" id="taskSaveBtn">Zapisz zadanie</button>
+      </div>
+      <div style="text-align:center; margin-top:6px;"><button class="text-danger" id="taskDeleteBtn" style="display:${isNew?'none':'inline-block'}">Usuń zadanie</button></div>
+    </div>
+
+    <div id="taskTabNotes" style="display:none;">
+      <div style="margin-bottom:10px;"><button class="ai-link-btn" id="taskNotesAiBtn">✨ Zaproponuj</button></div>
+      <div class="notes-toolbar" id="taskNotesToolbar">
+        <button type="button" data-cmd="bold" title="Pogrubienie"><b>B</b></button>
+        <button type="button" data-cmd="italic" title="Kursywa"><i>i</i></button>
+        <button type="button" data-cmd="h3" title="Nagłówek">H</button>
+        <button type="button" data-cmd="ul" title="Lista punktowana">•≡</button>
+        <button type="button" data-cmd="ol" title="Lista numerowana">1.≡</button>
+        <button type="button" data-cmd="fontsmall" title="Mniejszy tekst" style="font-size:11px;">A</button>
+        <button type="button" data-cmd="fontnormal" title="Normalny tekst" style="font-size:14px;">A</button>
+        <button type="button" data-cmd="fontlarge" title="Większy tekst" style="font-size:18px;">A</button>
+        <button type="button" data-cmd="image" title="Wstaw zdjęcie">🖼</button>
+      </div>
+      <div class="notes-editor" id="taskNotesEditor" contenteditable="true" data-placeholder="Notatki do tego zadania…" style="min-height:200px;"></div>
+      <div class="save-hint" id="taskNotesSaveHint">Zapisano</div>
+      <div class="modal-actions"><button class="primary" id="taskNotesCloseBtn">Gotowe</button></div>
+    </div>
+
+    <div id="taskTabChecklist" style="display:none;">
+      <div style="margin-bottom:10px;"><button class="ai-link-btn" id="taskChecklistAiBtn">✨ Zaproponuj</button></div>
+      <div id="taskChecklistList"></div>
+      <div class="modal-actions"><button class="primary" id="taskChecklistCloseBtn">Gotowe</button></div>
+    </div>
+
+    <div id="taskTabLinks" style="display:none;">
+      <div id="taskLinksList"></div>
+      <div class="modal-actions"><button class="primary" id="taskLinksCloseBtn">Gotowe</button></div>
+    </div>`;
+
+  document.getElementById('taskTitleInput').value = t ? t.title : '';
+  document.getElementById('taskDueInput').value = t ? (t.due || '') : '';
+  selectedPerson = t ? (t.person || 1) : 1;
+  selectedStatus = t ? (t.status || 'todo') : 'todo';
+  selectedPriority = t ? (t.priority || 'medium') : 'medium';
+  pendingTaskPhoto = t ? (t.photo || null) : null;
+  updatePersonSeg(); updateStatusSeg(); updatePrioritySeg(); renderTaskPhotoField();
+
+  document.getElementById('taskBackBtn').addEventListener('click', goBackFromTaskPage);
+  document.getElementById('taskCancelBtn').addEventListener('click', goBackFromTaskPage);
+  document.getElementById('taskSaveBtn').addEventListener('click', saveTask);
+  document.getElementById('taskDeleteBtn').addEventListener('click', deleteCurrentTask);
+  document.querySelectorAll('#personSeg button').forEach(btn => btn.addEventListener('click', () => { selectedPerson = parseInt(btn.dataset.person,10); updatePersonSeg(); }));
+  document.querySelectorAll('#statusSeg button').forEach(btn => btn.addEventListener('click', () => { selectedStatus = btn.dataset.status; updateStatusSeg(); }));
+  document.querySelectorAll('#prioritySeg button').forEach(btn => btn.addEventListener('click', () => { selectedPriority = btn.dataset.priority; updatePrioritySeg(); }));
+  document.querySelectorAll('#taskTabBar button').forEach(btn => btn.addEventListener('click', () => switchTaskTab(btn.dataset.tab)));
+  document.querySelectorAll('#taskNotesToolbar button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const editor = document.getElementById('taskNotesEditor');
+      if(btn.dataset.cmd !== 'image') editor.focus();
+      runEditorCommand(btn.dataset.cmd, editor, () => scheduleTaskNotesSave(editor));
+    });
+  });
+  document.getElementById('taskNotesEditor').addEventListener('input', e => scheduleTaskNotesSave(e.target));
+  wireImageResize(document.getElementById('taskNotesEditor'), () => scheduleTaskNotesSave(document.getElementById('taskNotesEditor')));
+  document.getElementById('taskNotesCloseBtn').addEventListener('click', goBackFromTaskPage);
+  document.getElementById('taskChecklistCloseBtn').addEventListener('click', goBackFromTaskPage);
+  document.getElementById('taskLinksCloseBtn').addEventListener('click', goBackFromTaskPage);
+  document.getElementById('taskNotesAiBtn').addEventListener('click', taskNotesAiPropose);
+  document.getElementById('taskChecklistAiBtn').addEventListener('click', taskChecklistAiPropose);
+
+  switchTaskTab(taskDetailTab);
+  if(isNew) setTimeout(() => document.getElementById('taskTitleInput').focus(), 50);
+}
+async function saveTask(){
+  const title = document.getElementById('taskTitleInput').value.trim(); if(!title) return;
+  const due = document.getElementById('taskDueInput').value || null;
+  const payload = { title, due, person: selectedPerson, status: selectedStatus, priority: selectedPriority, photo: pendingTaskPhoto || null, sectionId: currentSectionId, projectId: currentProjectId };
+  try {
+    if(editingTaskId) await db.doc('tasks/'+editingTaskId).update(payload);
+    else { payload.createdAt = Date.now(); await db.collection('tasks').add(payload); }
+    goBackFromTaskPage();
+  } catch(e){ console.error(e); alert('Nie udało się zapisać zadania, spróbuj ponownie.'); }
+}
+async function deleteCurrentTask(){
+  if(!editingTaskId) return;
+  try { await db.doc('tasks/'+editingTaskId).delete(); goBackFromTaskPage(); } catch(e){ console.error(e); }
+}
+
+// ---- Backup / export ----
+async function exportBackupJson(){
+  try {
+    const notesAll = await getCollectionOnce('notes');
+    const taskNotesAll = await getCollectionOnce('tasknotes');
+    const qn = quickNotesList;
+    const data = {
+      version: 1, exportedAt: new Date().toISOString(), settings, projects, sections, tasks,
+      checklist: checklistItems, links, photos, notes: notesAll, taskNotes: taskNotesAll, quickNotes: qn
+    };
+    if(downloads){
+      await downloads.save({ filename: 'domowe-sprawy-backup.json', data: JSON.stringify(data, null, 2) });
+    } else {
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'domowe-sprawy-backup.json'; a.click();
+    }
+  } catch(e){ console.error(e); alert('Nie udało się przygotować kopii zapasowej.'); }
+}
+function handleImportFile(e){
+  const file = e.target.files[0]; e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      const writes = [];
+      (data.projects||[]).forEach(p => writes.push(db.doc('projects/'+p.id).set(p)));
+      (data.sections||[]).forEach(s => writes.push(db.doc('sections/'+s.id).set(s)));
+      (data.tasks||[]).forEach(t => writes.push(db.doc('tasks/'+t.id).set(t)));
+      (data.checklist||[]).forEach(c => writes.push(db.doc('checklist/'+c.id).set(c)));
+      (data.links||[]).forEach(l => writes.push(db.doc('links/'+l.id).set(l)));
+      (data.photos||[]).forEach(p => writes.push(db.doc('photos/'+p.id).set(p)));
+      (data.notes||[]).forEach(n => writes.push(db.doc('notes/'+n.id).set({ html: n.html||'', updatedAt: Date.now() })));
+      (data.taskNotes||[]).forEach(n => writes.push(db.doc('tasknotes/'+n.id).set({ html: n.html||'', updatedAt: Date.now() })));
+      if(Array.isArray(data.quickNotes)) data.quickNotes.forEach(n => writes.push(db.doc('quicknotes/'+n.id).set({ title: n.title||'', html: n.html||'', createdAt: n.createdAt||Date.now(), updatedAt: Date.now() })));
+      if(data.settings) writes.push(db.doc('meta/settings').set(data.settings));
+      await Promise.all(writes);
+      alert('Kopia zapasowa została wczytana.');
+      document.getElementById('backupModalOverlay').classList.remove('show');
+    } catch(err){ console.error(err); alert('Nie udało się wczytać pliku — sprawdź, czy to poprawna kopia zapasowa z tej aplikacji.'); }
+  };
+  reader.readAsText(file);
+}
+
+function buildReportRows(){
+  const rows = [];
+  projects.forEach(p => {
+    const projSections = sections.filter(s => s.projectId === p.id);
+    const secList = projSections.length ? projSections : [{ id: null, name: '(bez podzadania)' }];
+    secList.forEach(s => {
+      const secTasks = tasks.filter(t => t.projectId === p.id && t.sectionId === s.id);
+      secTasks.forEach(t => {
+        rows.push({
+          Projekt: p.name, Podzadanie: s.name, Zadanie: t.title, Osoba: personName(t.person),
+          Termin: t.due || '', Priorytet: PRIORITY_LABEL[t.priority] || '', Status: STATUS_LABEL[t.status] || t.status
+        });
+      });
+      if(!secTasks.length) rows.push({ Projekt: p.name, Podzadanie: s.name, Zadanie: '(brak zadań)', Osoba: '', Termin: '', Priorytet: '', Status: '' });
+    });
+  });
+  return rows;
+}
+
+async function exportExcel(){
+  try {
+    if(typeof XLSX === 'undefined'){ alert('Nie udało się załadować biblioteki Excela — sprawdź połączenie i spróbuj ponownie.'); return; }
+    const rows = buildReportRows();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Zadania');
+    const checklistRows = checklistItems.map(c => ({ Podzadanie: sectionName(c.sectionId), Pozycja: c.label, Zaznaczone: c.checked ? 'tak' : 'nie' }));
+    if(checklistRows.length){ const ws2 = XLSX.utils.json_to_sheet(checklistRows); XLSX.utils.book_append_sheet(wb, ws2, 'Checklisty'); }
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    if(downloads) await downloads.save({ filename: 'domowe-sprawy.xlsx', data: blob });
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'domowe-sprawy.xlsx'; a.click(); }
+  } catch(e){ console.error(e); alert('Nie udało się wyeksportować do Excela.'); }
+}
+
+async function exportWord(){
+  try {
+    if(typeof docx === 'undefined'){ alert('Nie udało się załadować biblioteki Worda — sprawdź połączenie i spróbuj ponownie.'); return; }
+    const { Document, Packer, Paragraph, HeadingLevel, Table, TableRow, TableCell, TextRun, WidthType } = docx;
+    const children = [ new Paragraph({ text: 'Domowe Sprawy — raport', heading: HeadingLevel.TITLE }) ];
+    const headerCells = ['Podzadanie','Zadanie','Osoba','Termin','Priorytet','Status'];
+    projects.forEach(p => {
+      children.push(new Paragraph({ text: p.name + (p.due ? '  (termin: ' + p.due + ')' : ''), heading: HeadingLevel.HEADING_1 }));
+      const projSections = sections.filter(s => s.projectId === p.id);
+      const secList = projSections.length ? projSections : [{ id: null, name: 'Zadania ogólne' }];
+      secList.forEach(s => {
+        const secTasks = tasks.filter(t => t.projectId === p.id && t.sectionId === s.id);
+        children.push(new Paragraph({ text: s.name + (s.due ? '  (termin: ' + s.due + ')' : ''), heading: HeadingLevel.HEADING_2 }));
+        const rows = [ new TableRow({ children: headerCells.map(h => new TableCell({ children: [new Paragraph({ children:[new TextRun({text:h,bold:true})] })] })) }) ];
+        if(secTasks.length){
+          secTasks.forEach(t => {
+            rows.push(new TableRow({ children: [
+              new TableCell({ children: [new Paragraph(s.name)] }),
+              new TableCell({ children: [new Paragraph(t.title)] }),
+              new TableCell({ children: [new Paragraph(personName(t.person))] }),
+              new TableCell({ children: [new Paragraph(t.due || '—')] }),
+              new TableCell({ children: [new Paragraph(PRIORITY_LABEL[t.priority] || '—')] }),
+              new TableCell({ children: [new Paragraph(STATUS_LABEL[t.status] || '—')] }),
+            ] }));
+          });
+        } else {
+          rows.push(new TableRow({ children: [ new TableCell({ children:[new Paragraph('Brak zadań')] }), new TableCell({children:[new Paragraph('')]}), new TableCell({children:[new Paragraph('')]}), new TableCell({children:[new Paragraph('')]}), new TableCell({children:[new Paragraph('')]}), new TableCell({children:[new Paragraph('')]}) ] }));
+        }
+        children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+        const secChecklist = checklistItems.filter(c => c.sectionId === s.id);
+        if(secChecklist.length){
+          children.push(new Paragraph({ text: 'Checklista:', spacing: { before: 120 } }));
+          secChecklist.forEach(c => children.push(new Paragraph({ text: (c.checked ? '☑ ' : '☐ ') + c.label })));
+        }
+        const secLinks = links.filter(l => l.sectionId === s.id);
+        if(secLinks.length){
+          children.push(new Paragraph({ text: 'Linki:', spacing: { before: 120 } }));
+          secLinks.forEach(l => children.push(new Paragraph({ text: (l.label ? l.label + ' — ' : '') + l.url })));
+        }
+      });
+    });
+    const doc = new Document({ sections: [{ properties: {}, children }] });
+    const blob = await Packer.toBlob(doc);
+    if(downloads) await downloads.save({ filename: 'domowe-sprawy.docx', data: blob });
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'domowe-sprawy.docx'; a.click(); }
+  } catch(e){ console.error(e); alert('Nie udało się wyeksportować do Worda.'); }
+}
+
+function exportPdf(){
+  try {
+    const area = document.getElementById('printArea');
+    let html = '<h1>Domowe Sprawy — raport</h1>';
+    projects.forEach(p => {
+      html += '<h2>' + escapeHtml(p.name) + (p.due ? ' (termin: ' + p.due + ')' : '') + '</h2>';
+      const projSections = sections.filter(s => s.projectId === p.id);
+      const secList = projSections.length ? projSections : [{ id: null, name: 'Zadania ogólne' }];
+      secList.forEach(s => {
+        const secTasks = tasks.filter(t => t.projectId === p.id && t.sectionId === s.id);
+        html += '<h3>' + escapeHtml(s.name) + (s.due ? ' (termin: ' + s.due + ')' : '') + '</h3>';
+        html += '<table><tr><th>Zadanie</th><th>Osoba</th><th>Termin</th><th>Priorytet</th><th>Status</th></tr>';
+        if(secTasks.length){
+          secTasks.forEach(t => {
+            html += `<tr><td>${escapeHtml(t.title)}</td><td>${escapeHtml(personName(t.person))}</td><td>${t.due||'—'}</td><td>${PRIORITY_LABEL[t.priority]||'—'}</td><td>${STATUS_LABEL[t.status]||'—'}</td></tr>`;
+          });
+        } else { html += '<tr><td colspan="5">Brak zadań</td></tr>'; }
+        html += '</table>';
+        const secChecklist = checklistItems.filter(c => c.sectionId === s.id);
+        if(secChecklist.length){
+          html += '<p><b>Checklista:</b></p><ul>' + secChecklist.map(c => `<li>${c.checked?'☑':'☐'} ${escapeHtml(c.label)}</li>`).join('') + '</ul>';
+        }
+        const secLinks = links.filter(l => l.sectionId === s.id);
+        if(secLinks.length){
+          html += '<p><b>Linki:</b></p><ul>' + secLinks.map(l => `<li>${escapeHtml(l.label||l.url)} — ${escapeHtml(l.url)}</li>`).join('') + '</ul>';
+        }
+      });
+    });
+    area.innerHTML = html;
+    document.body.classList.add('printing');
+    const done = () => { document.body.classList.remove('printing'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    setTimeout(() => window.print(), 60);
+  } catch(e){ console.error(e); alert('Nie udało się przygotować widoku PDF.'); }
+}
+
+init();
+</script>
+</body>
+</html>
