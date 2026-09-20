@@ -1745,13 +1745,50 @@ async function handleTaskPhotoUpload(e){
 function switchTaskTab(tab){
   taskDetailTab = tab;
   document.querySelectorAll('#taskTabBar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const overviewEl = document.getElementById('taskTabOverview');
+  if(overviewEl) overviewEl.style.display = tab === 'overview' ? 'block' : 'none';
   document.getElementById('taskTabDetails').style.display = tab === 'details' ? 'block' : 'none';
   document.getElementById('taskTabNotes').style.display = tab === 'notes' ? 'block' : 'none';
   document.getElementById('taskTabChecklist').style.display = tab === 'checklist' ? 'block' : 'none';
   document.getElementById('taskTabLinks').style.display = tab === 'links' ? 'block' : 'none';
+  if(tab === 'overview') renderTaskOverviewTab();
   if(tab === 'notes') renderTaskNotesTab();
   if(tab === 'checklist') renderTaskChecklistTab();
   if(tab === 'links') renderTaskLinksTab();
+}
+function renderTaskOverviewTab(){
+  const wrap = document.getElementById('taskTabOverview');
+  if(!wrap) return;
+  const t = tasks.find(x => x.id === editingTaskId);
+  const notesHtml = taskNotesCache[editingTaskId] || '';
+  const notesPreview = escapeHtml(stripHtml(notesHtml)).slice(0, 160);
+  const items = checklistItems.filter(i => i.taskId === editingTaskId).sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+  const itemLinks = links.filter(l => l.taskId === editingTaskId).sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+  const dc = t ? dueClass(t.due, t.status) : '';
+  wrap.innerHTML = `
+    ${t ? `<div class="dash-card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span class="priority-badge ${t.priority||'medium'}"><span class="dot"></span>${PRIORITY_LABEL[t.priority||'medium']}</span>
+        <span class="due-badge ${dc}">${formatDue(t.due)}</span>
+        <span style="font-size:12.5px;color:var(--text-soft);">${escapeHtml(personName(t.person))} · ${STATUS_LABEL[t.status]||''}</span>
+      </div>
+      ${t.photo ? `<img src="${t.photo}" style="width:100%;max-height:160px;object-fit:cover;border-radius:14px;margin-top:12px;">` : ''}
+    </div>` : ''}
+    <div class="dash-card" style="margin-bottom:14px;cursor:pointer;" id="ovNotesCard">
+      <h3>${ICONS.notes} Notatki</h3>
+      <p style="font-size:13.5px;color:var(--text-soft);margin:0;">${notesPreview || 'Brak notatek — dotknij, aby dodać.'}</p>
+    </div>
+    <div class="dash-card" style="margin-bottom:14px;cursor:pointer;" id="ovChecklistCard">
+      <h3>${ICONS.checklist} Checklista (${items.filter(i=>i.checked).length}/${items.length})</h3>
+      ${items.length ? items.slice(0,4).map(i => `<div style="font-size:13.5px;padding:4px 0;${i.checked?'color:var(--text-soft);text-decoration:line-through;':''}">${i.checked?'☑':'☐'} ${escapeHtml(i.label)}</div>`).join('') + (items.length>4?`<p style="font-size:12px;color:var(--text-soft);margin:4px 0 0;">+${items.length-4} więcej</p>`:'') : '<p style="font-size:13.5px;color:var(--text-soft);margin:0;">Brak pozycji — dotknij, aby dodać.</p>'}
+    </div>
+    <div class="dash-card" style="cursor:pointer;" id="ovLinksCard">
+      <h3>${ICONS.links} Linki (${itemLinks.length})</h3>
+      ${itemLinks.length ? itemLinks.slice(0,4).map(l => `<div style="font-size:13.5px;padding:4px 0;color:var(--primary-deep);">${escapeHtml(l.label||l.url)}</div>`).join('') : '<p style="font-size:13.5px;color:var(--text-soft);margin:0;">Brak link\u00f3w — dotknij, aby dodać.</p>'}
+    </div>`;
+  document.getElementById('ovNotesCard').addEventListener('click', () => switchTaskTab('notes'));
+  document.getElementById('ovChecklistCard').addEventListener('click', () => switchTaskTab('checklist'));
+  document.getElementById('ovLinksCard').addEventListener('click', () => switchTaskTab('links'));
 }
 function renderTaskNotesTab(){
   const editor = document.getElementById('taskNotesEditor');
@@ -1810,7 +1847,7 @@ function renderTaskLinksTab(){
 }
 function goToTaskPage(taskId){
   editingTaskId = taskId || null;
-  taskDetailTab = taskId ? 'notes' : 'details';
+  taskDetailTab = taskId ? 'overview' : 'details';
   activeView = 'task';
   renderBreadcrumb(); renderSubNav(); renderMain();
 }
@@ -1827,11 +1864,14 @@ function renderTaskPage(main){
     <div class="breadcrumb" style="padding:0 0 14px;"><button class="back" id="taskBackBtn">${ICONS.back} ${escapeHtml(sectionName(currentSectionId)) || 'Zadania'}</button></div>
     <h2 style="color:var(--primary-deep);margin:0 0 14px;font-size:20px;font-family:'Fredoka',sans-serif;">${isNew ? 'Nowe zadanie' : 'Edytuj zadanie'}</h2>
     <div class="task-tab-bar" id="taskTabBar" style="${isNew ? 'display:none;' : 'display:flex;'}">
+      <button data-tab="overview">Przegląd</button>
       <button data-tab="details">Szczegóły</button>
       <button data-tab="notes">Notatki</button>
       <button data-tab="checklist">Checklista</button>
       <button data-tab="links">Linki</button>
     </div>
+
+    <div id="taskTabOverview" style="display:none;"></div>
 
     <div id="taskTabDetails">
       <label>Nazwa zadania</label>
