@@ -1,0 +1,89 @@
+// ==UserScript==
+// @name         Planer obiadów → Blix (udostępnianie listy zakupów)
+// @namespace    planer-obiadow
+// @version      1.2
+// @description  Wysyła listę zakupów z Planera obiadów do Blixa i zwraca link do udostępnionej listy (do otwarcia w aplikacji Blix).
+// @match        https://anssgar.github.io/Planer/*
+// @match        file:///*/planer-obiadow*.html
+// @connect      blix.pl
+// @grant        GM_xmlhttpRequest
+// @run-at       document-idle
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const API = 'https://blix.pl/api/shoppingList/share/';
+  const LINK_PREFIX = 'https://blix.pl/subscribeshoppinglist/';
+
+  // Komunikacja ze stroną przez atrybuty na <html> (działa niezależnie od izolacji skryptu w rozszerzeniu):
+  //   data-blix-share     – znacznik "skrypt jest zainstalowany" (wersja)
+  //   data-blix-request   – żądanie od strony: {id, items:[{name, quantity}]}
+  //   data-blix-response  – odpowiedź skryptu: {id, ok, url | error}
+  const root = document.documentElement;
+  console.info('[planer→blix] skrypt 1.2 aktywny na', location.href);
+  const reply = msg => root.setAttribute('data-blix-response', JSON.stringify(msg));
+
+  function looksLikeCloudflare(text) {
+    return /<html|cloudflare|just a moment|cf-chl/i.test(text || '');
+  }
+
+  function extractLink(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { return null; }
+    const pick = v => (typeof v === 'string' && v.startsWith(LINK_PREFIX)) ? v : null;
+    if (pick(data)) return data;
+    if (data && typeof data === 'object') {
+      for (const k of Object.keys(data)) { const p = pick(data[k]); if (p) return p; }
+    }
+    return null;
+  }
+
+  function share(id, items) {
+    // Format zgodny z tym, co wysyła sam blix.pl: [{type:2, properties:{name, bought, quantity}}]
+    const list = items.map(it => ({
+      type: 2,
+      properties: { name: String(it.name).slice(0, 120), bought: false, quantity: Math.max(1, Number(it.quantity) || 1) }
+    }));
+
+    GM_xmlhttpRequest({
+      method: 'POST',
+      url: API,
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8',
+        'Accept': '*/*',
+        'Origin': 'https://blix.pl',
+        'Referer': 'https://blix.pl/'
+      },
+      data: JSON.stringify(list),
+      timeout: 20000,
+      onload: r => {
+        const link = r.status >= 200 && r.status < 300 ? extractLink(r.responseText) : null;
+        if (link) return reply({ id, ok: true, url: link });
+        let hint = 'Blix odpowiedział nieoczekiwanie (HTTP ' + r.status + ').';
+        if (looksLikeCloudflare(r.responseText) || r.status === 403 || r.status === 429) {
+          hint = 'Blix zablokował zapytanie (ochrona przed botami). Otwórz raz blix.pl w tej przeglądarce, poczekaj aż strona się załaduje i spróbuj ponownie.';
+        }
+        reply({ id, ok: false, error: hint, debug: String(r.responseText || '').slice(0, 300) });
+      },
+      onerror: () => reply({ id, ok: false, error: 'Nie udało się połączyć z blix.pl (sprawdź internet lub blokady w przeglądarce).' }),
+      ontimeout: () => reply({ id, ok: false, error: 'Blix nie odpowiedział w 20 s.' })
+    });
+  }
+
+  let lastRaw = null;
+  function onRequest() {
+    const raw = root.getAttribute('data-blix-request');
+    if (!raw || raw === lastRaw) return;
+    lastRaw = raw;
+    let req;
+    try { req = JSON.parse(raw); } catch (e) { return; }
+    if (!req || typeof req.id !== 'string') return;
+    console.info('[planer→blix] żądanie odebrane');
+    const items = Array.isArray(req.items) ? req.items.slice(0, 300).filter(x => x && typeof x.name === 'string' && x.name.trim()) : [];
+    if (!items.length) return reply({ id: req.id, ok: false, error: 'Lista jest pusta.' });
+    share(req.id, items);
+  }
+  new MutationObserver(onRequest).observe(root, { attributes: true, attributeFilter: ['data-blix-request'] });
+  root.setAttribute('data-blix-share', '1.2'); // znacznik obecności – ustawiamy na końcu, gdy wszystko jest gotowe
+})();
