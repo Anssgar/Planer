@@ -317,6 +317,13 @@
   .task-tab-bar button.active { background: var(--primary); color: white; }
 
   #printArea { display: none; }
+  .emoji-picker-trigger { font-size: 24px; text-align: center; cursor: pointer; background: var(--bg); }
+  .emoji-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+  .emoji-grid button {
+    font-size: 22px; width: 46px; height: 46px; border-radius: 13px; border: 1.5px solid var(--border);
+    background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .emoji-grid button:hover { background: var(--surface-alt); border-color: var(--primary); }
   @media print {
     body.printing > *:not(#printArea) { display: none !important; }
     body.printing #printArea { display: block !important; }
@@ -426,7 +433,7 @@
     <label>Nazwa projektu</label>
     <input type="text" id="projectNameInput" placeholder="np. Remont mieszkania">
     <label>Emoji (opcjonalnie)</label>
-    <input type="text" id="projectEmojiInput" placeholder="🏠" maxlength="4">
+    <input type="text" id="projectEmojiInput" placeholder="Wybierz…" readonly class="emoji-picker-trigger">
     <label>Termin projektu (opcjonalnie)</label>
     <input type="date" id="projectDueInput">
     <div class="modal-actions">
@@ -444,7 +451,7 @@
     <label>Nazwa (np. Ściany, Podłoga, Łazienka)</label>
     <input type="text" id="sectionNameInput" placeholder="np. Ściany">
     <label>Emoji (opcjonalnie)</label>
-    <input type="text" id="sectionEmojiInput" placeholder="🎨" maxlength="4">
+    <input type="text" id="sectionEmojiInput" placeholder="Wybierz…" readonly class="emoji-picker-trigger">
     <label>Termin podzadania (opcjonalnie)</label>
     <input type="date" id="sectionDueInput">
     <div class="modal-actions">
@@ -452,6 +459,23 @@
       <button class="primary" id="sectionSaveBtn">Utwórz podzadanie</button>
     </div>
     <div style="text-align:center; margin-top:6px;"><button class="text-danger" id="sectionDeleteBtn" style="display:none">Usuń podzadanie</button></div>
+  </div>
+</div>
+
+<!-- Modal: emoji picker -->
+<div class="modal-overlay" id="emojiPickerOverlay">
+  <div class="modal">
+    <h2>Wybierz emotikonę</h2>
+    <div id="emojiSuggestSection">
+      <label>Sugestie</label>
+      <div class="emoji-grid" id="emojiSuggestGrid"></div>
+    </div>
+    <label>Wszystkie</label>
+    <div class="emoji-grid" id="emojiAllGrid"></div>
+    <div class="modal-actions">
+      <button class="ghost" id="emojiPickerClearBtn" style="flex:1;">Bez emoji</button>
+      <button class="ghost" id="emojiPickerCancelBtn" style="flex:1;">Zamknij</button>
+    </div>
   </div>
 </div>
 
@@ -491,6 +515,75 @@ const SUB_TABS = [
   { key: 'links', label: 'Linki' }, { key: 'gallery', label: 'Galeria' }
 ];
 const PRIORITY_LABEL = { low: 'Niski', medium: 'Średni', high: 'Wysoki' };
+const EMOJI_LIBRARY = [
+  { e: '🏠', k: ['dom','mieszkanie','remont mieszkania'] },
+  { e: '🛁', k: ['łazienka','kąpiel','wanna'] },
+  { e: '🚿', k: ['prysznic','łazienka'] },
+  { e: '🚽', k: ['toaleta','wc'] },
+  { e: '🛋️', k: ['salon','kanapa','sofa'] },
+  { e: '🛏️', k: ['sypialnia','łóżko','pokój'] },
+  { e: '🍳', k: ['kuchnia','gotowanie','jedzenie','śniadanie'] },
+  { e: '🍽️', k: ['obiad','jedzenie','posiłek','kolacja'] },
+  { e: '🪟', k: ['okno','okna'] },
+  { e: '🚪', k: ['drzwi','przedpokój'] },
+  { e: '🧱', k: ['ściana','ściany','budowa','remont','mur'] },
+  { e: '🎨', k: ['malowanie','farba','kolor','maluj'] },
+  { e: '🔧', k: ['naprawa','narzędzia','usterka','montaż'] },
+  { e: '💡', k: ['elektryka','żarówka','oświetlenie','prąd'] },
+  { e: '🪑', k: ['meble','krzesło','stół'] },
+  { e: '🪴', k: ['ogród','rośliny','balkon','kwiaty'] },
+  { e: '🌳', k: ['ogród','drzewo','działka'] },
+  { e: '🚗', k: ['samochód','auto','garaż'] },
+  { e: '🧺', k: ['pranie','bielizna'] },
+  { e: '🧹', k: ['sprzątanie','porządki','odkurzanie'] },
+  { e: '🧽', k: ['mycie','czyszczenie','sprzątanie'] },
+  { e: '🧴', k: ['kosmetyki','higiena'] },
+  { e: '🛒', k: ['zakupy','sklep'] },
+  { e: '💰', k: ['finanse','pieniądze','budżet','oszczędności'] },
+  { e: '🧾', k: ['rachunki','faktury','dokumenty','podatki'] },
+  { e: '📅', k: ['planowanie','terminarz','kalendarz'] },
+  { e: '📦', k: ['przeprowadzka','pakowanie','paczka'] },
+  { e: '🔑', k: ['klucze','bezpieczeństwo','zamek'] },
+  { e: '🐶', k: ['pies','zwierzę','piesek'] },
+  { e: '🐱', k: ['kot','zwierzę','kotek'] },
+  { e: '🎄', k: ['święta','choinka','boże narodzenie'] },
+  { e: '🎂', k: ['urodziny','impreza','tort'] },
+  { e: '✈️', k: ['podróż','wakacje','wyjazd','lot'] },
+  { e: '📚', k: ['nauka','książki','szkoła'] },
+  { e: '💻', k: ['praca','komputer','biuro'] },
+  { e: '🏋️', k: ['sport','siłownia','trening','ćwiczenia'] },
+  { e: '❄️', k: ['zima','śnieg'] },
+  { e: '☀️', k: ['lato','słońce'] },
+  { e: '🧰', k: ['warsztat','narzędzia','naprawa'] },
+  { e: '🧼', k: ['mycie','higiena','czystość'] },
+  { e: '📺', k: ['telewizor','rtv','elektronika'] }
+];
+const POPULAR_EMOJI = ['🏠','🎨','🧹','🛒','💰','📅','🔧','🐶','🍳','🛁','📦','✈️'];
+function suggestEmojis(text){
+  const t = (text||'').toLowerCase();
+  if(!t.trim()) return [];
+  const matches = EMOJI_LIBRARY.filter(item => item.k.some(kw => t.includes(kw)));
+  const list = matches.map(m => m.e);
+  return [...new Set(list)].slice(0, 10);
+}
+let emojiPickerCallback = null;
+function renderEmojiGrid(containerId, list){
+  const el = document.getElementById(containerId);
+  el.innerHTML = list.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    if(emojiPickerCallback) emojiPickerCallback(b.dataset.emoji);
+    document.getElementById('emojiPickerOverlay').classList.remove('show');
+  }));
+}
+function openEmojiPicker(nameInputId, onSelect){
+  emojiPickerCallback = onSelect;
+  const nameVal = document.getElementById(nameInputId) ? document.getElementById(nameInputId).value : '';
+  const suggestions = suggestEmojis(nameVal);
+  document.getElementById('emojiSuggestSection').style.display = suggestions.length ? 'block' : 'none';
+  if(suggestions.length) renderEmojiGrid('emojiSuggestGrid', suggestions);
+  renderEmojiGrid('emojiAllGrid', EMOJI_LIBRARY.map(m => m.e).filter((v,i,a) => a.indexOf(v)===i));
+  document.getElementById('emojiPickerOverlay').classList.add('show');
+}
 const PRIORITY_RANK = { high: 3, medium: 2, low: 1 };
 const STATUS_LABEL = { todo: 'Do zrobienia', progress: 'W trakcie', done: 'Zrobione' };
 
@@ -897,6 +990,17 @@ async function init(){
   document.getElementById('projectSaveBtn').addEventListener('click', saveProject);
   document.getElementById('sectionCancelBtn').addEventListener('click', closeSectionModal);
   document.getElementById('sectionSaveBtn').addEventListener('click', saveSection);
+  document.getElementById('projectEmojiInput').addEventListener('click', () => {
+    openEmojiPicker('projectNameInput', emoji => { document.getElementById('projectEmojiInput').value = emoji; });
+  });
+  document.getElementById('sectionEmojiInput').addEventListener('click', () => {
+    openEmojiPicker('sectionNameInput', emoji => { document.getElementById('sectionEmojiInput').value = emoji; });
+  });
+  document.getElementById('emojiPickerCancelBtn').addEventListener('click', () => document.getElementById('emojiPickerOverlay').classList.remove('show'));
+  document.getElementById('emojiPickerClearBtn').addEventListener('click', () => {
+    if(emojiPickerCallback) emojiPickerCallback('');
+    document.getElementById('emojiPickerOverlay').classList.remove('show');
+  });
   document.getElementById('photoInput').addEventListener('change', handlePhotoUpload);
   document.getElementById('importFileInput').addEventListener('change', handleImportFile);
 
