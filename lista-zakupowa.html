@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista Zakupów</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1E8; --bg-grad: #F5F1E8; --surface: #FAF7F2; --surface-alt: #EFE8DA;
+    --column-bg: #F2EDE2; --primary: #B5735A; --primary-deep: #96593F; --secondary: #E8DCC8;
+    --sage: #8B9474; --sage-bg: #E7EAE0; --sage-text: #5E6A4C; --gold: #C99A4A; --gold-bg: #F1E4C8; --gold-text: #7A5C22;
+    --text: #2E2A24; --text-soft: #8A7F70; --border: #E3DDD0; --shadow: rgba(60, 50, 35, 0.10);
+    --danger: #B15C4A; --danger-bg: #F1DDD5;
+  }
+  * { box-sizing: border-box; }
+  button, input, textarea, select { font-family: inherit; color: inherit; }
+  body {
+    margin: 0; font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text); min-height: 100vh; padding-bottom: 60px;
+  }
+  h1, h2, h3 { font-family: 'Fredoka', sans-serif; font-weight: 500; }
+  header.top { padding: 20px 20px 8px; max-width: 900px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { margin: 0; font-size: 23px; font-weight: 500; color: var(--primary-deep); }
+  .brand svg { width: 34px; height: 34px; flex-shrink: 0; }
+  .tagline { margin: 2px 0 0; color: var(--text-soft); font-size: 13.5px; }
+
+  .tabs { max-width: 900px; margin: 18px auto 0; padding: 0 20px; display: flex; gap: 8px; }
+  .tab-btn {
+    padding: 8px 15px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-soft); font-weight: 700; font-size: 13.5px; cursor: pointer;
+  }
+  .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  main { max-width: 900px; margin: 18px auto 0; padding: 0 20px; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar button {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px;
+    font-weight: 700; font-size: 13px; color: var(--primary-deep); cursor: pointer;
+  }
+  .toolbar button:hover { background: var(--surface-alt); }
+
+  .add-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .add-bar input, .add-bar select {
+    padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 14px;
+  }
+  .add-bar input[name=name] { flex: 2; min-width: 140px; }
+  .add-bar input[name=qty] { width: 70px; }
+  .add-bar select { flex: 1; min-width: 110px; }
+  .add-bar button {
+    background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 18px;
+    font-weight: 700; cursor: pointer; font-size: 14px;
+  }
+  .add-bar button:hover { background: var(--primary-deep); }
+
+  .cat-group { margin-bottom: 20px; }
+  .cat-group h3 { font-size: 14.5px; font-weight: 700; color: var(--primary-deep); margin: 0 0 9px; padding-left: 2px; letter-spacing: 0.2px; }
+  .item-row {
+    display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 7px; box-shadow: 0 1px 3px var(--shadow);
+  }
+  .item-row.checked { opacity: 0.55; }
+  .item-row input[type=checkbox] { width: 19px; height: 19px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer; }
+  .item-row .name { flex: 1; font-weight: 700; font-size: 14.5px; }
+  .item-row.checked .name { text-decoration: line-through; color: var(--text-soft); }
+  .item-row .qty { font-size: 12px; color: var(--text-soft); font-weight: 700; background: var(--column-bg); padding: 3px 9px; border-radius: 8px; }
+  .item-row .store-badge { font-size: 10.5px; font-weight: 700; color: var(--sage-text); background: var(--sage-bg); padding: 3px 8px; border-radius: 8px; }
+  .item-row .src-badge { font-size: 10.5px; font-weight: 700; color: var(--gold-text); background: var(--gold-bg); padding: 3px 8px; border-radius: 8px; }
+  .item-row .del-btn { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .item-row .del-btn:hover { color: var(--danger); }
+  .item-row .del-btn svg { width: 16px; height: 16px; }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--text-soft); }
+  .empty-state h2 { color: var(--primary-deep); margin: 6px 0 4px; font-size: 18px; }
+
+  .simple-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px; }
+  .simple-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  .simple-row:last-child { border-bottom: none; }
+  .simple-row .row-label { flex: 1; font-weight: 700; font-size: 14.5px; }
+  .row-del { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .row-del:hover { color: var(--danger); }
+  .row-del svg { width: 16px; height: 16px; }
+  .add-inline { display: flex; gap: 8px; padding: 10px 6px 4px; }
+  .add-inline input { flex: 1; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 14px; }
+  .add-inline button { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer; }
+
+  .planer-hint { color: var(--text-soft); font-size: 13px; margin: 0 0 14px; }
+  .planer-timestamp { color: var(--text-soft); font-size: 12px; margin: 10px 0 0; }
+
+  #printArea { display: none; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="24" fill="var(--secondary)"/>
+      <path d="M14 18h20l-2.2 15.4a3 3 0 01-3 2.6H19.2a3 3 0 01-3-2.6L14 18Z" fill="var(--surface)" stroke="var(--primary-deep)" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M18 18v-2a6 6 0 0112 0v2" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round"/>
+      <circle cx="20.5" cy="24.5" r="1.6" fill="var(--primary)"/>
+      <circle cx="27.5" cy="24.5" r="1.6" fill="var(--primary)"/>
+      <path d="M19 29.5c2.8 1.6 7.2 1.6 10 0" stroke="var(--primary-deep)" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <div><h1>Lista Zakupów</h1><p class="tagline">Wasza wspólna lista, pod ręką z każdego miejsca</p></div>
+  </div>
+</header>
+
+<div class="tabs" id="tabsRow">
+  <button class="tab-btn active" data-tab="list">Lista</button>
+  <button class="tab-btn" data-tab="planer">Z planera</button>
+  <button class="tab-btn" data-tab="stores">Sklepy</button>
+  <button class="tab-btn" data-tab="categories">Kategorie</button>
+</div>
+
+<main id="mainArea"></main>
+
+<div id="printArea"></div>
+
+<script>
+// ==== jsonbin.io — konfiguracja ====
+const JSONBIN_API_KEY = '$2a$10$W148CMyGUUl1iGtoArLw0Oq7sQ49NyL/WoL0agc3g/rWvSXdbCvdK';
+let JSONBIN_BIN_ID = '';
+
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
+const JSONBIN_POLL_MS = 6000;
+
+function jsonbinEmptyState(){
+  return { items:{}, categories:{}, stores:{} };
+}
+function genId(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
+
+const DEFAULT_CATEGORIES = ['Nabiał','Pieczywo','Mięso i ryby','Warzywa i owoce','Przyprawy','Produkty suche/sypkie','Mrożonki','Napoje','Inne'];
+const DEFAULT_STORES = ['Biedronka','Lidl','Żabka','Rossmann','Inne'];
+
+function showJsonbinConfigWarning(msg){
+  const main = document.getElementById('mainArea');
+  if(main) main.innerHTML = `<div class="empty-state"><h2>Konfiguracja jsonbin.io</h2><p>${msg}</p></div>`;
+}
+function showBinIdBanner(id){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,30,50,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:18px;padding:22px;max-width:420px;font-family:'Nunito',sans-serif;">
+    <h2 style="margin:0 0 10px;color:#4E74A8;font-family:'Fredoka',sans-serif;">Pierwsze uruchomienie</h2>
+    <p style="font-size:14px;line-height:1.5;color:#3C4A5E;">Utworzono nowy magazyn danych na jsonbin.io. Skopiuj poniższe ID i wklej je jako wartość <code>JSONBIN_BIN_ID</code> na górze pliku — inaczej przy kolejnym otwarciu powstanie kolejny, pusty magazyn.</p>
+    <input readonly value="${id}" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;margin:10px 0;" onclick="this.select()">
+    <button id="binIdBannerCloseBtn" style="width:100%;padding:10px;border-radius:10px;border:none;background:#7FA9E0;color:#fff;font-weight:800;cursor:pointer;">Rozumiem, zapisałem</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#binIdBannerCloseBtn').addEventListener('click', () => overlay.remove());
+}
+
+function createJsonBinDb(){
+  let state = jsonbinEmptyState();
+  let pendingSave = false;
+  let saveTimer = null;
+  const collectionListeners = {};
+
+  function notifyCollection(name){
+    const set = collectionListeners[name];
+    if(!set) return;
+    set.forEach(entry => {
+      const ids = Object.keys(state[name] || {});
+      const docs = ids.map(id => ({ id, data: () => state[name][id] }));
+      entry.cb({ docs });
+    });
+  }
+  function notifyAll(){ Object.keys(collectionListeners).forEach(notifyCollection); }
+
+  async function ensureBin(){
+    if(JSONBIN_BIN_ID) return true;
+    try {
+      const seeded = jsonbinEmptyState();
+      DEFAULT_CATEGORIES.forEach(name => { const id = genId(); seeded.categories[id] = { name, createdAt: Date.now() }; });
+      DEFAULT_STORES.forEach(name => { const id = genId(); seeded.stores[id] = { name, createdAt: Date.now() }; });
+      const res = await fetch(JSONBIN_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Name': 'lista-zakupowa' },
+        body: JSON.stringify(seeded)
+      });
+      const json = await res.json();
+      if(json && json.metadata && json.metadata.id){
+        JSONBIN_BIN_ID = json.metadata.id;
+        showBinIdBanner(JSONBIN_BIN_ID);
+        return true;
+      }
+    } catch(e){ console.error('jsonbin create error', e); }
+    return false;
+  }
+  async function pullRemote(){
+    try {
+      const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+      if(!res.ok) return;
+      const json = await res.json();
+      if(pendingSave) return;
+      const nextState = Object.assign(jsonbinEmptyState(), json.record || {});
+      if(JSON.stringify(nextState) === JSON.stringify(state)) return;
+      state = nextState;
+      notifyAll();
+    } catch(e){ console.error('jsonbin pull error', e); }
+  }
+  function schedulePush(){
+    pendingSave = true;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+          body: JSON.stringify(state)
+        });
+      } catch(e){ console.error('jsonbin push error', e); }
+      pendingSave = false;
+    }, 350);
+  }
+
+  function docRef(coll, id){
+    return {
+      async update(patch){
+        if(!state[coll]) state[coll] = {};
+        state[coll][id] = { ...(state[coll][id]||{}), ...patch };
+        notifyCollection(coll); schedulePush();
+      },
+      async delete(){
+        if(state[coll]) delete state[coll][id];
+        notifyCollection(coll); schedulePush();
+      }
+    };
+  }
+  function collectionRef(name){
+    return {
+      onSnapshot(cb){
+        const entry = { cb };
+        if(!collectionListeners[name]) collectionListeners[name] = new Set();
+        collectionListeners[name].add(entry);
+        notifyCollection(name);
+        return () => collectionListeners[name].delete(entry);
+      },
+      async add(data){
+        const id = genId();
+        if(!state[name]) state[name] = {};
+        state[name][id] = { ...data };
+        notifyCollection(name); schedulePush();
+        return { id };
+      }
+    };
+  }
+
+  (async () => {
+    if(!JSONBIN_API_KEY){ showJsonbinConfigWarning('Uzupełnij stałą <code>JSONBIN_API_KEY</code> na górze pliku i odśwież stronę.'); return; }
+    const ok = await ensureBin();
+    if(!ok){ showJsonbinConfigWarning('Nie udało się połączyć z jsonbin.io — sprawdź klucz API i połączenie z internetem.'); return; }
+    await pullRemote();
+    setInterval(pullRemote, JSONBIN_POLL_MS);
+  })();
+
+  return {
+    doc(path){ const [coll, id] = path.split('/'); return docRef(coll, id); },
+    collection(name){ return collectionRef(name); }
+  };
+}
+
+// ==== Aplikacja ====
+const PAW = '🛒';
+const PLANER_JSONBIN_API_KEY = '$2a$10$W148CMyGUUl1iGtoArLw0Oq7sQ49NyL/WoL0agc3g/rWvSXdbCvdK';
+const PLANER_BIN_ID = '6aa90506ac6210605acf4f8b';
+let db = null;
+let items = [], categories = [], stores = [];
+let activeTab = 'list';
+let planerPreview = null; // { items:[...], fetchedAt }
+let planerLoading = false;
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function fetchPlanerPreview(){
+  planerLoading = true; renderMain();
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${PLANER_BIN_ID}/latest`, { headers: { 'X-Master-Key': PLANER_JSONBIN_API_KEY } });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    const record = json.record || {};
+    planerPreview = { items: Array.isArray(record.shopping) ? record.shopping : [], fetchedAt: Date.now() };
+  } catch(e){
+    console.error('planer preview fetch error', e);
+    alert('Nie udało się pobrać listy z planera — sprawdź połączenie z internetem.');
+  }
+  planerLoading = false; renderMain();
+}
+
+async function init(){
+  db = createJsonBinDb();
+
+  db.collection('items').onSnapshot(snap => { items = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(activeTab==='list') renderMain(); });
+  db.collection('categories').onSnapshot(snap => { categories = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMain(); refreshSelects(); });
+  db.collection('stores').onSnapshot(snap => { stores = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMain(); refreshSelects(); });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b===btn));
+      renderMain();
+    });
+  });
+
+  renderMain();
+}
+
+function renderMain(){
+  const main = document.getElementById('mainArea');
+  if(activeTab === 'list') return renderListTab(main);
+  if(activeTab === 'planer') return renderPlanerTab(main);
+  if(activeTab === 'stores') return renderManageTab(main, 'stores', stores, 'Dodaj sklep…');
+  if(activeTab === 'categories') return renderManageTab(main, 'categories', categories, 'Dodaj kategorię…');
+}
+
+function renderPlanerTab(main){
+  let html = `<p class="planer-hint">Podgląd listy zakupów z planera obiadów — tylko do odczytu, nic tu nie zmienisz. Pozycje, które chcesz mieć na swojej liście, przenieś przyciskiem w planerze.</p>
+    <div class="toolbar"><button id="fetchPlanerBtn">${planerLoading ? 'Pobieram…' : '⟳ Pobierz aktualną listę z planera'}</button></div>`;
+
+  if(!planerPreview){
+    html += `<div class="empty-state">🍲<h2>Brak podglądu</h2><p>Kliknij powyżej, aby pobrać aktualną listę z planera.</p></div>`;
+    main.innerHTML = html;
+  } else if(!planerPreview.items.length){
+    html += `<div class="empty-state">🍲<h2>Lista w planerze jest pusta</h2></div>
+      <p class="planer-timestamp">Pobrano: ${new Date(planerPreview.fetchedAt).toLocaleString('pl-PL')}</p>`;
+    main.innerHTML = html;
+  } else {
+    const cats = [];
+    planerPreview.items.forEach(i => { const c = i.category || 'Inne'; if(!cats.includes(c)) cats.push(c); });
+    cats.forEach(cat => {
+      const catItems = planerPreview.items.filter(i => (i.category || 'Inne') === cat);
+      html += `<div class="cat-group"><h3>${escapeHtml(cat)}</h3>`;
+      catItems.forEach(it => {
+        html += `<div class="item-row ${it.checked?'checked':''}">
+          <span class="name">${escapeHtml(it.name)}</span>
+          ${(it.qty!=null && it.qty!=='') ? `<span class="qty">${escapeHtml(String(it.qty))}${it.unit?' '+escapeHtml(it.unit):''}</span>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `<p class="planer-timestamp">Pobrano: ${new Date(planerPreview.fetchedAt).toLocaleString('pl-PL')}</p>`;
+    main.innerHTML = html;
+  }
+  document.getElementById('fetchPlanerBtn').addEventListener('click', fetchPlanerPreview);
+}
+
+function renderListTab(main){
+  const cats = categories.map(c => c.name);
+  items.forEach(i => { if(i.category && !cats.includes(i.category)) cats.push(i.category); });
+  if(!cats.includes('Inne')) cats.push('Inne');
+
+  let html = `
+    <div class="toolbar">
+      <button id="clearCheckedBtn">Usuń zaznaczone (kupione)</button>
+    </div>
+    <div class="add-bar">
+      <input type="text" name="name" id="newItemName" placeholder="Nazwa produktu…">
+      <input type="text" name="qty" id="newItemQty" placeholder="Ilość">
+      <select id="newItemCategory"></select>
+      <select id="newItemStore"></select>
+      <button id="addItemBtn">Dodaj</button>
+    </div>
+  `;
+
+  if(!items.length){
+    html += `<div class="empty-state">${PAW}<h2>Lista jest pusta</h2><p>Dodaj pierwszy produkt powyżej.</p></div>`;
+    main.innerHTML = html;
+    wireAddBar(); refreshSelects();
+    return;
+  }
+
+  cats.forEach(cat => {
+    const catItems = items.filter(i => (i.category || 'Inne') === cat);
+    if(!catItems.length) return;
+    html += `<div class="cat-group"><h3>${escapeHtml(cat)}</h3>`;
+    catItems.forEach(it => {
+      html += `<div class="item-row ${it.checked?'checked':''}" data-id="${it.id}">
+        <input type="checkbox" class="buy-cb" ${it.checked?'checked':''}>
+        <span class="name">${escapeHtml(it.name)}</span>
+        ${(it.qty!=null && it.qty!=='') ? `<span class="qty">${escapeHtml(String(it.qty))}${it.unit?' '+escapeHtml(it.unit):''}</span>` : ''}
+        ${it.store ? `<span class="store-badge">${escapeHtml(it.store)}</span>` : ''}
+        ${it.source==='planer' ? `<span class="src-badge">z planera</span>` : ''}
+        <button class="del-btn" data-del="${it.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  main.innerHTML = html;
+  wireAddBar();
+  refreshSelects();
+
+  main.querySelectorAll('.buy-cb').forEach(cb => cb.addEventListener('change', () => {
+    const id = cb.closest('.item-row').dataset.id;
+    db.doc('items/'+id).update({ checked: cb.checked });
+  }));
+  main.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', () => {
+    db.doc('items/'+btn.dataset.del).delete();
+  }));
+  document.getElementById('clearCheckedBtn').addEventListener('click', () => {
+    items.filter(i => i.checked).forEach(i => db.doc('items/'+i.id).delete());
+  });
+}
+
+function wireAddBar(){
+  const addBtn = document.getElementById('addItemBtn');
+  const nameInput = document.getElementById('newItemName');
+  const add = async () => {
+    const name = nameInput.value.trim();
+    if(!name) return;
+    const qty = document.getElementById('newItemQty').value.trim();
+    const category = document.getElementById('newItemCategory').value || 'Inne';
+    const store = document.getElementById('newItemStore').value || '';
+    await db.collection('items').add({ name, qty, unit: '', checked: false, category, store, source: 'manual', createdAt: Date.now() });
+    nameInput.value = ''; document.getElementById('newItemQty').value = '';
+    nameInput.focus();
+  };
+  addBtn.addEventListener('click', add);
+  nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+}
+function refreshSelects(){
+  const catSel = document.getElementById('newItemCategory');
+  const storeSel = document.getElementById('newItemStore');
+  if(catSel){
+    catSel.innerHTML = categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('') || '<option value="Inne">Inne</option>';
+  }
+  if(storeSel){
+    storeSel.innerHTML = `<option value="">Bez sklepu</option>` + stores.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('');
+  }
+}
+
+function renderManageTab(main, coll, list, placeholder){
+  main.innerHTML = `<div class="simple-list">
+    ${list.length ? list.map(x => `<div class="simple-row" data-id="${x.id}">
+        <span class="row-label">${escapeHtml(x.name)}</span>
+        <button class="row-del" data-id="${x.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>`).join('') : '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Lista pusta</div>'}
+    <div class="add-inline"><input type="text" id="manageAddInput" placeholder="${placeholder}"><button id="manageAddBtn">Dodaj</button></div>
+  </div>`;
+  main.querySelectorAll('.row-del').forEach(btn => btn.addEventListener('click', () => db.doc(coll+'/'+btn.dataset.id).delete()));
+  const addBtn = document.getElementById('manageAddBtn');
+  const input = document.getElementById('manageAddInput');
+  const add = async () => {
+    const name = input.value.trim();
+    if(!name) return;
+    input.value = '';
+    await db.collection(coll).add({ name, createdAt: Date.now() });
+  };
+  addBtn.addEventListener('click', add);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+}
+
+init();
+</script>
+</body>
+</html>
