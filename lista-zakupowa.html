@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lista Zakupów</title>
+<title>Zakupy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -89,6 +89,20 @@
   .add-inline input { flex: 1; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 14px; }
   .add-inline button { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer; }
 
+  .prod-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .prod-row .prod-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .prod-row .prod-name { font-weight: 700; font-size: 14.5px; flex: 1; min-width: 100px; }
+  .type-badge { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
+  .type-badge.spozywcze { background: var(--surface-alt); color: var(--lavender); }
+  .type-badge.niespozywcze { background: var(--gold-bg); color: var(--gold-text); }
+  .prod-fields { display: flex; flex-wrap: wrap; gap: 7px; }
+  .prod-fields label { display: flex; flex-direction: column; gap: 3px; font-size: 10.5px; color: var(--text-soft); font-weight: 700; flex: 1; min-width: 95px; }
+  .prod-fields input, .prod-fields select { padding: 6px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--column-bg); font-size: 12.5px; width: 100%; }
+  .prod-fields input:disabled, .prod-fields select:disabled { background: var(--surface-alt); color: var(--text-soft); }
+  .prod-add-form { background: var(--surface); border: 1px dashed var(--border); border-radius: 14px; padding: 12px; margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .prod-add-form input, .prod-add-form select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 13.5px; flex: 1; min-width: 100px; }
+  .prod-add-form button { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer; }
+
   .planer-hint { color: var(--text-soft); font-size: 13px; margin: 0 0 14px; }
   .planer-timestamp { color: var(--text-soft); font-size: 12px; margin: 10px 0 0; }
 
@@ -107,7 +121,7 @@
       <circle cx="27.5" cy="24.5" r="1.6" fill="var(--primary)"/>
       <path d="M19 29.5c2.8 1.6 7.2 1.6 10 0" stroke="var(--primary-deep)" stroke-width="1.6" stroke-linecap="round"/>
     </svg>
-    <div><h1>Lista Zakupów</h1><p class="tagline">Wasza wspólna lista, pod ręką z każdego miejsca</p></div>
+    <div><h1>Zakupy</h1><p class="tagline">Wasza wspólna lista, pod ręką z każdego miejsca</p></div>
   </div>
 </header>
 
@@ -116,6 +130,7 @@
   <button class="tab-btn" data-tab="planer">Z planera</button>
   <button class="tab-btn" data-tab="stores">Sklepy</button>
   <button class="tab-btn" data-tab="categories">Kategorie</button>
+  <button class="tab-btn" data-tab="products">Produkty</button>
 </div>
 
 <main id="mainArea"></main>
@@ -131,12 +146,13 @@ const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
 const JSONBIN_POLL_MS = 6000;
 
 function jsonbinEmptyState(){
-  return { items:{}, categories:{}, stores:{} };
+  return { items:{}, categories:{}, stores:{}, products:{} };
 }
 function genId(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
 
 const DEFAULT_CATEGORIES = ['Nabiał','Pieczywo','Mięso i ryby','Warzywa i owoce','Przyprawy','Produkty suche/sypkie','Mrożonki','Napoje','Inne'];
 const DEFAULT_STORES = ['Biedronka','Lidl','Żabka','Rossmann','Inne'];
+const DEFAULT_UNITS = ['g','kg','ml','l','szt','łyżka','łyżeczka','szklanka','opakowanie','ząbek','pęczek','plaster','garść','puszka'];
 
 function showJsonbinConfigWarning(msg){
   const main = document.getElementById('mainArea');
@@ -270,12 +286,29 @@ const PAW = '🛒';
 const PLANER_JSONBIN_API_KEY = '$2a$10$W148CMyGUUl1iGtoArLw0Oq7sQ49NyL/WoL0agc3g/rWvSXdbCvdK';
 const PLANER_BIN_ID = '6aa90506ac6210605acf4f8b';
 let db = null;
-let items = [], categories = [], stores = [];
+let items = [], categories = [], stores = [], products = [];
 let activeTab = 'list';
 let planerPreview = null; // { items:[...], fetchedAt }
 let planerLoading = false;
+let planerProducts = []; // {id, name, category, unit} — na żywo z bazy produktów planera
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function fetchPlanerProducts(){
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${PLANER_BIN_ID}/latest`, { headers: { 'X-Master-Key': PLANER_JSONBIN_API_KEY } });
+    if(!res.ok) return;
+    const json = await res.json();
+    const record = json.record || {};
+    planerProducts = Array.isArray(record.products) ? record.products : [];
+  } catch(e){ console.error('planer products fetch error', e); }
+}
+function findPlanerProduct(name){
+  const n = (name||'').trim().toLowerCase();
+  if(!n) return null;
+  return planerProducts.find(p => (p.name||'').trim().toLowerCase() === n)
+    || planerProducts.find(p => (p.name||'').trim().length > 2 && n.includes((p.name||'').trim().toLowerCase()));
+}
 
 async function fetchPlanerPreview(){
   planerLoading = true; renderMain();
@@ -294,10 +327,12 @@ async function fetchPlanerPreview(){
 
 async function init(){
   db = createJsonBinDb();
+  fetchPlanerProducts();
 
   db.collection('items').onSnapshot(snap => { items = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(activeTab==='list') renderMain(); });
   db.collection('categories').onSnapshot(snap => { categories = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMain(); refreshSelects(); });
   db.collection('stores').onSnapshot(snap => { stores = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMain(); refreshSelects(); });
+  db.collection('products').onSnapshot(snap => { products = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(activeTab==='products') renderMain(); });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -316,6 +351,7 @@ function renderMain(){
   if(activeTab === 'planer') return renderPlanerTab(main);
   if(activeTab === 'stores') return renderManageTab(main, 'stores', stores, 'Dodaj sklep…');
   if(activeTab === 'categories') return renderManageTab(main, 'categories', categories, 'Dodaj kategorię…');
+  if(activeTab === 'products') return renderProductsTab(main);
 }
 
 function renderPlanerTab(main){
@@ -361,6 +397,7 @@ function renderListTab(main){
     <div class="add-bar">
       <input type="text" name="name" id="newItemName" placeholder="Nazwa produktu…">
       <input type="text" name="qty" id="newItemQty" placeholder="Ilość">
+      <select id="newItemUnit"></select>
       <select id="newItemCategory"></select>
       <select id="newItemStore"></select>
       <button id="addItemBtn">Dodaj</button>
@@ -407,17 +444,40 @@ function renderListTab(main){
   });
 }
 
+function findLocalProduct(name){
+  const n = (name||'').trim().toLowerCase();
+  if(!n) return null;
+  return products.find(p => p.name.trim().toLowerCase() === n) || null;
+}
 function wireAddBar(){
   const addBtn = document.getElementById('addItemBtn');
   const nameInput = document.getElementById('newItemName');
+  const qtyInput = document.getElementById('newItemQty');
+  const unitSel = document.getElementById('newItemUnit');
+  const catSel = document.getElementById('newItemCategory');
+  const storeSel = document.getElementById('newItemStore');
+  nameInput.addEventListener('input', () => {
+    const pMatch = findPlanerProduct(nameInput.value);
+    const lMatch = findLocalProduct(nameInput.value);
+    const category = pMatch ? pMatch.category : (lMatch ? lMatch.category : null);
+    const unit = pMatch ? pMatch.unit : (lMatch ? lMatch.unit : null);
+    const store = lMatch ? lMatch.store : null;
+    if(category){
+      if(![...catSel.options].some(o => o.value === category)) catSel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`);
+      catSel.value = category;
+    }
+    if(unit && [...unitSel.options].some(o => o.value === unit)) unitSel.value = unit;
+    if(store && [...storeSel.options].some(o => o.value === store)) storeSel.value = store;
+  });
   const add = async () => {
     const name = nameInput.value.trim();
     if(!name) return;
-    const qty = document.getElementById('newItemQty').value.trim();
-    const category = document.getElementById('newItemCategory').value || 'Inne';
-    const store = document.getElementById('newItemStore').value || '';
-    await db.collection('items').add({ name, qty, unit: '', checked: false, category, store, source: 'manual', createdAt: Date.now() });
-    nameInput.value = ''; document.getElementById('newItemQty').value = '';
+    const qty = qtyInput.value.trim();
+    const unit = unitSel.value || '';
+    const category = catSel.value || 'Inne';
+    const store = storeSel.value || '';
+    await db.collection('items').add({ name, qty, unit, checked: false, category, store, source: 'manual', createdAt: Date.now() });
+    nameInput.value = ''; qtyInput.value = ''; unitSel.value = ''; storeSel.value = '';
     nameInput.focus();
   };
   addBtn.addEventListener('click', add);
@@ -426,11 +486,15 @@ function wireAddBar(){
 function refreshSelects(){
   const catSel = document.getElementById('newItemCategory');
   const storeSel = document.getElementById('newItemStore');
+  const unitSel = document.getElementById('newItemUnit');
   if(catSel){
     catSel.innerHTML = categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('') || '<option value="Inne">Inne</option>';
   }
   if(storeSel){
     storeSel.innerHTML = `<option value="">Bez sklepu</option>` + stores.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('');
+  }
+  if(unitSel){
+    unitSel.innerHTML = `<option value="">Jedn.</option>` + DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
   }
 }
 
@@ -453,6 +517,121 @@ function renderManageTab(main, coll, list, placeholder){
   };
   addBtn.addEventListener('click', add);
   input.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+}
+
+function unitOptionsHtml(current){
+  return DEFAULT_UNITS.map(u => `<option value="${u}" ${u===current?'selected':''}>${u}</option>`).join('');
+}
+function catOptionsHtml(current){
+  const names = categories.map(c=>c.name);
+  if(current && !names.includes(current)) names.push(current);
+  return names.map(n => `<option value="${escapeHtml(n)}" ${n===current?'selected':''}>${escapeHtml(n)}</option>`).join('');
+}
+function storeOptionsHtml(current){
+  return `<option value="">— brak —</option>` + stores.map(s => `<option value="${escapeHtml(s.name)}" ${s.name===current?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
+}
+
+function mergedProductRows(){
+  const localByName = new Map(products.map(p => [p.name.trim().toLowerCase(), p]));
+  const rows = [];
+  // Spożywcze — z bazy planera, scalone z lokalnymi danymi (cena/sklep), jeśli już zapisane
+  planerProducts.forEach(pp => {
+    const key = (pp.name||'').trim().toLowerCase();
+    if(!key) return;
+    const local = localByName.get(key);
+    rows.push({
+      id: local ? local.id : null,
+      name: pp.name, type: 'spozywcze',
+      category: pp.category || 'Inne', unit: pp.unit || '',
+      store: local ? (local.store||'') : '',
+      priceNormal: local ? local.priceNormal : null,
+      pricePromoLow: local ? local.pricePromoLow : null,
+      pricePromoTypical: local ? local.pricePromoTypical : null
+    });
+    localByName.delete(key);
+  });
+  // Niespożywcze (i ewentualne lokalne spożywcze, których nie ma już w planerze) — czysto lokalne
+  localByName.forEach(p => {
+    rows.push({ id: p.id, name: p.name, type: p.type || 'niespozywcze', category: p.category||'Inne', unit: p.unit||'', store: p.store||'', priceNormal: p.priceNormal, pricePromoLow: p.pricePromoLow, pricePromoTypical: p.pricePromoTypical });
+  });
+  return rows.sort((a,b) => a.name.localeCompare(b.name, 'pl'));
+}
+
+async function saveProductField(row, field, value){
+  if(row.id){
+    await db.doc('products/'+row.id).update({ [field]: value });
+  } else {
+    // Wirtualny wiersz (produkt spożywczy z planera jeszcze nie zapisany lokalnie) — tworzymy rekord
+    const payload = { name: row.name, type: row.type, category: row.category, unit: row.unit, store: row.store, priceNormal: row.priceNormal, pricePromoLow: row.pricePromoLow, pricePromoTypical: row.pricePromoTypical, createdAt: Date.now() };
+    payload[field] = value;
+    await db.collection('products').add(payload);
+  }
+}
+
+function renderProductsTab(main){
+  const rows = mergedProductRows();
+  let html = rows.length ? rows.map(r => `
+    <div class="prod-row" data-name="${escapeHtml(r.name)}" data-id="${r.id||''}" data-type="${r.type}">
+      <div class="prod-top">
+        <span class="prod-name">${escapeHtml(r.name)}</span>
+        <span class="type-badge ${r.type}">${r.type==='spozywcze'?'Spożywcze':'Niespożywcze'}</span>
+      </div>
+      <div class="prod-fields">
+        <label>Kategoria
+          <select data-field="category" ${r.type==='spozywcze'?'disabled':''}>${catOptionsHtml(r.category)}</select>
+        </label>
+        <label>Jednostka
+          <select data-field="unit" ${r.type==='spozywcze'?'disabled':''}>${unitOptionsHtml(r.unit)}</select>
+        </label>
+        <label>Domyślny sklep
+          <select data-field="store">${storeOptionsHtml(r.store)}</select>
+        </label>
+        <label>Cena zwykła
+          <input type="number" step="0.01" min="0" data-field="priceNormal" value="${r.priceNormal!=null?r.priceNormal:''}" placeholder="0,00 zł">
+        </label>
+        <label>Najniższa promocyjna
+          <input type="number" step="0.01" min="0" data-field="pricePromoLow" value="${r.pricePromoLow!=null?r.pricePromoLow:''}" placeholder="0,00 zł">
+        </label>
+        <label>Typowa promocja
+          <input type="number" step="0.01" min="0" data-field="pricePromoTypical" value="${r.pricePromoTypical!=null?r.pricePromoTypical:''}" placeholder="0,00 zł">
+        </label>
+      </div>
+    </div>`).join('') : '<div class="empty-state"><h2>Brak produktów</h2><p>Produkty spożywcze pojawią się tu same z planera obiadów, albo dodaj poniżej coś niespożywczego.</p></div>';
+
+  html += `<div class="prod-add-form">
+    <input type="text" id="newProdName" placeholder="Nazwa nowego produktu (niespożywczego)…">
+    <select id="newProdCategory">${catOptionsHtml('')}</select>
+    <select id="newProdUnit">${unitOptionsHtml('szt')}</select>
+    <select id="newProdStore">${storeOptionsHtml('')}</select>
+    <button id="addProdBtn">Dodaj produkt</button>
+  </div>`;
+
+  main.innerHTML = html;
+
+  main.querySelectorAll('.prod-row').forEach(rowEl => {
+    const row = rows.find(r => r.name === rowEl.dataset.name && r.type === rowEl.dataset.type);
+    rowEl.querySelectorAll('[data-field]').forEach(el => {
+      el.addEventListener('change', () => {
+        let val = el.value;
+        if(el.type === 'number') val = val === '' ? null : parseFloat(val);
+        saveProductField(row, el.dataset.field, val);
+      });
+    });
+  });
+
+  document.getElementById('addProdBtn').addEventListener('click', async () => {
+    const name = document.getElementById('newProdName').value.trim();
+    if(!name) return;
+    await db.collection('products').add({
+      name, type: 'niespozywcze',
+      category: document.getElementById('newProdCategory').value || 'Inne',
+      unit: document.getElementById('newProdUnit').value || '',
+      store: document.getElementById('newProdStore').value || '',
+      priceNormal: null, pricePromoLow: null, pricePromoTypical: null,
+      createdAt: Date.now()
+    });
+    document.getElementById('newProdName').value = '';
+  });
 }
 
 init();

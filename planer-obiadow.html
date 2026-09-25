@@ -280,6 +280,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
       <button class="btn btn-ghost" id="mergeModeBtn">⇄ Połącz pozycje</button>
       <button class="btn btn-ghost" id="clearChecked">Usuń zaznaczone (kupione)</button>
       <button class="btn btn-ghost" id="shopExportBtn">⬇ Eksportuj</button>
+      <button class="btn btn-ghost" id="transferToListaBtn">➜ Przenieś do głównej listy</button>
     </div>
     <div class="add-item-bar">
       <input type="text" id="newItemName" placeholder="dodaj pozycję ręcznie...">
@@ -1570,6 +1571,7 @@ function renderShopping(){
   }));
 }
 document.getElementById('addItemBtn').addEventListener('click', addManualItem);
+document.getElementById('transferToListaBtn').addEventListener('click', transferToListaZakupowa);
 bindEnterSubmit(document.getElementById('newItemName'), addManualItem);
 async function addManualItem(){
   const input=document.getElementById('newItemName');
@@ -1588,6 +1590,59 @@ function shoppingCatsForExport(){
   const cats = shoppingCategories.map(c=>c.name);
   shopping.forEach(i=>{ if(!cats.includes(i.category)) cats.push(i.category||'Inne'); });
   return cats;
+}
+
+// ---- Przeniesienie do apki "Lista Zakupowa" (osobny bin na jsonbin.io) ----
+// Wklej tu ID bina apki "Lista Zakupowa" (patrz JSONBIN_BIN_ID w pliku lista-zakupowa.html
+// po jej pierwszym uruchomieniu) — dopóki jest puste, przycisk pokaże komunikat.
+const LISTA_ZAKUPOWA_BIN_ID = '';
+
+async function transferToListaZakupowa(){
+  if(shopping.length===0){ alert('Lista zakupów w planerze jest pusta.'); return; }
+  if(!LISTA_ZAKUPOWA_BIN_ID){
+    alert('Ta funkcja nie jest jeszcze skonfigurowana — brak ID bina apki "Lista Zakupowa" w kodzie planera.');
+    return;
+  }
+  const btn = document.getElementById('transferToListaBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Przenoszę…';
+  try {
+    const res = await fetchWithTimeout(JSONBIN_BASE + LISTA_ZAKUPOWA_BIN_ID + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    });
+    const json = await res.json();
+    const remote = json.record || { items:{}, categories:{}, stores:{} };
+    if(!remote.items) remote.items = {};
+
+    const existingByKey = new Map();
+    Object.entries(remote.items).forEach(([id, it]) => {
+      existingByKey.set((it.name||'').trim().toLowerCase()+'|'+(it.unit||''), id);
+    });
+
+    shopping.forEach(it => {
+      const key = (it.name||'').trim().toLowerCase()+'|'+(it.unit||'');
+      const existingId = existingByKey.get(key);
+      if(existingId){
+        remote.items[existingId] = { ...remote.items[existingId], qty: it.qty, unit: it.unit, category: it.category||'Inne', source: 'planer' };
+      } else {
+        const newId = 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,9);
+        remote.items[newId] = { name: it.name, qty: it.qty, unit: it.unit||'', checked: false, category: it.category||'Inne', store: '', source: 'planer', createdAt: Date.now() };
+        existingByKey.set(key, newId);
+      }
+    });
+
+    await fetchWithTimeout(JSONBIN_BASE + LISTA_ZAKUPOWA_BIN_ID, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+      body: JSON.stringify(remote)
+    });
+    alert('Przeniesiono listę zakupów do głównej listy (kategoria "z planera").');
+  } catch(e){
+    console.error(e);
+    alert('Nie udało się przenieść listy — sprawdź połączenie z internetem i spróbuj ponownie.');
+  } finally {
+    btn.disabled = false; btn.textContent = originalText;
+  }
 }
 function exportShoppingTxt(){
   if(shopping.length===0){ alert('Lista zakupów jest pusta.'); return; }
