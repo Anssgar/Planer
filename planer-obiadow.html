@@ -443,11 +443,12 @@ function guessCategory(name){
   }
   return 'Inne';
 }
+function isFoodProduct(p){ return !p.type || p.type === 'spozywcze'; }
 function findProduct(name){ return products.find(p=>namesMatch(p.name,name)); }
 function ensureProduct(name, unit){
   let p = findProduct(name);
   if(p){ if(unit && unit.trim() && !p.unit) p.unit = unit.trim(); return p; }
-  p = {id:uid(), name:name.trim(), category:guessCategory(name), unit:(unit||'').trim()};
+  p = {id:uid(), name:name.trim(), category:guessCategory(name), unit:(unit||'').trim(), type:'spozywcze'};
   products.push(p);
   return p;
 }
@@ -1266,6 +1267,64 @@ function openRecipePreview(rec){
 }
 
 /* ============ RECIPE MODAL (edit/create) ============ */
+function parseIngredientLine(line){
+  line = String(line).trim();
+  const unitsEsc = DEFAULT_UNITS.map(u=>u.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const re = new RegExp('^([\\d\\s/.,]+)\\s*(' + unitsEsc + ')?\\b\\s*(.*)$', 'i');
+  const m = line.match(re);
+  if(m && m[1] && m[1].trim()){
+    return { name: (m[3]||'').trim() || line, qty: m[1].trim(), unit: (m[2]||'').trim() };
+  }
+  return { name: line, qty: '', unit: '' };
+}
+async function importRecipeFromUrl(url){
+  if(!url) throw new Error('Podaj najpierw link do przepisu.');
+  let html;
+  try {
+    const direct = await fetchWithTimeout(url, {}, 9000);
+    if(!direct.ok) throw new Error('bad status');
+    html = await direct.text();
+  } catch(e){
+    const proxied = await fetchWithTimeout('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), {}, 15000);
+    if(!proxied.ok) throw new Error('Nie udało się pobrać strony pod tym linkiem.');
+    html = await proxied.text();
+  }
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+  let recipe = null;
+  for(const s of scripts){
+    try {
+      const data = JSON.parse(s.textContent);
+      const candidates = Array.isArray(data) ? data : (data['@graph'] ? data['@graph'] : [data]);
+      for(const c of candidates){
+        const types = Array.isArray(c['@type']) ? c['@type'] : [c['@type']];
+        if(types.includes('Recipe')){ recipe = c; break; }
+      }
+      if(recipe) break;
+    } catch(e){ /* pomijamy błędny blok JSON-LD */ }
+  }
+  if(!recipe) throw new Error('Ta strona nie udostępnia ustrukturyzowanego przepisu (spróbuj innego źródła albo wpisz dane ręcznie).');
+
+  const name = recipe.name || '';
+  let servings = null;
+  if(recipe.recipeYield){
+    const y = Array.isArray(recipe.recipeYield) ? recipe.recipeYield[0] : recipe.recipeYield;
+    const m = String(y).match(/\d+/);
+    if(m) servings = parseInt(m[0]);
+  }
+  const rawIngredients = recipe.recipeIngredient || recipe.ingredients || [];
+  const ingredients = rawIngredients.map(parseIngredientLine);
+
+  let instructions = '';
+  if(recipe.recipeInstructions){
+    const steps = Array.isArray(recipe.recipeInstructions) ? recipe.recipeInstructions : [recipe.recipeInstructions];
+    instructions = steps.map((s, idx) => {
+      const text = typeof s === 'string' ? s : (s.text || (s.itemListElement ? s.itemListElement.map(x=>x.text||'').join(' ') : ''));
+      return (idx+1) + '. ' + String(text).trim();
+    }).join('\n');
+  }
+  return { name, servings, ingredients, instructions };
+}
 function openRecipeModal(existing, forceNew){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -1292,7 +1351,13 @@ function openRecipeModal(existing, forceNew){
           <button type="button" class="btn btn-ghost" id="m-image-remove">Usuń zdjęcie</button>
         </div>
       </div>
-      <div class="field"><label>Link do przepisu (źródło)</label><input type="url" id="m-source" value="${escapeHtml(rec.sourceUrl)}" placeholder="https://..."></div>
+      <div class="field"><label>Link do przepisu (źródło)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="url" id="m-source" value="${escapeHtml(rec.sourceUrl)}" placeholder="https://..." style="flex:1;">
+          <button type="button" class="btn btn-ghost" id="m-import-btn" style="white-space:nowrap;">⬇ Zaimportuj</button>
+        </div>
+        <p class="hint" id="m-import-status" style="margin:6px 0 0;"></p>
+      </div>
       <div class="field">
         <label>Składniki <span class="hint">(Enter dodaje kolejny wiersz)</span></label>
         <div id="ingList"></div>
@@ -1400,7 +1465,7 @@ function openRecipeModal(existing, forceNew){
   function showIngSugg(row, idx){
     closeIngSugg();
     const val=(ings[idx].name||'').toLowerCase();
-    const matches = val ? products.filter(p=>p.name.toLowerCase().includes(val)) : products.slice(0,8);
+    const matches = (val ? products.filter(p=>p.name.toLowerCase().includes(val)) : products.slice(0,8)).filter(isFoodProduct);
     if(matches.length===0) return;
     ingSuggBox=document.createElement('div');
     ingSuggBox.className='picker';
@@ -1454,6 +1519,31 @@ function openRecipeModal(existing, forceNew){
   }
   renderIngs();
   overlay.querySelector('#addIng').addEventListener('click', ()=>{ ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); });
+
+  overlay.querySelector('#m-import-btn').addEventListener('click', async ()=>{
+    const url = overlay.querySelector('#m-source').value.trim();
+    const statusEl = overlay.querySelector('#m-import-status');
+    const btn = overlay.querySelector('#m-import-btn');
+    if(!url){ statusEl.textContent = 'Wklej najpierw link do przepisu powyżej.'; return; }
+    btn.disabled = true; const origLabel = btn.textContent; btn.textContent = 'Importuję…';
+    statusEl.textContent = 'Pobieram i analizuję stronę…';
+    try {
+      const imported = await importRecipeFromUrl(url);
+      if(imported.name) overlay.querySelector('#m-name').value = imported.name;
+      if(imported.servings) overlay.querySelector('#m-servings').value = imported.servings;
+      if(imported.ingredients && imported.ingredients.length){
+        ings = imported.ingredients;
+        renderIngs();
+      }
+      if(imported.instructions) overlay.querySelector('#m-instr').value = imported.instructions;
+      statusEl.textContent = 'Zaimportowano — sprawdź i popraw dane poniżej przed zapisem.';
+    } catch(e){
+      console.error(e);
+      statusEl.textContent = e.message || 'Nie udało się zaimportować przepisu z tego linku.';
+    } finally {
+      btn.disabled = false; btn.textContent = origLabel;
+    }
+  });
 
   overlay.querySelector('#m-cancel').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
@@ -1595,7 +1685,7 @@ function shoppingCatsForExport(){
 // ---- Przeniesienie do apki "Lista Zakupowa" (osobny bin na jsonbin.io) ----
 // Wklej tu ID bina apki "Lista Zakupowa" (patrz JSONBIN_BIN_ID w pliku lista-zakupowa.html
 // po jej pierwszym uruchomieniu) — dopóki jest puste, przycisk pokaże komunikat.
-const LISTA_ZAKUPOWA_BIN_ID = '';
+const LISTA_ZAKUPOWA_BIN_ID = '6ab8f57fac6210605afa8aaf';
 
 async function transferToListaZakupowa(){
   if(shopping.length===0){ alert('Lista zakupów w planerze jest pusta.'); return; }
@@ -1747,12 +1837,13 @@ document.getElementById('addFromRecipeBtn').addEventListener('click', ()=>{
 /* ============ PRODUCTS TAB ============ */
 function renderProducts(filter){
   const body=document.getElementById('productsBody');
-  if(products.length===0){
+  const foodProducts = products.filter(isFoodProduct);
+  if(foodProducts.length===0){
     body.innerHTML = `<tr><td colspan="5" class="usage">Baza jest pusta — pojawią się tu produkty dodane w przepisach.</td></tr>`;
     return;
   }
   const f=(filter||'').toLowerCase();
-  const filtered = products.filter(p=>p.name.toLowerCase().includes(f) || (p.category||'').toLowerCase().includes(f));
+  const filtered = foodProducts.filter(p=>p.name.toLowerCase().includes(f) || (p.category||'').toLowerCase().includes(f));
   if(filtered.length===0){
     body.innerHTML = `<tr><td colspan="5" class="usage">Nic nie znaleziono.</td></tr>`;
     return;

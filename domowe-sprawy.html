@@ -1042,6 +1042,20 @@ function requestNotifications(){
 }
 
 // ---- Top navigation ----
+async function openProject(projectId){
+  currentProjectId = projectId;
+  const projSections = sections.filter(s => s.projectId === projectId);
+  if(projSections.length === 0){
+    const proj = projects.find(p => p.id === projectId);
+    const { id } = await db.collection('sections').add({ name: (proj && proj.name) || 'Zadania', emoji: '', due: '', projectId, createdAt: Date.now() });
+    currentSectionId = id; activeView = 'section'; currentSubTab = 'tasks';
+  } else if(projSections.length === 1){
+    currentSectionId = projSections[0].id; activeView = 'section'; currentSubTab = 'tasks';
+  } else {
+    currentSectionId = null; activeView = 'sections';
+  }
+  renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+}
 function renderProjectsRow(){
   const row = document.getElementById('projectsRow');
   let html = `<button class="proj-tab ${activeView==='dashboard'?'active':''}" id="startTab">${ICONS.home} Start</button>
@@ -1056,8 +1070,7 @@ function renderProjectsRow(){
   document.getElementById('calendarTab').addEventListener('click', () => { activeView='calendar'; currentProjectId=null; currentSectionId=null; renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain(); });
   row.querySelectorAll('.proj-tab[data-id]').forEach(btn => {
     btn.addEventListener('click', () => {
-      currentProjectId = btn.dataset.id; currentSectionId = null; activeView = 'sections';
-      renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+      openProject(btn.dataset.id);
     });
   });
   document.getElementById('addProjectTab').addEventListener('click', () => openProjectModal());
@@ -1241,8 +1254,7 @@ function handleDashRowClick(id, kind){
     renderProjectsRow();
     goToTaskPage(id);
   } else if(kind === 'project'){
-    currentProjectId = id; currentSectionId = null; activeView = 'sections';
-    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+    openProject(id);
   } else if(kind === 'section'){
     const sec = sections.find(x=>x.id===id); if(!sec) return;
     currentProjectId = sec.projectId; currentSectionId = id; activeView = 'section'; currentSubTab = 'tasks';
@@ -1363,8 +1375,7 @@ function navigateToCalItem(x){
     renderProjectsRow();
     goToTaskPage(x.id);
   } else if(x.kind === 'project'){
-    currentProjectId = x.id; currentSectionId = null; activeView = 'sections';
-    renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+    openProject(x.id);
   } else if(x.kind === 'section'){
     currentProjectId = x.projectId; currentSectionId = x.id; activeView = 'section'; currentSubTab = 'tasks';
     renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
@@ -1753,8 +1764,8 @@ async function saveProject(){
       closeProjectModal(); renderProjectsRow(); renderBreadcrumb();
     } else {
       const ref = await db.collection('projects').add({ name, emoji, due, createdAt: Date.now() });
-      currentProjectId = ref.id; currentSectionId = null; activeView = 'sections';
-      closeProjectModal(); renderProjectsRow(); renderBreadcrumb(); renderSubNav(); renderMain();
+      closeProjectModal();
+      openProject(ref.id);
     }
   } catch(e){ console.error(e); alert('Nie udało się zapisać projektu, spróbuj ponownie.'); }
 }

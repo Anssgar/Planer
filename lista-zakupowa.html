@@ -29,7 +29,7 @@
   .brand svg { width: 34px; height: 34px; flex-shrink: 0; }
   .tagline { margin: 2px 0 0; color: var(--text-soft); font-size: 13.5px; }
 
-  .tabs { max-width: 900px; margin: 18px auto 0; padding: 0 20px; display: flex; gap: 8px; }
+  .tabs { max-width: 900px; margin: 18px auto 0; padding: 0 20px; display: flex; gap: 8px; flex-wrap: wrap; }
   .tab-btn {
     padding: 8px 15px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface);
     color: var(--text-soft); font-weight: 700; font-size: 13.5px; cursor: pointer;
@@ -51,7 +51,7 @@
   }
   .add-bar input[name=name] { flex: 2; min-width: 140px; }
   .add-bar input[name=qty] { width: 70px; }
-  .add-bar select { flex: 1; min-width: 110px; }
+  .add-bar select { flex: 1; min-width: 100px; }
   .add-bar button {
     background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 18px;
     font-weight: 700; cursor: pointer; font-size: 14px;
@@ -66,47 +66,65 @@
   }
   .item-row.checked { opacity: 0.55; }
   .item-row input[type=checkbox] { width: 19px; height: 19px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer; }
-  .item-row .name { flex: 1; font-weight: 700; font-size: 14.5px; }
+  .item-row .name { flex: 1; font-weight: 700; font-size: 14.5px; cursor: pointer; }
   .item-row.checked .name { text-decoration: line-through; color: var(--text-soft); }
   .item-row .qty { font-size: 12px; color: var(--text-soft); font-weight: 700; background: var(--column-bg); padding: 3px 9px; border-radius: 8px; }
   .item-row .store-badge { font-size: 10.5px; font-weight: 700; color: var(--sage-text); background: var(--sage-bg); padding: 3px 8px; border-radius: 8px; }
   .item-row .src-badge { font-size: 10.5px; font-weight: 700; color: var(--gold-text); background: var(--gold-bg); padding: 3px 8px; border-radius: 8px; }
-  .item-row .del-btn { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
-  .item-row .del-btn:hover { color: var(--danger); }
-  .item-row .del-btn svg { width: 16px; height: 16px; }
+  .item-row .icon-btn { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .item-row .icon-btn:hover { color: var(--primary-deep); }
+  .item-row .icon-btn.del:hover { color: var(--danger); }
+  .item-row .icon-btn svg { width: 16px; height: 16px; }
+
+  .edit-row { background: var(--column-bg); border-radius: 12px; padding: 10px; margin: -3px 0 7px; display: flex; flex-wrap: wrap; gap: 7px; }
+  .edit-row input, .edit-row select { padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; flex: 1; min-width: 90px; }
+  .edit-row button { background: var(--primary); color: white; border: none; border-radius: 7px; padding: 0 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
 
   .empty-state { text-align: center; padding: 50px 20px; color: var(--text-soft); }
   .empty-state h2 { color: var(--primary-deep); margin: 6px 0 4px; font-size: 18px; }
 
   .simple-list { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px; }
-  .simple-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  .simple-row { display: flex; align-items: center; gap: 8px; padding: 9px 8px; border-bottom: 1px solid var(--border); }
   .simple-row:last-child { border-bottom: none; }
   .simple-row .row-label { flex: 1; font-weight: 700; font-size: 14.5px; }
-  .row-del { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
-  .row-del:hover { color: var(--danger); }
-  .row-del svg { width: 16px; height: 16px; }
+  .simple-row input.rename-input { flex: 1; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); font-size: 14px; display: none; }
+  .simple-row.editing .row-label { display: none; }
+  .simple-row.editing input.rename-input { display: block; }
+  .row-btn { background: none; border: none; color: var(--text-soft); cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .row-btn:hover { color: var(--primary-deep); }
+  .row-btn.del:hover { color: var(--danger); }
+  .row-btn svg { width: 16px; height: 16px; }
   .add-inline { display: flex; gap: 8px; padding: 10px 6px 4px; }
   .add-inline input { flex: 1; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 14px; }
   .add-inline button { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer; }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select { padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; }
+  .filter-bar input { flex: 2; min-width: 140px; }
+  .filter-bar select { flex: 1; min-width: 120px; }
 
   .prod-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
   .prod-row .prod-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
   .prod-row .prod-name { font-weight: 700; font-size: 14.5px; flex: 1; min-width: 100px; }
   .type-badge { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
-  .type-badge.spozywcze { background: var(--surface-alt); color: var(--lavender); }
+  .type-badge.spozywcze { background: var(--sage-bg); color: var(--sage-text); }
   .type-badge.niespozywcze { background: var(--gold-bg); color: var(--gold-text); }
   .prod-fields { display: flex; flex-wrap: wrap; gap: 7px; }
   .prod-fields label { display: flex; flex-direction: column; gap: 3px; font-size: 10.5px; color: var(--text-soft); font-weight: 700; flex: 1; min-width: 95px; }
   .prod-fields input, .prod-fields select { padding: 6px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--column-bg); font-size: 12.5px; width: 100%; }
-  .prod-fields input:disabled, .prod-fields select:disabled { background: var(--surface-alt); color: var(--text-soft); }
   .prod-add-form { background: var(--surface); border: 1px dashed var(--border); border-radius: 14px; padding: 12px; margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
   .prod-add-form input, .prod-add-form select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 13.5px; flex: 1; min-width: 100px; }
   .prod-add-form button { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer; }
 
   .planer-hint { color: var(--text-soft); font-size: 13px; margin: 0 0 14px; }
   .planer-timestamp { color: var(--text-soft); font-size: 12px; margin: 10px 0 0; }
+  .planer-item-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 7px; }
 
-  #printArea { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+  }
 </style>
 </head>
 <body>
@@ -128,9 +146,9 @@
 <div class="tabs" id="tabsRow">
   <button class="tab-btn active" data-tab="list">Lista</button>
   <button class="tab-btn" data-tab="planer">Z planera</button>
-  <button class="tab-btn" data-tab="stores">Sklepy</button>
-  <button class="tab-btn" data-tab="categories">Kategorie</button>
   <button class="tab-btn" data-tab="products">Produkty</button>
+  <button class="tab-btn" data-tab="categories">Kategorie</button>
+  <button class="tab-btn" data-tab="stores">Sklepy</button>
 </div>
 
 <main id="mainArea"></main>
@@ -138,35 +156,36 @@
 <div id="printArea"></div>
 
 <script>
-// ==== jsonbin.io — konfiguracja ====
+// ==== jsonbin.io — magazyn WŁASNY tej apki (lista zakupów + sklepy) ====
 const JSONBIN_API_KEY = '$2a$10$W148CMyGUUl1iGtoArLw0Oq7sQ49NyL/WoL0agc3g/rWvSXdbCvdK';
-let JSONBIN_BIN_ID = '';
-
+let JSONBIN_BIN_ID = '6ab8f57fac6210605afa8aaf';
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
 const JSONBIN_POLL_MS = 6000;
 
+// ==== jsonbin.io — magazyn WSPÓLNY z planerem (produkty + kategorie zakupowe) ====
+const PLANER_JSONBIN_API_KEY = JSONBIN_API_KEY;
+const PLANER_BIN_ID = '6aa90506ac6210605acf4f8b';
+
 function jsonbinEmptyState(){
-  return { items:{}, categories:{}, stores:{}, products:{} };
+  return { items:{}, stores:{} };
 }
 function genId(){ return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
 
-const DEFAULT_CATEGORIES = ['Nabiał','Pieczywo','Mięso i ryby','Warzywa i owoce','Przyprawy','Produkty suche/sypkie','Mrożonki','Napoje','Inne'];
 const DEFAULT_STORES = ['Biedronka','Lidl','Żabka','Rossmann','Inne'];
 const DEFAULT_UNITS = ['g','kg','ml','l','szt','łyżka','łyżeczka','szklanka','opakowanie','ząbek','pęczek','plaster','garść','puszka'];
 
 function showJsonbinConfigWarning(msg){
   const main = document.getElementById('mainArea');
-  if(main) main.innerHTML = `<div class="empty-state"><h2>Konfiguracja jsonbin.io</h2><p>${msg}</p></div>`;
+  if(main) main.innerHTML = '<div class="empty-state"><h2>Konfiguracja jsonbin.io</h2><p>' + msg + '</p></div>';
 }
 function showBinIdBanner(id){
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,30,50,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-  overlay.innerHTML = `<div style="background:#fff;border-radius:18px;padding:22px;max-width:420px;font-family:'Nunito',sans-serif;">
-    <h2 style="margin:0 0 10px;color:#4E74A8;font-family:'Fredoka',sans-serif;">Pierwsze uruchomienie</h2>
-    <p style="font-size:14px;line-height:1.5;color:#3C4A5E;">Utworzono nowy magazyn danych na jsonbin.io. Skopiuj poniższe ID i wklej je jako wartość <code>JSONBIN_BIN_ID</code> na górze pliku — inaczej przy kolejnym otwarciu powstanie kolejny, pusty magazyn.</p>
-    <input readonly value="${id}" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;margin:10px 0;" onclick="this.select()">
-    <button id="binIdBannerCloseBtn" style="width:100%;padding:10px;border-radius:10px;border:none;background:#7FA9E0;color:#fff;font-weight:800;cursor:pointer;">Rozumiem, zapisałem</button>
-  </div>`;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(40,30,20,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = '<div style="background:#FAF7F2;border-radius:16px;padding:22px;max-width:420px;font-family:\'Nunito\',sans-serif;">' +
+    '<h2 style="margin:0 0 10px;color:#96593F;font-family:\'Fredoka\',sans-serif;">Pierwsze uruchomienie</h2>' +
+    '<p style="font-size:14px;line-height:1.5;color:#2E2A24;">Utworzono nowy magazyn danych na jsonbin.io. Skopiuj poniższe ID i wklej je jako wartość <code>JSONBIN_BIN_ID</code> na górze pliku.</p>' +
+    '<input readonly value="' + id + '" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #ccc;font-size:14px;margin:10px 0;" onclick="this.select()">' +
+    '<button id="binIdBannerCloseBtn" style="width:100%;padding:10px;border-radius:10px;border:none;background:#B5735A;color:#fff;font-weight:800;cursor:pointer;">Rozumiem, zapisałem</button></div>';
   document.body.appendChild(overlay);
   overlay.querySelector('#binIdBannerCloseBtn').addEventListener('click', () => overlay.remove());
 }
@@ -192,11 +211,10 @@ function createJsonBinDb(){
     if(JSONBIN_BIN_ID) return true;
     try {
       const seeded = jsonbinEmptyState();
-      DEFAULT_CATEGORIES.forEach(name => { const id = genId(); seeded.categories[id] = { name, createdAt: Date.now() }; });
       DEFAULT_STORES.forEach(name => { const id = genId(); seeded.stores[id] = { name, createdAt: Date.now() }; });
       const res = await fetch(JSONBIN_BASE, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Name': 'lista-zakupowa' },
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Name': 'zakupy' },
         body: JSON.stringify(seeded)
       });
       const json = await res.json();
@@ -210,7 +228,7 @@ function createJsonBinDb(){
   }
   async function pullRemote(){
     try {
-      const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+      const res = await fetch(JSONBIN_BASE + '/' + JSONBIN_BIN_ID + '/latest', { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
       if(!res.ok) return;
       const json = await res.json();
       if(pendingSave) return;
@@ -225,7 +243,7 @@ function createJsonBinDb(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       try {
-        await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}`, {
+        await fetch(JSONBIN_BASE + '/' + JSONBIN_BIN_ID, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
           body: JSON.stringify(state)
@@ -276,67 +294,83 @@ function createJsonBinDb(){
   })();
 
   return {
-    doc(path){ const [coll, id] = path.split('/'); return docRef(coll, id); },
+    doc(path){ const parts = path.split('/'); return docRef(parts[0], parts[1]); },
     collection(name){ return collectionRef(name); }
   };
 }
 
-// ==== Aplikacja ====
-const PAW = '🛒';
-const PLANER_JSONBIN_API_KEY = '$2a$10$W148CMyGUUl1iGtoArLw0Oq7sQ49NyL/WoL0agc3g/rWvSXdbCvdK';
-const PLANER_BIN_ID = '6aa90506ac6210605acf4f8b';
+// ==== Wspolna baza produktow i kategorii (zyje w binie Planera) ====
+async function fetchPlanerRecord(){
+  const res = await fetch('https://api.jsonbin.io/v3/b/' + PLANER_BIN_ID + '/latest', { headers: { 'X-Master-Key': PLANER_JSONBIN_API_KEY } });
+  if(!res.ok) throw new Error('Nie udało się pobrać danych planera (HTTP ' + res.status + ')');
+  const json = await res.json();
+  return json.record || {};
+}
+async function pushPlanerRecord(record){
+  await fetch('https://api.jsonbin.io/v3/b/' + PLANER_BIN_ID, {
+    method: 'PUT',
+    headers: { 'Content-Type':'application/json', 'X-Master-Key': PLANER_JSONBIN_API_KEY },
+    body: JSON.stringify(record)
+  });
+}
+async function updatePlanerRecord(mutateFn){
+  const record = await fetchPlanerRecord();
+  record.products = record.products || [];
+  record.shoppingCategories = record.shoppingCategories || [];
+  mutateFn(record);
+  await pushPlanerRecord(record);
+  return record;
+}
+
+let products = [];
+let sharedCategories = [];
+let planerLastFetch = null;
+
+async function refreshSharedData(){
+  try {
+    const record = await fetchPlanerRecord();
+    products = Array.isArray(record.products) ? record.products : [];
+    sharedCategories = Array.isArray(record.shoppingCategories) ? record.shoppingCategories : [];
+    planerLastFetch = new Date();
+    if(activeTab === 'products' || activeTab === 'categories') renderMain();
+    refreshSelects();
+  } catch(e){ console.error('refreshSharedData error', e); }
+}
+function findProductByName(name){
+  const n = (name||'').trim().toLowerCase();
+  if(!n) return null;
+  return products.find(p => (p.name||'').trim().toLowerCase() === n)
+    || products.find(p => (p.name||'').trim().length > 2 && n.includes((p.name||'').trim().toLowerCase()));
+}
+
+async function fetchPlanerShoppingList(){
+  const record = await fetchPlanerRecord();
+  return Array.isArray(record.shopping) ? record.shopping : [];
+}
+
+const BASKET = '\u{1F6D2}';
 let db = null;
-let items = [], categories = [], stores = [], products = [];
+let items = [], stores = [];
 let activeTab = 'list';
-let planerPreview = null; // { items:[...], fetchedAt }
-let planerLoading = false;
-let planerProducts = []; // {id, name, category, unit} — na żywo z bazy produktów planera
+let editingItemId = null;
+let planerPreviewItems = null;
+let productSearch = '';
+let productCategoryFilter = '';
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-async function fetchPlanerProducts(){
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${PLANER_BIN_ID}/latest`, { headers: { 'X-Master-Key': PLANER_JSONBIN_API_KEY } });
-    if(!res.ok) return;
-    const json = await res.json();
-    const record = json.record || {};
-    planerProducts = Array.isArray(record.products) ? record.products : [];
-  } catch(e){ console.error('planer products fetch error', e); }
-}
-function findPlanerProduct(name){
-  const n = (name||'').trim().toLowerCase();
-  if(!n) return null;
-  return planerProducts.find(p => (p.name||'').trim().toLowerCase() === n)
-    || planerProducts.find(p => (p.name||'').trim().length > 2 && n.includes((p.name||'').trim().toLowerCase()));
-}
-
-async function fetchPlanerPreview(){
-  planerLoading = true; renderMain();
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${PLANER_BIN_ID}/latest`, { headers: { 'X-Master-Key': PLANER_JSONBIN_API_KEY } });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json = await res.json();
-    const record = json.record || {};
-    planerPreview = { items: Array.isArray(record.shopping) ? record.shopping : [], fetchedAt: Date.now() };
-  } catch(e){
-    console.error('planer preview fetch error', e);
-    alert('Nie udało się pobrać listy z planera — sprawdź połączenie z internetem.');
-  }
-  planerLoading = false; renderMain();
-}
-
 async function init(){
   db = createJsonBinDb();
-  fetchPlanerProducts();
+  refreshSharedData();
+  setInterval(refreshSharedData, JSONBIN_POLL_MS);
 
   db.collection('items').onSnapshot(snap => { items = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(activeTab==='list') renderMain(); });
-  db.collection('categories').onSnapshot(snap => { categories = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMain(); refreshSelects(); });
   db.collection('stores').onSnapshot(snap => { stores = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMain(); refreshSelects(); });
-  db.collection('products').onSnapshot(snap => { products = snap.docs.map(d => ({ id: d.id, ...d.data() })); if(activeTab==='products') renderMain(); });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
+      editingItemId = null;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b===btn));
       renderMain();
     });
@@ -349,63 +383,33 @@ function renderMain(){
   const main = document.getElementById('mainArea');
   if(activeTab === 'list') return renderListTab(main);
   if(activeTab === 'planer') return renderPlanerTab(main);
-  if(activeTab === 'stores') return renderManageTab(main, 'stores', stores, 'Dodaj sklep…');
-  if(activeTab === 'categories') return renderManageTab(main, 'categories', categories, 'Dodaj kategorię…');
   if(activeTab === 'products') return renderProductsTab(main);
-}
-
-function renderPlanerTab(main){
-  let html = `<p class="planer-hint">Podgląd listy zakupów z planera obiadów — tylko do odczytu, nic tu nie zmienisz. Pozycje, które chcesz mieć na swojej liście, przenieś przyciskiem w planerze.</p>
-    <div class="toolbar"><button id="fetchPlanerBtn">${planerLoading ? 'Pobieram…' : '⟳ Pobierz aktualną listę z planera'}</button></div>`;
-
-  if(!planerPreview){
-    html += `<div class="empty-state">🍲<h2>Brak podglądu</h2><p>Kliknij powyżej, aby pobrać aktualną listę z planera.</p></div>`;
-    main.innerHTML = html;
-  } else if(!planerPreview.items.length){
-    html += `<div class="empty-state">🍲<h2>Lista w planerze jest pusta</h2></div>
-      <p class="planer-timestamp">Pobrano: ${new Date(planerPreview.fetchedAt).toLocaleString('pl-PL')}</p>`;
-    main.innerHTML = html;
-  } else {
-    const cats = [];
-    planerPreview.items.forEach(i => { const c = i.category || 'Inne'; if(!cats.includes(c)) cats.push(c); });
-    cats.forEach(cat => {
-      const catItems = planerPreview.items.filter(i => (i.category || 'Inne') === cat);
-      html += `<div class="cat-group"><h3>${escapeHtml(cat)}</h3>`;
-      catItems.forEach(it => {
-        html += `<div class="item-row ${it.checked?'checked':''}">
-          <span class="name">${escapeHtml(it.name)}</span>
-          ${(it.qty!=null && it.qty!=='') ? `<span class="qty">${escapeHtml(String(it.qty))}${it.unit?' '+escapeHtml(it.unit):''}</span>` : ''}
-        </div>`;
-      });
-      html += `</div>`;
-    });
-    html += `<p class="planer-timestamp">Pobrano: ${new Date(planerPreview.fetchedAt).toLocaleString('pl-PL')}</p>`;
-    main.innerHTML = html;
-  }
-  document.getElementById('fetchPlanerBtn').addEventListener('click', fetchPlanerPreview);
+  if(activeTab === 'categories') return renderCategoriesTab(main);
+  if(activeTab === 'stores') return renderStoresTab(main);
 }
 
 function renderListTab(main){
-  const cats = categories.map(c => c.name);
+  const cats = sharedCategories.map(c => c.name);
   items.forEach(i => { if(i.category && !cats.includes(i.category)) cats.push(i.category); });
   if(!cats.includes('Inne')) cats.push('Inne');
 
-  let html = `
-    <div class="toolbar">
-      <button id="clearCheckedBtn">Usuń zaznaczone (kupione)</button>
-    </div>
-    <div class="add-bar">
-      <input type="text" name="name" id="newItemName" placeholder="Nazwa produktu…">
-      <input type="text" name="qty" id="newItemQty" placeholder="Ilość">
-      <select id="newItemUnit"></select>
-      <select id="newItemCategory"></select>
-      <select id="newItemStore"></select>
-      <button id="addItemBtn">Dodaj</button>
-    </div>
-  `;
+  let html = '' +
+    '<div class="toolbar">' +
+      '<button id="clearCheckedBtn">Usuń zaznaczone (kupione)</button>' +
+      '<button id="copyListBtn">Kopiuj listę</button>' +
+      '<button id="exportPdfBtn">Eksportuj do PDF</button>' +
+    '</div>' +
+    '<div class="add-bar">' +
+      '<input type="text" name="name" id="newItemName" placeholder="Nazwa produktu…" autocomplete="off">' +
+      '<input type="text" name="qty" id="newItemQty" placeholder="Ilość">' +
+      '<select id="newItemUnit"></select>' +
+      '<select id="newItemCategory"></select>' +
+      '<select id="newItemStore"></select>' +
+      '<button id="addItemBtn">Dodaj</button>' +
+    '</div>';
 
   if(!items.length){
-    html += `<div class="empty-state">${PAW}<h2>Lista jest pusta</h2><p>Dodaj pierwszy produkt powyżej.</p></div>`;
+    html += '<div class="empty-state">' + BASKET + '<h2>Lista jest pusta</h2><p>Dodaj pierwszy produkt powyżej.</p></div>';
     main.innerHTML = html;
     wireAddBar(); refreshSelects();
     return;
@@ -414,18 +418,30 @@ function renderListTab(main){
   cats.forEach(cat => {
     const catItems = items.filter(i => (i.category || 'Inne') === cat);
     if(!catItems.length) return;
-    html += `<div class="cat-group"><h3>${escapeHtml(cat)}</h3>`;
+    html += '<div class="cat-group"><h3>' + escapeHtml(cat) + '</h3>';
     catItems.forEach(it => {
-      html += `<div class="item-row ${it.checked?'checked':''}" data-id="${it.id}">
-        <input type="checkbox" class="buy-cb" ${it.checked?'checked':''}>
-        <span class="name">${escapeHtml(it.name)}</span>
-        ${(it.qty!=null && it.qty!=='') ? `<span class="qty">${escapeHtml(String(it.qty))}${it.unit?' '+escapeHtml(it.unit):''}</span>` : ''}
-        ${it.store ? `<span class="store-badge">${escapeHtml(it.store)}</span>` : ''}
-        ${it.source==='planer' ? `<span class="src-badge">z planera</span>` : ''}
-        <button class="del-btn" data-del="${it.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      </div>`;
+      const isEditing = editingItemId === it.id;
+      html += '<div class="item-row ' + (it.checked?'checked':'') + '" data-id="' + it.id + '">' +
+        '<input type="checkbox" class="buy-cb" ' + (it.checked?'checked':'') + '>' +
+        '<span class="name" data-edit="' + it.id + '">' + escapeHtml(it.name) + '</span>' +
+        ((it.qty!=null && it.qty!=='') ? '<span class="qty">' + escapeHtml(String(it.qty)) + (it.unit?' '+escapeHtml(it.unit):'') + '</span>' : '') +
+        (it.store ? '<span class="store-badge">' + escapeHtml(it.store) + '</span>' : '') +
+        (it.source==='planer' ? '<span class="src-badge">z planera</span>' : '') +
+        '<button class="icon-btn" data-edit-btn="' + it.id + '" title="Edytuj"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18 10a2.8 2.8 0 00-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>' +
+        '<button class="icon-btn del" data-del="' + it.id + '"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
+      '</div>' +
+      (isEditing ? (
+        '<div class="edit-row" id="editRow-' + it.id + '">' +
+        '<input type="text" data-f="name" value="' + escapeHtml(it.name) + '" placeholder="Nazwa">' +
+        '<input type="text" data-f="qty" value="' + escapeHtml(it.qty||'') + '" placeholder="Ilość" style="max-width:80px;">' +
+        '<select data-f="unit">' + unitOptionsHtml(it.unit) + '</select>' +
+        '<select data-f="category">' + catOptionsHtml(it.category, cats) + '</select>' +
+        '<select data-f="store">' + storeOptionsHtml(it.store) + '</select>' +
+        '<button data-save-edit="' + it.id + '">Zapisz</button>' +
+        '</div>'
+      ) : '');
     });
-    html += `</div>`;
+    html += '</div>';
   });
 
   main.innerHTML = html;
@@ -439,16 +455,29 @@ function renderListTab(main){
   main.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', () => {
     db.doc('items/'+btn.dataset.del).delete();
   }));
+  main.querySelectorAll('[data-edit-btn]').forEach(btn => btn.addEventListener('click', () => {
+    editingItemId = editingItemId === btn.dataset.editBtn ? null : btn.dataset.editBtn;
+    renderMain();
+  }));
+  main.querySelectorAll('[data-edit]').forEach(el => el.addEventListener('click', () => {
+    editingItemId = editingItemId === el.dataset.edit ? null : el.dataset.edit;
+    renderMain();
+  }));
+  main.querySelectorAll('[data-save-edit]').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.saveEdit;
+    const row = document.getElementById('editRow-'+id);
+    const patch = {};
+    row.querySelectorAll('[data-f]').forEach(inp => { patch[inp.dataset.f] = inp.value; });
+    db.doc('items/'+id).update(patch);
+    editingItemId = null;
+  }));
   document.getElementById('clearCheckedBtn').addEventListener('click', () => {
     items.filter(i => i.checked).forEach(i => db.doc('items/'+i.id).delete());
   });
+  document.getElementById('copyListBtn').addEventListener('click', copyListToClipboard);
+  document.getElementById('exportPdfBtn').addEventListener('click', exportListToPdf);
 }
 
-function findLocalProduct(name){
-  const n = (name||'').trim().toLowerCase();
-  if(!n) return null;
-  return products.find(p => p.name.trim().toLowerCase() === n) || null;
-}
 function wireAddBar(){
   const addBtn = document.getElementById('addItemBtn');
   const nameInput = document.getElementById('newItemName');
@@ -457,17 +486,14 @@ function wireAddBar(){
   const catSel = document.getElementById('newItemCategory');
   const storeSel = document.getElementById('newItemStore');
   nameInput.addEventListener('input', () => {
-    const pMatch = findPlanerProduct(nameInput.value);
-    const lMatch = findLocalProduct(nameInput.value);
-    const category = pMatch ? pMatch.category : (lMatch ? lMatch.category : null);
-    const unit = pMatch ? pMatch.unit : (lMatch ? lMatch.unit : null);
-    const store = lMatch ? lMatch.store : null;
-    if(category){
-      if(![...catSel.options].some(o => o.value === category)) catSel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`);
-      catSel.value = category;
+    const match = findProductByName(nameInput.value);
+    if(!match) return;
+    if(match.category){
+      if(![...catSel.options].some(o => o.value === match.category)) catSel.insertAdjacentHTML('beforeend', '<option value="' + escapeHtml(match.category) + '">' + escapeHtml(match.category) + '</option>');
+      catSel.value = match.category;
     }
-    if(unit && [...unitSel.options].some(o => o.value === unit)) unitSel.value = unit;
-    if(store && [...storeSel.options].some(o => o.value === store)) storeSel.value = store;
+    if(match.unit && [...unitSel.options].some(o => o.value === match.unit)) unitSel.value = match.unit;
+    if(match.store && [...storeSel.options].some(o => o.value === match.store)) storeSel.value = match.store;
   });
   const add = async () => {
     const name = nameInput.value.trim();
@@ -487,134 +513,160 @@ function refreshSelects(){
   const catSel = document.getElementById('newItemCategory');
   const storeSel = document.getElementById('newItemStore');
   const unitSel = document.getElementById('newItemUnit');
-  if(catSel){
-    catSel.innerHTML = categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('') || '<option value="Inne">Inne</option>';
-  }
-  if(storeSel){
-    storeSel.innerHTML = `<option value="">Bez sklepu</option>` + stores.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('');
-  }
-  if(unitSel){
-    unitSel.innerHTML = `<option value="">Jedn.</option>` + DEFAULT_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
-  }
+  if(catSel) catSel.innerHTML = catOptionsHtml('', sharedCategories.map(c=>c.name));
+  if(storeSel) storeSel.innerHTML = storeOptionsHtml('');
+  if(unitSel) unitSel.innerHTML = '<option value="">Jedn.</option>' + DEFAULT_UNITS.map(u => '<option value="' + u + '">' + u + '</option>').join('');
 }
-
-function renderManageTab(main, coll, list, placeholder){
-  main.innerHTML = `<div class="simple-list">
-    ${list.length ? list.map(x => `<div class="simple-row" data-id="${x.id}">
-        <span class="row-label">${escapeHtml(x.name)}</span>
-        <button class="row-del" data-id="${x.id}"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      </div>`).join('') : '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Lista pusta</div>'}
-    <div class="add-inline"><input type="text" id="manageAddInput" placeholder="${placeholder}"><button id="manageAddBtn">Dodaj</button></div>
-  </div>`;
-  main.querySelectorAll('.row-del').forEach(btn => btn.addEventListener('click', () => db.doc(coll+'/'+btn.dataset.id).delete()));
-  const addBtn = document.getElementById('manageAddBtn');
-  const input = document.getElementById('manageAddInput');
-  const add = async () => {
-    const name = input.value.trim();
-    if(!name) return;
-    input.value = '';
-    await db.collection(coll).add({ name, createdAt: Date.now() });
-  };
-  addBtn.addEventListener('click', add);
-  input.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
-}
-
 function unitOptionsHtml(current){
-  return DEFAULT_UNITS.map(u => `<option value="${u}" ${u===current?'selected':''}>${u}</option>`).join('');
+  return '<option value="">-</option>' + DEFAULT_UNITS.map(u => '<option value="' + u + '" ' + (u===current?'selected':'') + '>' + u + '</option>').join('');
 }
-function catOptionsHtml(current){
-  const names = categories.map(c=>c.name);
+function catOptionsHtml(current, extra){
+  const names = sharedCategories.map(c=>c.name);
+  (extra||[]).forEach(n => { if(!names.includes(n)) names.push(n); });
   if(current && !names.includes(current)) names.push(current);
-  return names.map(n => `<option value="${escapeHtml(n)}" ${n===current?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  if(!names.includes('Inne')) names.push('Inne');
+  return names.map(n => '<option value="' + escapeHtml(n) + '" ' + (n===current?'selected':'') + '>' + escapeHtml(n) + '</option>').join('');
 }
 function storeOptionsHtml(current){
-  return `<option value="">— brak —</option>` + stores.map(s => `<option value="${escapeHtml(s.name)}" ${s.name===current?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
+  return '<option value="">Bez sklepu</option>' + stores.map(s => '<option value="' + escapeHtml(s.name) + '" ' + (s.name===current?'selected':'') + '>' + escapeHtml(s.name) + '</option>').join('');
 }
 
-function mergedProductRows(){
-  const localByName = new Map(products.map(p => [p.name.trim().toLowerCase(), p]));
-  const rows = [];
-  // Spożywcze — z bazy planera, scalone z lokalnymi danymi (cena/sklep), jeśli już zapisane
-  planerProducts.forEach(pp => {
-    const key = (pp.name||'').trim().toLowerCase();
-    if(!key) return;
-    const local = localByName.get(key);
-    rows.push({
-      id: local ? local.id : null,
-      name: pp.name, type: 'spozywcze',
-      category: pp.category || 'Inne', unit: pp.unit || '',
-      store: local ? (local.store||'') : '',
-      priceNormal: local ? local.priceNormal : null,
-      pricePromoLow: local ? local.pricePromoLow : null,
-      pricePromoTypical: local ? local.pricePromoTypical : null
+function copyListToClipboard(){
+  const cats = [...new Set(items.map(i => i.category || 'Inne'))];
+  let text = 'Lista zakupów:\n\n';
+  cats.forEach(cat => {
+    const catItems = items.filter(i => (i.category||'Inne') === cat && !i.checked);
+    if(!catItems.length) return;
+    text += cat + ':\n';
+    catItems.forEach(it => { text += '- ' + it.name + (it.qty?(' (' + it.qty + (it.unit?' '+it.unit:'') + ')'):'') + (it.store?(' [' + it.store + ']'):'') + '\n'; });
+    text += '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => alert('Lista skopiowana do schowka.')).catch(() => alert('Nie udało się skopiować — spróbuj ręcznie zaznaczyć tekst.'));
+}
+function exportListToPdf(){
+  const cats = [...new Set(items.map(i => i.category || 'Inne'))];
+  let html = '<h1 style="font-family:sans-serif;color:#96593F;">Lista zakupów</h1><p style="color:#8A7F70;font-family:sans-serif;font-size:13px;">' + new Date().toLocaleDateString('pl-PL') + '</p>';
+  cats.forEach(cat => {
+    const catItems = items.filter(i => (i.category||'Inne') === cat);
+    if(!catItems.length) return;
+    html += '<h3 style="font-family:sans-serif;color:#2E2A24;border-bottom:1px solid #ccc;padding-bottom:4px;">' + escapeHtml(cat) + '</h3><ul style="font-family:sans-serif;">';
+    catItems.forEach(it => {
+      html += '<li style="' + (it.checked?'text-decoration:line-through;color:#999;':'') + '">' + escapeHtml(it.name) + (it.qty?(' - ' + escapeHtml(String(it.qty)) + (it.unit?' '+escapeHtml(it.unit):'')):'') + (it.store?(' (' + escapeHtml(it.store) + ')'):'') + '</li>';
     });
-    localByName.delete(key);
+    html += '</ul>';
   });
-  // Niespożywcze (i ewentualne lokalne spożywcze, których nie ma już w planerze) — czysto lokalne
-  localByName.forEach(p => {
-    rows.push({ id: p.id, name: p.name, type: p.type || 'niespozywcze', category: p.category||'Inne', unit: p.unit||'', store: p.store||'', priceNormal: p.priceNormal, pricePromoLow: p.pricePromoLow, pricePromoTypical: p.pricePromoTypical });
-  });
-  return rows.sort((a,b) => a.name.localeCompare(b.name, 'pl'));
+  document.getElementById('printArea').innerHTML = html;
+  window.print();
 }
 
-async function saveProductField(row, field, value){
-  if(row.id){
-    await db.doc('products/'+row.id).update({ [field]: value });
-  } else {
-    // Wirtualny wiersz (produkt spożywczy z planera jeszcze nie zapisany lokalnie) — tworzymy rekord
-    const payload = { name: row.name, type: row.type, category: row.category, unit: row.unit, store: row.store, priceNormal: row.priceNormal, pricePromoLow: row.pricePromoLow, pricePromoTypical: row.pricePromoTypical, createdAt: Date.now() };
-    payload[field] = value;
-    await db.collection('products').add(payload);
+async function renderPlanerTab(main){
+  main.innerHTML = '<p class="planer-hint">Podgląd listy zakupów zapisanej teraz w planerze obiadów — nic się tu automatycznie nie synchronizuje, kliknij, żeby odświeżyć.</p>' +
+    '<div class="toolbar"><button id="fetchPlanerListBtn">Pobierz aktualną listę z planera</button></div>' +
+    '<div id="planerPreviewArea"></div>';
+  document.getElementById('fetchPlanerListBtn').addEventListener('click', loadPlanerPreview);
+  if(planerPreviewItems) renderPlanerPreview();
+}
+async function loadPlanerPreview(){
+  const area = document.getElementById('planerPreviewArea');
+  area.innerHTML = '<p class="planer-hint">Pobieranie…</p>';
+  try {
+    planerPreviewItems = await fetchPlanerShoppingList();
+    renderPlanerPreview();
+  } catch(e){
+    area.innerHTML = '<p class="planer-hint">Nie udało się pobrać danych z planera — spróbuj ponownie.</p>';
   }
+}
+function renderPlanerPreview(){
+  const area = document.getElementById('planerPreviewArea');
+  if(!planerPreviewItems || !planerPreviewItems.length){
+    area.innerHTML = '<p class="planer-hint">Lista zakupów w planerze jest pusta.</p>';
+    return;
+  }
+  const cats = [...new Set(planerPreviewItems.map(i => i.category || 'Inne'))];
+  let html = '';
+  cats.forEach(cat => {
+    const catItems = planerPreviewItems.filter(i => (i.category||'Inne') === cat);
+    html += '<div class="cat-group"><h3>' + escapeHtml(cat) + '</h3>';
+    catItems.forEach((it) => {
+      html += '<div class="planer-item-row">' +
+        '<span class="name" style="flex:1;font-weight:700;font-size:14.5px;">' + escapeHtml(it.name) + '</span>' +
+        ((it.qty!=null && it.qty!=='') ? '<span class="qty">' + escapeHtml(String(it.qty)) + (it.unit?' '+escapeHtml(it.unit):'') + '</span>' : '') +
+        '<button class="icon-btn" data-transfer-name="' + escapeHtml(it.name) + '" data-transfer-qty="' + escapeHtml(it.qty||'') + '" data-transfer-unit="' + escapeHtml(it.unit||'') + '" data-transfer-cat="' + escapeHtml(it.category||'Inne') + '" title="Przenieś na główną listę">&#10148;</button>' +
+      '</div>';
+    });
+    html += '</div>';
+  });
+  html += '<p class="planer-timestamp">Pobrano: ' + (planerLastFetch ? planerLastFetch.toLocaleTimeString('pl-PL') : '') + '</p>';
+  area.innerHTML = html;
+  area.querySelectorAll('[data-transfer-name]').forEach(btn => btn.addEventListener('click', async () => {
+    const name = btn.dataset.transferName;
+    const existing = items.find(i => i.name.trim().toLowerCase() === name.trim().toLowerCase());
+    if(existing){
+      await db.doc('items/'+existing.id).update({ qty: btn.dataset.transferQty, unit: btn.dataset.transferUnit, category: btn.dataset.transferCat, source: 'planer' });
+    } else {
+      await db.collection('items').add({ name, qty: btn.dataset.transferQty, unit: btn.dataset.transferUnit, checked: false, category: btn.dataset.transferCat, store: '', source: 'planer', createdAt: Date.now() });
+    }
+    btn.textContent = '\u2713'; btn.disabled = true;
+  }));
+}
+
+async function saveProductField(name, field, value){
+  await updatePlanerRecord(record => {
+    let p = record.products.find(x => (x.name||'').trim().toLowerCase() === name.trim().toLowerCase());
+    if(!p){ p = { id: genId(), name, type: 'niespozywcze', category: 'Inne', unit: '' }; record.products.push(p); }
+    p[field] = value;
+  });
+  await refreshSharedData();
 }
 
 function renderProductsTab(main){
-  const rows = mergedProductRows();
-  let html = rows.length ? rows.map(r => `
-    <div class="prod-row" data-name="${escapeHtml(r.name)}" data-id="${r.id||''}" data-type="${r.type}">
-      <div class="prod-top">
-        <span class="prod-name">${escapeHtml(r.name)}</span>
-        <span class="type-badge ${r.type}">${r.type==='spozywcze'?'Spożywcze':'Niespożywcze'}</span>
-      </div>
-      <div class="prod-fields">
-        <label>Kategoria
-          <select data-field="category" ${r.type==='spozywcze'?'disabled':''}>${catOptionsHtml(r.category)}</select>
-        </label>
-        <label>Jednostka
-          <select data-field="unit" ${r.type==='spozywcze'?'disabled':''}>${unitOptionsHtml(r.unit)}</select>
-        </label>
-        <label>Domyślny sklep
-          <select data-field="store">${storeOptionsHtml(r.store)}</select>
-        </label>
-        <label>Cena zwykła
-          <input type="number" step="0.01" min="0" data-field="priceNormal" value="${r.priceNormal!=null?r.priceNormal:''}" placeholder="0,00 zł">
-        </label>
-        <label>Najniższa promocyjna
-          <input type="number" step="0.01" min="0" data-field="pricePromoLow" value="${r.pricePromoLow!=null?r.pricePromoLow:''}" placeholder="0,00 zł">
-        </label>
-        <label>Typowa promocja
-          <input type="number" step="0.01" min="0" data-field="pricePromoTypical" value="${r.pricePromoTypical!=null?r.pricePromoTypical:''}" placeholder="0,00 zł">
-        </label>
-      </div>
-    </div>`).join('') : '<div class="empty-state"><h2>Brak produktów</h2><p>Produkty spożywcze pojawią się tu same z planera obiadów, albo dodaj poniżej coś niespożywczego.</p></div>';
+  let html = '<div class="filter-bar">' +
+    '<input type="text" id="prodSearchInput" placeholder="Szukaj produktu…" value="' + escapeHtml(productSearch) + '">' +
+    '<select id="prodCategoryFilter"><option value="">Wszystkie kategorie</option>' + sharedCategories.map(c => '<option value="' + escapeHtml(c.name) + '" ' + (c.name===productCategoryFilter?'selected':'') + '>' + escapeHtml(c.name) + '</option>').join('') + '</select>' +
+  '</div>';
 
-  html += `<div class="prod-add-form">
-    <input type="text" id="newProdName" placeholder="Nazwa nowego produktu (niespożywczego)…">
-    <select id="newProdCategory">${catOptionsHtml('')}</select>
-    <select id="newProdUnit">${unitOptionsHtml('szt')}</select>
-    <select id="newProdStore">${storeOptionsHtml('')}</select>
-    <button id="addProdBtn">Dodaj produkt</button>
-  </div>`;
+  const q = productSearch.trim().toLowerCase();
+  let rows = products.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!productCategoryFilter || p.category === productCategoryFilter));
+  rows = rows.slice().sort((a,b) => a.name.localeCompare(b.name, 'pl'));
+
+  html += rows.length ? rows.map(r => (
+    '<div class="prod-row" data-name="' + escapeHtml(r.name) + '">' +
+      '<div class="prod-top">' +
+        '<span class="prod-name">' + escapeHtml(r.name) + '</span>' +
+        '<span class="type-badge ' + (r.type==='niespozywcze'?'niespozywcze':'spozywcze') + '">' + (r.type==='niespozywcze'?'Niespożywcze':'Spożywcze') + '</span>' +
+      '</div>' +
+      '<div class="prod-fields">' +
+        '<label>Kategoria<select data-field="category">' + catOptionsHtml(r.category, sharedCategories.map(c=>c.name)) + '</select></label>' +
+        '<label>Jednostka<select data-field="unit">' + unitOptionsHtml(r.unit) + '</select></label>' +
+        '<label>Domyślny sklep<select data-field="store">' + storeOptionsHtml(r.store) + '</select></label>' +
+        '<label>Cena zwykła<input type="number" step="0.01" min="0" data-field="priceNormal" value="' + (r.priceNormal!=null?r.priceNormal:'') + '" placeholder="0,00 zł"></label>' +
+        '<label>Najniższa promocyjna<input type="number" step="0.01" min="0" data-field="pricePromoLow" value="' + (r.pricePromoLow!=null?r.pricePromoLow:'') + '" placeholder="0,00 zł"></label>' +
+        '<label>Typowa promocja<input type="number" step="0.01" min="0" data-field="pricePromoTypical" value="' + (r.pricePromoTypical!=null?r.pricePromoTypical:'') + '" placeholder="0,00 zł"></label>' +
+      '</div>' +
+    '</div>'
+  )).join('') : '<div class="empty-state"><h2>Brak produktów</h2><p>Produkty spożywcze pojawią się tu same z planera obiadów, albo dodaj poniżej coś niespożywczego.</p></div>';
+
+  html += '<div class="prod-add-form">' +
+    '<input type="text" id="newProdName" placeholder="Nazwa nowego produktu…">' +
+    '<select id="newProdType"><option value="niespozywcze">Niespożywcze</option><option value="spozywcze">Spożywcze</option></select>' +
+    '<select id="newProdCategory">' + catOptionsHtml('', sharedCategories.map(c=>c.name)) + '</select>' +
+    '<select id="newProdUnit">' + unitOptionsHtml('szt') + '</select>' +
+    '<select id="newProdStore">' + storeOptionsHtml('') + '</select>' +
+    '<button id="addProdBtn">Dodaj produkt</button>' +
+  '</div>';
 
   main.innerHTML = html;
 
+  document.getElementById('prodSearchInput').addEventListener('input', e => { productSearch = e.target.value; renderProductsTab(main); });
+  document.getElementById('prodCategoryFilter').addEventListener('change', e => { productCategoryFilter = e.target.value; renderProductsTab(main); });
+
   main.querySelectorAll('.prod-row').forEach(rowEl => {
-    const row = rows.find(r => r.name === rowEl.dataset.name && r.type === rowEl.dataset.type);
+    const name = rowEl.dataset.name;
     rowEl.querySelectorAll('[data-field]').forEach(el => {
       el.addEventListener('change', () => {
         let val = el.value;
         if(el.type === 'number') val = val === '' ? null : parseFloat(val);
-        saveProductField(row, el.dataset.field, val);
+        saveProductField(name, el.dataset.field, val);
       });
     });
   });
@@ -622,16 +674,94 @@ function renderProductsTab(main){
   document.getElementById('addProdBtn').addEventListener('click', async () => {
     const name = document.getElementById('newProdName').value.trim();
     if(!name) return;
-    await db.collection('products').add({
-      name, type: 'niespozywcze',
-      category: document.getElementById('newProdCategory').value || 'Inne',
-      unit: document.getElementById('newProdUnit').value || '',
-      store: document.getElementById('newProdStore').value || '',
-      priceNormal: null, pricePromoLow: null, pricePromoTypical: null,
-      createdAt: Date.now()
+    const type = document.getElementById('newProdType').value;
+    await updatePlanerRecord(record => {
+      if(record.products.some(p => (p.name||'').trim().toLowerCase() === name.toLowerCase())) return;
+      record.products.push({
+        id: genId(), name, type,
+        category: document.getElementById('newProdCategory').value || 'Inne',
+        unit: document.getElementById('newProdUnit').value || '',
+        store: document.getElementById('newProdStore').value || '',
+        priceNormal: null, pricePromoLow: null, pricePromoTypical: null
+      });
     });
     document.getElementById('newProdName').value = '';
+    await refreshSharedData();
   });
+}
+
+function renderCategoriesTab(main){
+  main.innerHTML = '<p class="planer-hint">Kategorie są wspólne z planerem obiadów — zmiana tutaj jest widoczna też tam.</p><div class="simple-list">' +
+    (sharedCategories.length ? sharedCategories.map(c => (
+      '<div class="simple-row" data-id="' + c.id + '">' +
+        '<span class="row-label">' + escapeHtml(c.name) + '</span>' +
+        '<input type="text" class="rename-input" value="' + escapeHtml(c.name) + '">' +
+        '<button class="row-btn" data-rename="' + c.id + '" title="Zmień nazwę"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18 10a2.8 2.8 0 00-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>' +
+        '<button class="row-btn del" data-del="' + c.id + '"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
+      '</div>'
+    )).join('') : '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Lista pusta</div>') +
+    '<div class="add-inline"><input type="text" id="manageAddInput" placeholder="Dodaj kategorię…"><button id="manageAddBtn">Dodaj</button></div>' +
+  '</div>';
+  wireSharedCategoryRows(main);
+}
+function wireSharedCategoryRows(main){
+  main.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', async () => {
+    await updatePlanerRecord(record => { record.shoppingCategories = record.shoppingCategories.filter(c => c.id !== btn.dataset.del); });
+    await refreshSharedData();
+  }));
+  main.querySelectorAll('[data-rename]').forEach(btn => btn.addEventListener('click', async () => {
+    const row = btn.closest('.simple-row');
+    if(!row.classList.contains('editing')){ row.classList.add('editing'); row.querySelector('.rename-input').focus(); return; }
+    const newName = row.querySelector('.rename-input').value.trim();
+    if(newName){
+      await updatePlanerRecord(record => { const c = record.shoppingCategories.find(x => x.id === btn.dataset.rename); if(c) c.name = newName; });
+      await refreshSharedData();
+    }
+    row.classList.remove('editing');
+  }));
+  const addBtn = document.getElementById('manageAddBtn');
+  const input = document.getElementById('manageAddInput');
+  const add = async () => {
+    const name = input.value.trim();
+    if(!name) return;
+    input.value = '';
+    await updatePlanerRecord(record => { record.shoppingCategories.push({ id: genId(), name }); });
+    await refreshSharedData();
+  };
+  addBtn.addEventListener('click', add);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+}
+
+function renderStoresTab(main){
+  main.innerHTML = '<div class="simple-list">' +
+    (stores.length ? stores.map(s => (
+      '<div class="simple-row" data-id="' + s.id + '">' +
+        '<span class="row-label">' + escapeHtml(s.name) + '</span>' +
+        '<input type="text" class="rename-input" value="' + escapeHtml(s.name) + '">' +
+        '<button class="row-btn" data-rename="' + s.id + '" title="Zmień nazwę"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18 10a2.8 2.8 0 00-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>' +
+        '<button class="row-btn del" data-del="' + s.id + '"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
+      '</div>'
+    )).join('') : '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px;">Lista pusta</div>') +
+    '<div class="add-inline"><input type="text" id="manageAddInput" placeholder="Dodaj sklep…"><button id="manageAddBtn">Dodaj</button></div>' +
+  '</div>';
+  main.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', () => db.doc('stores/'+btn.dataset.del).delete()));
+  main.querySelectorAll('[data-rename]').forEach(btn => btn.addEventListener('click', () => {
+    const row = btn.closest('.simple-row');
+    if(!row.classList.contains('editing')){ row.classList.add('editing'); row.querySelector('.rename-input').focus(); return; }
+    const newName = row.querySelector('.rename-input').value.trim();
+    if(newName) db.doc('stores/'+btn.dataset.rename).update({ name: newName });
+    row.classList.remove('editing');
+  }));
+  const addBtn = document.getElementById('manageAddBtn');
+  const input = document.getElementById('manageAddInput');
+  const add = async () => {
+    const name = input.value.trim();
+    if(!name) return;
+    input.value = '';
+    await db.collection('stores').add({ name, createdAt: Date.now() });
+  };
+  addBtn.addEventListener('click', add);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
 }
 
 init();
