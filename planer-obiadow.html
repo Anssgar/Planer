@@ -1277,8 +1277,35 @@ function parseIngredientLine(line){
   }
   return { name: line, qty: '', unit: '' };
 }
+// Wklej tu adres swojego Cloudflare Workera (patrz cloudflare-worker.js), np. 'https://recipe-import.twoja-nazwa.workers.dev'
+// Dopóki puste, import korzysta z prostszej metody (szukanie gotowych danych na stronie), bez AI.
+const RECIPE_AI_WORKER_URL = 'https://przepisy.okowol.workers.dev';
+
 async function importRecipeFromUrl(url){
   if(!url) throw new Error('Podaj najpierw link do przepisu.');
+  if(RECIPE_AI_WORKER_URL){
+    try {
+      const res = await fetchWithTimeout(RECIPE_AI_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      }, 25000);
+      const data = await res.json();
+      if(res.ok && data && data.recipe){
+        const r = data.recipe;
+        return {
+          name: r.name || '',
+          servings: r.servings || null,
+          ingredients: Array.isArray(r.ingredients) ? r.ingredients.map(i => ({ name: i.name||'', qty: i.qty||'', unit: i.unit||'' })) : [],
+          instructions: r.instructions || ''
+        };
+      }
+      // Worker odpowiedział błędem — spróbujemy jeszcze prostszej metody niżej, zamiast od razu się poddawać.
+    } catch(e){ console.error('AI worker import error', e); }
+  }
+  return importRecipeFromUrlBasic(url);
+}
+async function importRecipeFromUrlBasic(url){
   let html;
   try {
     const direct = await fetchWithTimeout(url, {}, 9000);
