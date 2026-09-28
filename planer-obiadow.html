@@ -1283,6 +1283,7 @@ const RECIPE_AI_WORKER_URL = 'https://przepisy.okowol.workers.dev';
 
 async function importRecipeFromUrl(url){
   if(!url) throw new Error('Podaj najpierw link do przepisu.');
+  let workerErr = '';
   if(RECIPE_AI_WORKER_URL){
     try {
       const res = await fetchWithTimeout(RECIPE_AI_WORKER_URL, {
@@ -1300,10 +1301,15 @@ async function importRecipeFromUrl(url){
           instructions: r.instructions || ''
         };
       }
-      // Worker odpowiedział błędem — spróbujemy jeszcze prostszej metody niżej, zamiast od razu się poddawać.
-    } catch(e){ console.error('AI worker import error', e); }
+      workerErr = (data && data.error) ? data.error : ('HTTP ' + res.status);
+    } catch(e){ console.error('AI worker import error', e); workerErr = (e && e.message) || 'brak odpowiedzi'; }
   }
-  return importRecipeFromUrlBasic(url);
+  try {
+    return await importRecipeFromUrlBasic(url);
+  } catch(e){
+    if(workerErr) throw new Error('AI (Worker): ' + workerErr + ' | zapasowa metoda: ' + ((e && e.message) || 'błąd'));
+    throw e;
+  }
 }
 async function importRecipeFromUrlBasic(url){
   let html;
