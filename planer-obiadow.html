@@ -219,6 +219,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
       <button data-tab="plan" class="active">Plan tygodnia</button>
       <button data-tab="breakfast">Śniadania</button>
       <button data-tab="recipes">Przepisy</button>
+      <button data-tab="quick">Szybkie przepisy</button>
       <button data-tab="proposals">Propozycje</button>
       <button data-tab="shopping">Lista zakupów</button>
       <button data-tab="products">Produkty</button>
@@ -263,6 +264,21 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
     <div class="filter-caption">Wg tagu</div>
     <div class="filter-row" id="tagFilterRow"></div>
     <div class="recipe-grid" id="recipeGrid"></div>
+  </section>
+
+  <section id="tab-quick" class="tab-panel">
+    <div class="recipes-toolbar">
+      <input type="text" id="quickSearch" placeholder="Szukaj: tytuł, kategoria, tag, opis...">
+      <div class="sub" style="flex:1 1 100%;min-width:200px;">Proste rzeczy bez przepisu — kanapki, przekąski, szybkie śniadania.</div>
+      <button class="btn btn-primary" id="newQuickBtn">+ Dodaj szybki przepis</button>
+    </div>
+    <div class="filter-caption">Wg kategorii posiłku</div>
+    <div class="filter-row" id="quickMealFilterRow"></div>
+    <div class="filter-caption">Wg kategorii przepisu</div>
+    <div class="filter-row" id="quickCatFilterRow"></div>
+    <div class="filter-caption">Wg tagu</div>
+    <div class="filter-row" id="quickTagFilterRow"></div>
+    <div class="recipe-grid" id="quickGrid"></div>
   </section>
 
   <section id="tab-proposals" class="tab-panel">
@@ -369,7 +385,7 @@ const CATEGORY_KEYWORDS = {
 };
 
 /* ============ STATE ============ */
-let recipes=[], plan={}, shopping=[], products=[], tags=[], proposals=[], breakfastPlan={}, people=[];
+let recipes=[], plan={}, shopping=[], products=[], tags=[], proposals=[], breakfastPlan={}, people=[], quickRecipes=[];
 let mealCategories=[], recipeCategories=[], shoppingCategories=[], units=[];
 let currentWeekStart=getMonday(new Date());
 let bfWeekStart=getMonday(new Date());
@@ -517,7 +533,7 @@ async function remoteLoad(){
 async function remoteSaveNow(){
   if(!storageReady) return;
   const state = {
-    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people,
+    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes,
     mealCategories, recipeCategories, shoppingCategories, units
   };
   try{
@@ -578,7 +594,15 @@ async function loadAll(){
   proposals = data.proposals || [];
   breakfastPlan = data.breakfastPlan || {};
   people = data.people || [];
+  quickRecipes = data.quickRecipes || [];
   // migrations
+  quickRecipes.forEach(q=>{
+    if(!Array.isArray(q.mealCategories)) q.mealCategories=[];
+    if(!Array.isArray(q.categories)) q.categories=[];
+    if(!Array.isArray(q.tags)) q.tags=[];
+    if(q.description===undefined) q.description='';
+    if(q.imageData===undefined) q.imageData='';
+  });
   recipes.forEach(r=>{
     if(!r.mealCategories){ r.mealCategories = r.categories || (r.category ? [r.category] : []); r.categories = []; }
     if(!Array.isArray(r.categories)) r.categories = [];
@@ -597,6 +621,7 @@ async function saveProposals(){ schedulePersist(); }
 async function saveBreakfastPlan(){ schedulePersist(); }
 async function savePeople(){ schedulePersist(); }
 async function saveMealCategories(){ schedulePersist(); }
+async function saveQuickRecipes(){ schedulePersist(); }
 async function saveRecipeCategories(){ schedulePersist(); }
 async function saveShoppingCategories(){ schedulePersist(); }
 
@@ -618,6 +643,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     if(btn.dataset.tab==='tags') renderTagsManage();
     if(btn.dataset.tab==='proposals') renderProposals();
     if(btn.dataset.tab==='breakfast'){ renderBfWeekRange(); renderBfDayGrid(); }
+    if(btn.dataset.tab==='quick'){ renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value); }
   });
 });
 
@@ -648,9 +674,17 @@ function renderRecentBar(){
   bar.innerHTML = top.length ? `Najczęściej planowane: ` + top.map(r=>`<b>${escapeHtml(r.name)}</b>`).join(', ') : '';
 }
 function mealItemHtml(item, dayKey, slotType, extraId){
-  if(item.text!==undefined && item.recipeId===undefined){
+  if(item.text!==undefined && item.recipeId===undefined && item.quickRecipeId===undefined){
     return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}">
       <span class="nm">📝 ${escapeHtml(item.text)}</span>
+      <button class="rm">✕</button>
+    </div>`;
+  }
+  if(item.quickRecipeId!==undefined){
+    const qr = quickRecipes.find(q=>q.id===item.quickRecipeId);
+    const qname = qr ? qr.name : '(usunięty szybki przepis)';
+    return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}">
+      <span class="nm">⚡ ${escapeHtml(qname)}</span>
       <button class="rm">✕</button>
     </div>`;
   }
@@ -776,21 +810,24 @@ function openMealTypeChooser(anchorEl, dayKey){
   setTimeout(()=>document.addEventListener('click', outsideClickClose),0);
 }
 function openRecipePickerModal(opts){
-  const { title='Wybierz przepis', allowFreeText=false, freeTextPlaceholder='albo wpisz tekst...', matchMealLabel=null, onSelectRecipe, onSelectText } = opts;
+  const { title='Wybierz przepis', matchMealLabel=null, defaultSub='recipes', onSelectRecipe, onSelectQuick } = opts;
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.innerHTML=`
     <div class="modal" style="max-width:480px;">
       <h2>${escapeHtml(title)}</h2>
-      ${allowFreeText?`
-      <div class="field">
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="rpm-freetext" placeholder="${escapeHtml(freeTextPlaceholder)}">
-          <button class="btn btn-ghost" id="rpm-freetext-add" style="white-space:nowrap;">Dodaj</button>
-        </div>
+      <div class="filter-row" style="margin-bottom:12px;">
+        <span class="filter-pill${defaultSub==='recipes'?' active':''}" id="rpm-subtab-recipes">Przepisy</span>
+        <span class="filter-pill${defaultSub==='quick'?' active':''}" id="rpm-subtab-quick">Szybkie</span>
       </div>
-      <div style="border-top:1px dashed var(--line);margin:2px 0 14px;"></div>`:''}
-      <div class="field"><input type="text" id="rpm-search" placeholder="Szukaj po nazwie, tagu, kategorii, składniku..."></div>
+      <div class="field" id="rpm-quickadd-wrap" style="display:${defaultSub==='quick'?'block':'none'};">
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="rpm-quickadd" placeholder="Nowa pozycja, np. &quot;kanapka z pasztetem&quot;...">
+          <button class="btn btn-ghost" id="rpm-quickadd-btn" style="white-space:nowrap;">Dodaj</button>
+        </div>
+        <p class="hint" style="margin:6px 0 0;">Zapisze się na liście Szybkich przepisów i od razu zostanie wybrana.</p>
+      </div>
+      <div class="field"><input type="text" id="rpm-search" placeholder="Szukaj po nazwie, tagu, kategorii, opisie..."></div>
       <div class="filter-caption">Kategoria posiłku</div>
       <div class="filter-row" id="rpm-meal-filters"></div>
       <div class="filter-caption">Kategoria przepisu</div>
@@ -805,6 +842,7 @@ function openRecipePickerModal(opts){
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
 
   let activeMeal=null, activeDish=null, activeTag=null;
+  let activeSub=defaultSub;
 
   function renderPillRow(containerId, names, active, onClick){
     const row = overlay.querySelector('#'+containerId);
@@ -819,52 +857,90 @@ function openRecipePickerModal(opts){
 
   function renderList(){
     const q=(overlay.querySelector('#rpm-search').value||'').trim();
-    let list = recipes.filter(r=>{
-      if(activeMeal && !(r.mealCategories||[]).includes(activeMeal)) return false;
-      if(activeDish && !(r.categories||[]).includes(activeDish)) return false;
-      if(activeTag && !(r.tags||[]).includes(activeTag)) return false;
-      if(q && !recipeMatchesQuery(r,q)) return false;
-      return true;
-    });
-    if(matchMealLabel && !q && !activeMeal && !activeDish && !activeTag){
-      list = [...list].sort((a,b)=> ((b.mealCategories||[]).includes(matchMealLabel)?1:0) - ((a.mealCategories||[]).includes(matchMealLabel)?1:0));
-    }
     const listEl = overlay.querySelector('#rpm-list');
-    if(recipes.length===0){ listEl.innerHTML = '<div class="empty-state">Brak przepisów. Dodaj je w zakładce „Przepisy”.</div>'; return; }
-    if(list.length===0){ listEl.innerHTML = '<div class="empty-state">Nic nie znaleziono.</div>'; return; }
-    listEl.innerHTML = list.map(r=>`
-      <div class="rpm-item" data-id="${r.id}">
-        <span>${escapeHtml(r.name)}${r.favorite?' ★':''}</span>
-        <span class="cat">${(r.mealCategories||[]).concat(r.categories||[]).slice(0,2).map(escapeHtml).join(' · ')}</span>
-      </div>
-    `).join('');
-    listEl.querySelectorAll('.rpm-item').forEach(o=>o.addEventListener('click', ()=>{
-      const rec = recipes.find(r=>r.id===o.dataset.id);
-      overlay.remove();
-      onSelectRecipe(rec);
-    }));
+    if(activeSub==='recipes'){
+      let list = recipes.filter(r=>{
+        if(activeMeal && !(r.mealCategories||[]).includes(activeMeal)) return false;
+        if(activeDish && !(r.categories||[]).includes(activeDish)) return false;
+        if(activeTag && !(r.tags||[]).includes(activeTag)) return false;
+        if(q && !recipeMatchesQuery(r,q)) return false;
+        return true;
+      });
+      if(matchMealLabel && !q && !activeMeal && !activeDish && !activeTag){
+        list = [...list].sort((a,b)=> ((b.mealCategories||[]).includes(matchMealLabel)?1:0) - ((a.mealCategories||[]).includes(matchMealLabel)?1:0));
+      }
+      if(recipes.length===0){ listEl.innerHTML = '<div class="empty-state">Brak przepisów. Dodaj je w zakładce „Przepisy”.</div>'; return; }
+      if(list.length===0){ listEl.innerHTML = '<div class="empty-state">Nic nie znaleziono.</div>'; return; }
+      listEl.innerHTML = list.map(r=>`
+        <div class="rpm-item" data-id="${r.id}">
+          <span>${escapeHtml(r.name)}${r.favorite?' ★':''}</span>
+          <span class="cat">${(r.mealCategories||[]).concat(r.categories||[]).slice(0,2).map(escapeHtml).join(' · ')}</span>
+        </div>
+      `).join('');
+      listEl.querySelectorAll('.rpm-item').forEach(o=>o.addEventListener('click', ()=>{
+        const rec = recipes.find(r=>r.id===o.dataset.id);
+        overlay.remove();
+        onSelectRecipe(rec);
+      }));
+    } else {
+      let list = quickRecipes.filter(r=>{
+        if(activeMeal && !(r.mealCategories||[]).includes(activeMeal)) return false;
+        if(activeDish && !(r.categories||[]).includes(activeDish)) return false;
+        if(activeTag && !(r.tags||[]).includes(activeTag)) return false;
+        if(q && !quickRecipeMatchesQuery(r,q)) return false;
+        return true;
+      });
+      if(matchMealLabel && !q && !activeMeal && !activeDish && !activeTag){
+        list = [...list].sort((a,b)=> ((b.mealCategories||[]).includes(matchMealLabel)?1:0) - ((a.mealCategories||[]).includes(matchMealLabel)?1:0));
+      }
+      if(quickRecipes.length===0){ listEl.innerHTML = '<div class="empty-state">Brak szybkich przepisów — dodaj pierwszy powyżej.</div>'; return; }
+      if(list.length===0){ listEl.innerHTML = '<div class="empty-state">Nic nie znaleziono.</div>'; return; }
+      listEl.innerHTML = list.map(r=>`
+        <div class="rpm-item" data-id="${r.id}">
+          <span>${escapeHtml(r.name)}</span>
+          <span class="cat">${(r.mealCategories||[]).concat(r.categories||[]).slice(0,2).map(escapeHtml).join(' · ')}</span>
+        </div>
+      `).join('');
+      listEl.querySelectorAll('.rpm-item').forEach(o=>o.addEventListener('click', ()=>{
+        const q2 = quickRecipes.find(r=>r.id===o.dataset.id);
+        overlay.remove();
+        onSelectQuick(q2);
+      }));
+    }
   }
+  function setSubTab(sub){
+    activeSub = sub;
+    overlay.querySelector('#rpm-subtab-recipes').classList.toggle('active', sub==='recipes');
+    overlay.querySelector('#rpm-subtab-quick').classList.toggle('active', sub==='quick');
+    overlay.querySelector('#rpm-quickadd-wrap').style.display = sub==='quick' ? 'block' : 'none';
+    renderList();
+  }
+  overlay.querySelector('#rpm-subtab-recipes').addEventListener('click', ()=>setSubTab('recipes'));
+  overlay.querySelector('#rpm-subtab-quick').addEventListener('click', ()=>setSubTab('quick'));
   overlay.querySelector('#rpm-search').addEventListener('input', renderList);
   renderMealPills(); renderDishPills(); renderTagPills(); renderList();
 
-  if(allowFreeText){
-    const freeInput = overlay.querySelector('#rpm-freetext');
-    function doFreeText(){
-      const val=freeInput.value.trim();
-      if(!val) return;
-      overlay.remove();
-      onSelectText(val);
-    }
-    overlay.querySelector('#rpm-freetext-add').addEventListener('click', doFreeText);
-    bindEnterSubmit(freeInput, doFreeText);
+  const quickAddInput = overlay.querySelector('#rpm-quickadd');
+  async function doQuickAdd(){
+    const val=quickAddInput.value.trim();
+    if(!val) return;
+    const newQ = {
+      id:uid(), name:val, description:'',
+      mealCategories: matchMealLabel ? [matchMealLabel] : [],
+      categories:[], tags:[], imageData:''
+    };
+    quickRecipes.push(newQ);
+    await saveQuickRecipes();
+    overlay.remove();
+    onSelectQuick(newQ);
   }
+  overlay.querySelector('#rpm-quickadd-btn').addEventListener('click', doQuickAdd);
+  bindEnterSubmit(quickAddInput, doQuickAdd);
 }
 function openRecipePicker(anchorEl, dayKey, slotType, extraId){
   const matchSlot = STANDARD_SLOTS.find(s=>s.key===slotType);
   openRecipePickerModal({
     title: 'Dodaj do planu',
-    allowFreeText: true,
-    freeTextPlaceholder: 'albo wpisz tekst, np. "obiad u babci"',
     matchMealLabel: matchSlot ? matchSlot.label : null,
     onSelectRecipe: async (rec)=>{
       const arr = findItemArray(dayKey, slotType, extraId);
@@ -872,9 +948,9 @@ function openRecipePicker(anchorEl, dayKey, slotType, extraId){
       await savePlan();
       renderDayGrid();
     },
-    onSelectText: async (val)=>{
+    onSelectQuick: async (qr)=>{
       const arr = findItemArray(dayKey, slotType, extraId);
-      if(arr) arr.push({id:uid(), text:val});
+      if(arr) arr.push({id:uid(), quickRecipeId:qr.id});
       await savePlan();
       renderDayGrid();
     }
@@ -993,6 +1069,187 @@ function renderRecipes(filter){
 }
 document.getElementById('recipeSearch').addEventListener('input', e=>renderRecipes(e.target.value));
 document.getElementById('newRecipeBtn').addEventListener('click', ()=>openRecipeModal(null));
+
+/* ============ QUICK RECIPES (szybkie przepisy — bez skladnikow/instrukcji) ============ */
+let activeQuickMealFilter=null, activeQuickCatFilter=null, activeQuickTagFilter=null;
+function renderQuickMealFilterRow(){
+  const row=document.getElementById('quickMealFilterRow');
+  row.innerHTML = `<span class="filter-pill${activeQuickMealFilter===null?' active':''}" data-v="">Wszystkie</span>` +
+    mealCategories.map(c=>`<span class="filter-pill${activeQuickMealFilter===c.name?' active':''}" data-v="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>`).join('');
+  row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click',()=>{
+    activeQuickMealFilter = p.dataset.v==='' ? null : p.dataset.v;
+    renderQuickMealFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value);
+  }));
+}
+function renderQuickCatFilterRow(){
+  const row=document.getElementById('quickCatFilterRow');
+  row.innerHTML = `<span class="filter-pill${activeQuickCatFilter===null?' active':''}" data-v="">Wszystkie</span>` +
+    recipeCategories.map(c=>`<span class="filter-pill${activeQuickCatFilter===c.name?' active':''}" data-v="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>`).join('');
+  row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click',()=>{
+    activeQuickCatFilter = p.dataset.v==='' ? null : p.dataset.v;
+    renderQuickCatFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value);
+  }));
+}
+function renderQuickTagFilterRow(){
+  const row=document.getElementById('quickTagFilterRow');
+  if(tags.length===0){ row.innerHTML='<span class="sub">Brak tagów.</span>'; return; }
+  row.innerHTML = `<span class="filter-pill${activeQuickTagFilter===null?' active':''}" data-v="">Wszystkie</span>` +
+    tags.map(t=>`<span class="filter-pill${activeQuickTagFilter===t?' active':''}" data-v="${escapeHtml(t)}">#${escapeHtml(t)}</span>`).join('');
+  row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click',()=>{
+    activeQuickTagFilter = p.dataset.v==='' ? null : p.dataset.v;
+    renderQuickTagFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value);
+  }));
+}
+function quickRecipeMatchesQuery(q, query){
+  if(!query) return true;
+  query=query.toLowerCase();
+  if(q.name.toLowerCase().includes(query)) return true;
+  if((q.tags||[]).some(t=>t.toLowerCase().includes(query))) return true;
+  if((q.mealCategories||[]).some(c=>c.toLowerCase().includes(query))) return true;
+  if((q.categories||[]).some(c=>c.toLowerCase().includes(query))) return true;
+  if((q.description||'').toLowerCase().includes(query)) return true;
+  return false;
+}
+function renderQuickRecipes(filter){
+  const grid=document.getElementById('quickGrid');
+  let list=quickRecipes.filter(q=>quickRecipeMatchesQuery(q, filter));
+  if(activeQuickMealFilter) list=list.filter(q=>(q.mealCategories||[]).includes(activeQuickMealFilter));
+  if(activeQuickCatFilter) list=list.filter(q=>(q.categories||[]).includes(activeQuickCatFilter));
+  if(activeQuickTagFilter) list=list.filter(q=>(q.tags||[]).includes(activeQuickTagFilter));
+  if(quickRecipes.length===0){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;"><b>Brak szybkich przepisów</b><br>Dodaj pierwszy, np. "Kanapka z pasztetem".</div>`;
+    return;
+  }
+  if(list.length===0){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;">Nic nie znaleziono.</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(q=>`
+    <div class="recipe-card" data-id="${q.id}">
+      ${q.imageData?`<img class="recipe-thumb" src="${q.imageData}" alt="">`:''}
+      <h3>${escapeHtml(q.name)}</h3>
+      <div class="meta">
+        ${(q.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
+        ${(q.categories||[]).map(c=>`<span class="cat-badge2">${escapeHtml(c)}</span>`).join('')}
+        ${(q.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
+      </div>
+      <div class="desc-clamp">${escapeHtml(q.description||'')}</div>
+      <div class="actions">
+        <span class="spacer"></span>
+        <button class="btn-icon edit-q" title="Edytuj">✎</button>
+        <button class="btn-icon del-q" title="Usuń">🗑</button>
+      </div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.edit-q').forEach(b=>b.addEventListener('click', e=>{
+    e.stopPropagation();
+    const id=e.target.closest('.recipe-card').dataset.id;
+    openQuickRecipeModal(quickRecipes.find(q=>q.id===id));
+  }));
+  grid.querySelectorAll('.del-q').forEach(b=>b.addEventListener('click', async e=>{
+    e.stopPropagation();
+    const id=e.target.closest('.recipe-card').dataset.id;
+    if(confirm('Usunąć ten szybki przepis?')){
+      quickRecipes = quickRecipes.filter(q=>q.id!==id);
+      await saveQuickRecipes();
+      renderQuickRecipes(document.getElementById('quickSearch').value);
+    }
+  }));
+  grid.querySelectorAll('.recipe-card').forEach(card=>{
+    card.addEventListener('click', e=>{
+      if(e.target.closest('.actions')) return;
+      openQuickRecipeModal(quickRecipes.find(q=>q.id===card.dataset.id));
+    });
+  });
+}
+document.getElementById('quickSearch').addEventListener('input', e=>renderQuickRecipes(e.target.value));
+document.getElementById('newQuickBtn').addEventListener('click', ()=>openQuickRecipeModal(null));
+
+function openQuickRecipeModal(existing){
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  const isEdit=!!existing;
+  const q = existing || {id:uid(), name:'', description:'', mealCategories:[], categories:[], tags:[], imageData:''};
+  overlay.innerHTML = `
+    <div class="modal">
+      <h2>${isEdit?'Edytuj szybki przepis':'Nowy szybki przepis'}</h2>
+      <div class="field"><label>Tytuł</label><input type="text" id="qm-name" value="${escapeHtml(q.name)}" placeholder="np. Kanapka z pasztetem"></div>
+      <div class="field"><label>Opis</label><textarea id="qm-desc" rows="3" placeholder="np. pasztet, ogórek kiszony, pieczywo razowe">${escapeHtml(q.description||'')}</textarea></div>
+      <div class="field"><label>Kategorie posiłków</label>
+        <div class="chips-input orange" id="qmMealCatsInput"><input type="text" id="qmMealCatInput" placeholder="np. Śniadanie..."></div>
+      </div>
+      <div class="field"><label>Kategorie przepisu</label>
+        <div class="chips-input mustard" id="qmDishCatsInput"><input type="text" id="qmDishCatInput" placeholder="np. Kanapka..."></div>
+      </div>
+      <div class="field"><label>Tagi</label>
+        <div class="chips-input" id="qmTagsInput"><input type="text" id="qmTagInput" placeholder="dodaj tag i Enter..."></div>
+      </div>
+      <div class="field"><label>Zdjęcie</label>
+        <input type="file" id="qm-image-file" accept="image/*">
+        <div class="img-preview-wrap" id="qm-image-preview" style="${q.imageData?'':'display:none;'}">
+          <img id="qm-image-thumb" src="${q.imageData||''}">
+          <button type="button" class="btn btn-ghost" id="qm-image-remove">Usuń zdjęcie</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="qm-cancel">Anuluj</button>
+        <button class="btn btn-primary" id="qm-save">Zapisz</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  let imageData = q.imageData || '';
+  const fileInput = overlay.querySelector('#qm-image-file');
+  const imgPreviewWrap = overlay.querySelector('#qm-image-preview');
+  const imgThumb = overlay.querySelector('#qm-image-thumb');
+  fileInput.addEventListener('change', async ()=>{
+    const file = fileInput.files[0];
+    if(!file) return;
+    try{
+      imageData = await resizeImageFile(file, 900, 0.8);
+      imgThumb.src = imageData;
+      imgPreviewWrap.style.display='flex';
+    }catch(err){ console.error(err); alert('Nie udało się wczytać zdjęcia.'); }
+  });
+  overlay.querySelector('#qm-image-remove').addEventListener('click', ()=>{
+    imageData=''; fileInput.value=''; imgPreviewWrap.style.display='none';
+  });
+
+  const mealCatsAPI = buildChipInputGeneric(
+    overlay.querySelector('#qmMealCatsInput'), overlay.querySelector('#qmMealCatInput'), q.mealCategories||[],
+    ()=> mealCategories.map(c=>c.name),
+    async (val)=>{ mealCategories.push({id:uid(), name:val}); await saveMealCategories(); }
+  );
+  const dishCatsAPI = buildChipInputGeneric(
+    overlay.querySelector('#qmDishCatsInput'), overlay.querySelector('#qmDishCatInput'), q.categories||[],
+    ()=> recipeCategories.map(c=>c.name),
+    async (val)=>{ recipeCategories.push({id:uid(), name:val}); await saveRecipeCategories(); }
+  );
+  const tagsAPI = buildChipInputGeneric(
+    overlay.querySelector('#qmTagsInput'), overlay.querySelector('#qmTagInput'), q.tags||[],
+    ()=> tags,
+    async (val)=>{ tags.push(val); }
+  );
+
+  overlay.querySelector('#qm-cancel').addEventListener('click', ()=>overlay.remove());
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#qm-save').addEventListener('click', async ()=>{
+    const name=overlay.querySelector('#qm-name').value.trim();
+    if(!name){ overlay.querySelector('#qm-name').focus(); return; }
+    const description = overlay.querySelector('#qm-desc').value.trim();
+    const selTags = tagsAPI.get();
+    selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
+    const newQ = {id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, imageData};
+    const idx = quickRecipes.findIndex(x=>x.id===q.id);
+    if(idx>=0) quickRecipes[idx]=newQ; else quickRecipes.push(newQ);
+    await Promise.all([saveQuickRecipes(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
+    renderQuickRecipes(document.getElementById('quickSearch').value);
+    renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow();
+    overlay.remove();
+  });
+  return q;
+}
 
 /* ============ EXPORT ============ */
 function downloadBlob(content, filename, mime){
@@ -1358,6 +1615,57 @@ async function importRecipeFromUrlBasic(url){
   }
   return { name, servings, ingredients, instructions };
 }
+/* generic chip-input builder (used by recipe + quick-recipe modals) */
+function buildChipInputGeneric(wrapEl, inputEl, initial, allOptionsFn, onCreateNew){
+  let selected = [...initial];
+  let suggBox=null;
+  wrapEl.style.position='relative';
+  function renderChips(){
+    wrapEl.querySelectorAll('.chip').forEach(c=>c.remove());
+    selected.forEach(v=>{
+      const chip=document.createElement('span');
+      chip.className='chip';
+      chip.innerHTML=`${escapeHtml(v)} <button type="button">✕</button>`;
+      chip.querySelector('button').addEventListener('click',()=>{ selected=selected.filter(x=>x!==v); renderChips(); });
+      wrapEl.insertBefore(chip, inputEl);
+    });
+  }
+  function closeSugg(){ if(suggBox){ suggBox.remove(); suggBox=null; } }
+  function showSugg(){
+    closeSugg();
+    const val = inputEl.value.toLowerCase();
+    const matches = allOptionsFn().filter(v=>!selected.includes(v) && v.toLowerCase().includes(val));
+    if(matches.length===0) return;
+    suggBox=document.createElement('div');
+    suggBox.className='picker'; suggBox.style.width='100%'; suggBox.style.top=wrapEl.offsetHeight+'px'; suggBox.style.left='0';
+    suggBox.innerHTML = matches.slice(0,10).map(v=>`<div class="opt" data-v="${escapeHtml(v)}">${escapeHtml(v)}</div>`).join('');
+    wrapEl.appendChild(suggBox);
+    suggBox.querySelectorAll('.opt').forEach(o=>o.addEventListener('mousedown', ev=>{
+      ev.preventDefault();
+      selected.push(o.dataset.v); inputEl.value=''; renderChips(); closeSugg();
+    }));
+  }
+  inputEl.addEventListener('input', showSugg);
+  inputEl.addEventListener('focus', showSugg);
+  async function handleChipEnter(){
+    const val=inputEl.value.trim();
+    if(!val) return;
+    const all = allOptionsFn();
+    const exact = all.find(v=>v.toLowerCase()===val.toLowerCase());
+    if(exact){ if(!selected.includes(exact)) selected.push(exact); }
+    else if(onCreateNew){ await onCreateNew(val); if(!selected.includes(val)) selected.push(val); }
+    else { if(!selected.includes(val)) selected.push(val); }
+    inputEl.value=''; renderChips(); closeSugg();
+  }
+  bindEnterSubmit(inputEl, handleChipEnter);
+  inputEl.addEventListener('keydown', e=>{
+    if(e.key==='Backspace' && !inputEl.value && selected.length){
+      selected.pop(); renderChips();
+    }
+  });
+  renderChips();
+  return { get: ()=>selected };
+}
 function openRecipeModal(existing, forceNew){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -1423,69 +1731,17 @@ function openRecipeModal(existing, forceNew){
     imageData=''; fileInput.value=''; imgPreviewWrap.style.display='none';
   });
 
-  /* generic chip-input builder */
-  function buildChipInput(wrapEl, inputEl, initial, allOptionsFn, onCreateNew){
-    let selected = [...initial];
-    let suggBox=null;
-    wrapEl.style.position='relative';
-    function renderChips(){
-      wrapEl.querySelectorAll('.chip').forEach(c=>c.remove());
-      selected.forEach(v=>{
-        const chip=document.createElement('span');
-        chip.className='chip';
-        chip.innerHTML=`${escapeHtml(v)} <button type="button">✕</button>`;
-        chip.querySelector('button').addEventListener('click',()=>{ selected=selected.filter(x=>x!==v); renderChips(); });
-        wrapEl.insertBefore(chip, inputEl);
-      });
-    }
-    function closeSugg(){ if(suggBox){ suggBox.remove(); suggBox=null; } }
-    function showSugg(){
-      closeSugg();
-      const val = inputEl.value.toLowerCase();
-      const matches = allOptionsFn().filter(v=>!selected.includes(v) && v.toLowerCase().includes(val));
-      if(matches.length===0) return;
-      suggBox=document.createElement('div');
-      suggBox.className='picker'; suggBox.style.width='100%'; suggBox.style.top=wrapEl.offsetHeight+'px'; suggBox.style.left='0';
-      suggBox.innerHTML = matches.slice(0,10).map(v=>`<div class="opt" data-v="${escapeHtml(v)}">${escapeHtml(v)}</div>`).join('');
-      wrapEl.appendChild(suggBox);
-      suggBox.querySelectorAll('.opt').forEach(o=>o.addEventListener('mousedown', ev=>{
-        ev.preventDefault();
-        selected.push(o.dataset.v); inputEl.value=''; renderChips(); closeSugg();
-      }));
-    }
-    inputEl.addEventListener('input', showSugg);
-    inputEl.addEventListener('focus', showSugg);
-    async function handleChipEnter(){
-      const val=inputEl.value.trim();
-      if(!val) return;
-      const all = allOptionsFn();
-      const exact = all.find(v=>v.toLowerCase()===val.toLowerCase());
-      if(exact){ if(!selected.includes(exact)) selected.push(exact); }
-      else if(onCreateNew){ await onCreateNew(val); if(!selected.includes(val)) selected.push(val); }
-      else { if(!selected.includes(val)) selected.push(val); }
-      inputEl.value=''; renderChips(); closeSugg();
-    }
-    bindEnterSubmit(inputEl, handleChipEnter);
-    inputEl.addEventListener('keydown', e=>{
-      if(e.key==='Backspace' && !inputEl.value && selected.length){
-        selected.pop(); renderChips();
-      }
-    });
-    renderChips();
-    return { get: ()=>selected };
-  }
-
-  const mealCatsAPI = buildChipInput(
+  const mealCatsAPI = buildChipInputGeneric(
     overlay.querySelector('#mealCatsInput'), overlay.querySelector('#mealCatInput'), rec.mealCategories||[],
     ()=> mealCategories.map(c=>c.name),
     async (val)=>{ mealCategories.push({id:uid(), name:val}); await saveMealCategories(); }
   );
-  const dishCatsAPI = buildChipInput(
+  const dishCatsAPI = buildChipInputGeneric(
     overlay.querySelector('#dishCatsInput'), overlay.querySelector('#dishCatInput'), rec.categories||[],
     ()=> recipeCategories.map(c=>c.name),
     async (val)=>{ recipeCategories.push({id:uid(), name:val}); await saveRecipeCategories(); }
   );
-  const tagsAPI = buildChipInput(
+  const tagsAPI = buildChipInputGeneric(
     overlay.querySelector('#tagsInput'), overlay.querySelector('#tagInput'), rec.tags||[],
     ()=> tags,
     async (val)=>{ tags.push(val); }
@@ -2142,6 +2398,9 @@ function bfEntryHtml(entry, dayKey){
   if(entry.recipeId){
     const rec = recipes.find(r=>r.id===entry.recipeId);
     content = rec ? escapeHtml(rec.name) : '(usunięty przepis)';
+  } else if(entry.quickRecipeId){
+    const qr = quickRecipes.find(q=>q.id===entry.quickRecipeId);
+    content = qr ? ('⚡ '+escapeHtml(qr.name)) : '(usunięty szybki przepis)';
   } else {
     content = escapeHtml(entry.text||'');
   }
@@ -2220,16 +2479,15 @@ function openBfPersonChooser(anchorEl, dayKey){
 function openBfContentPicker(anchorEl, dayKey, person){
   openRecipePickerModal({
     title: `Co na śniadanie — ${person}`,
-    allowFreeText: true,
-    freeTextPlaceholder: 'albo wpisz tekst, np. "kanapka z serem"',
+    defaultSub: 'quick',
     onSelectRecipe: async (rec)=>{
       bfGetDay(dayKey).push({id:uid(), person, recipeId:rec.id});
       if(!people.includes(person)){ people.push(person); await savePeople(); }
       await saveBreakfastPlan();
       renderBfDayGrid();
     },
-    onSelectText: async (val)=>{
-      bfGetDay(dayKey).push({id:uid(), person, text:val});
+    onSelectQuick: async (qr)=>{
+      bfGetDay(dayKey).push({id:uid(), person, quickRecipeId:qr.id});
       if(!people.includes(person)){ people.push(person); await savePeople(); }
       await saveBreakfastPlan();
       renderBfDayGrid();
@@ -2245,7 +2503,7 @@ function exportFullBackup(){
     version: 1,
     app: 'planer-obiadow',
     exportedAt: new Date().toISOString(),
-    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people,
+    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes,
     mealCategories, recipeCategories, shoppingCategories, units
   };
   downloadBlob(JSON.stringify(backup, null, 2), 'planer-obiadow-backup.json', 'application/json;charset=utf-8');
@@ -2267,6 +2525,14 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
     proposals = data.proposals || [];
     breakfastPlan = data.breakfastPlan || {};
     people = data.people || [];
+    quickRecipes = data.quickRecipes || [];
+    quickRecipes.forEach(q=>{
+      if(!Array.isArray(q.mealCategories)) q.mealCategories=[];
+      if(!Array.isArray(q.categories)) q.categories=[];
+      if(!Array.isArray(q.tags)) q.tags=[];
+      if(q.description===undefined) q.description='';
+      if(q.imageData===undefined) q.imageData='';
+    });
     mealCategories = migrateCategoryList(data.mealCategories, DEFAULT_MEAL_CATEGORIES);
     recipeCategories = migrateCategoryList(data.recipeCategories, DEFAULT_DISH_CATEGORIES);
     shoppingCategories = migrateCategoryList(data.shoppingCategories, DEFAULT_SHOPPING_CATEGORIES);
@@ -2280,11 +2546,12 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
     products.forEach(p=>{ if(p.unit===undefined) p.unit=''; });
     await Promise.all([
       saveRecipes(), savePlan(), saveShopping(), saveProducts(), saveTags(), saveProposals(),
-      saveBreakfastPlan(), savePeople(), saveMealCategories(), saveRecipeCategories(), saveShoppingCategories(), saveUnits()
+      saveBreakfastPlan(), savePeople(), saveMealCategories(), saveRecipeCategories(), saveShoppingCategories(), saveUnits(), saveQuickRecipes()
     ]);
     renderWeekRange(); renderDayGrid();
     renderBfWeekRange(); renderBfDayGrid();
     renderMealFilterRow(); renderCatFilterRow(); renderTagFilterRow(); renderRecipes('');
+    renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow(); renderQuickRecipes('');
     renderShopping();
     renderProposals();
     alert('Przywrócono pełny backup.');
@@ -2302,6 +2569,10 @@ async function init(){
   renderCatFilterRow();
   renderTagFilterRow();
   renderRecipes('');
+  renderQuickMealFilterRow();
+  renderQuickCatFilterRow();
+  renderQuickTagFilterRow();
+  renderQuickRecipes('');
   renderShopping();
 }
 init();
