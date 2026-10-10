@@ -108,6 +108,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .cat-badge2{font-size:10px;font-weight:700;background:rgba(232,163,61,.18);color:#8a5a10;padding:2px 8px;border-radius:20px;}
 .tag{font-size:10px;background:rgba(74,103,65,.12);color:var(--green-dark);padding:2px 7px;border-radius:20px;}
 .servings-line{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+.rating-line{font-size:13px;color:var(--ink-soft);margin-bottom:8px;}
 .desc-clamp{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:1em;white-space:pre-line;}
 .recipe-card .actions{display:flex;gap:2px;justify-content:flex-end;align-items:center;border-top:1px dashed var(--line);padding-top:8px;margin-top:4px;}
 .recipe-card .actions .spacer{flex:1;}
@@ -225,6 +226,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
       <button data-tab="products">Produkty</button>
       <button data-tab="categories">Kategorie</button>
       <button data-tab="tags">Tagi</button>
+      <button data-tab="people">Osoby</button>
     </nav>
   </header>
 
@@ -263,6 +265,20 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
     <div class="filter-row" id="catFilterRow"></div>
     <div class="filter-caption">Wg tagu</div>
     <div class="filter-row" id="tagFilterRow"></div>
+    <div class="filter-caption">Wg ocen</div>
+    <div class="filter-row" style="gap:10px;align-items:center;">
+      <select id="recipeRatingSortSel"><option value="">Sortuj: domyślnie</option></select>
+      <span class="sub">Pokaż tylko:</span>
+      <select id="recipeRatingPersonSel"><option value="">— wybierz osobę —</option></select>
+      <select id="recipeRatingMinSel">
+        <option value="0">dowolna ocena</option>
+        <option value="1">co najmniej 1★</option>
+        <option value="2">co najmniej 2★</option>
+        <option value="3">co najmniej 3★</option>
+        <option value="4">co najmniej 4★</option>
+        <option value="5">tylko 5★</option>
+      </select>
+    </div>
     <div class="recipe-grid" id="recipeGrid"></div>
   </section>
 
@@ -278,6 +294,20 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
     <div class="filter-row" id="quickCatFilterRow"></div>
     <div class="filter-caption">Wg tagu</div>
     <div class="filter-row" id="quickTagFilterRow"></div>
+    <div class="filter-caption">Wg ocen</div>
+    <div class="filter-row" style="gap:10px;align-items:center;">
+      <select id="quickRatingSortSel"><option value="">Sortuj: domyślnie</option></select>
+      <span class="sub">Pokaż tylko:</span>
+      <select id="quickRatingPersonSel"><option value="">— wybierz osobę —</option></select>
+      <select id="quickRatingMinSel">
+        <option value="0">dowolna ocena</option>
+        <option value="1">co najmniej 1★</option>
+        <option value="2">co najmniej 2★</option>
+        <option value="3">co najmniej 3★</option>
+        <option value="4">co najmniej 4★</option>
+        <option value="5">tylko 5★</option>
+      </select>
+    </div>
     <div class="recipe-grid" id="quickGrid"></div>
   </section>
 
@@ -356,6 +386,15 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
     </div>
     <div id="tagsManage"></div>
   </section>
+
+  <section id="tab-people" class="tab-panel">
+    <div class="sub" style="margin-bottom:10px;">Osoby używane przy Śniadaniach i ocenianiu przepisów.</div>
+    <div class="add-item-bar">
+      <input type="text" id="newPersonName" placeholder="dodaj osobę...">
+      <button class="btn btn-ghost" id="addPersonBtn">+</button>
+    </div>
+    <div id="peopleManage"></div>
+  </section>
 </div>
 
 <script>
@@ -392,6 +431,8 @@ let bfWeekStart=getMonday(new Date());
 let openPicker=null;
 let mergeMode=false, selectedForMerge=new Set();
 let activeMealFilter=null, activeCatFilter=null, activeTagFilter=null;
+let recipeRatingSort='', recipeRatingFilterPerson='', recipeRatingFilterMin=0;
+let quickRatingSort='', quickRatingFilterPerson='', quickRatingFilterMin=0;
 
 /* ============ HELPERS ============ */
 function uid(){return Math.random().toString(36).slice(2,10);}
@@ -602,12 +643,14 @@ async function loadAll(){
     if(!Array.isArray(q.tags)) q.tags=[];
     if(q.description===undefined) q.description='';
     if(q.imageData===undefined) q.imageData='';
+    if(!Array.isArray(q.ratings)) q.ratings=[];
   });
   recipes.forEach(r=>{
     if(!r.mealCategories){ r.mealCategories = r.categories || (r.category ? [r.category] : []); r.categories = []; }
     if(!Array.isArray(r.categories)) r.categories = [];
     if(r.imageData===undefined) r.imageData = '';
     if(r.sourceUrl===undefined) r.sourceUrl = '';
+    if(!Array.isArray(r.ratings)) r.ratings=[];
   });
   products.forEach(p=>{ if(p.unit===undefined) p.unit=''; });
 }
@@ -620,6 +663,182 @@ async function saveUnits(){ schedulePersist(); }
 async function saveProposals(){ schedulePersist(); }
 async function saveBreakfastPlan(){ schedulePersist(); }
 async function savePeople(){ schedulePersist(); }
+function countPersonUsage(name){
+  let bf=0;
+  Object.values(breakfastPlan).forEach(dayArr=>{ (dayArr||[]).forEach(e=>{ if(e.person===name) bf++; }); });
+  let rt=0;
+  recipes.forEach(r=>{ if((r.ratings||[]).some(x=>x.person===name)) rt++; });
+  quickRecipes.forEach(r=>{ if((r.ratings||[]).some(x=>x.person===name)) rt++; });
+  return {breakfast:bf, ratings:rt};
+}
+async function renamePersonEverywhere(oldName, newName){
+  newName = newName.trim();
+  if(!newName || newName===oldName) return;
+  const idx = people.indexOf(oldName);
+  if(idx>=0) people[idx] = newName; else people.push(newName);
+  Object.values(breakfastPlan).forEach(dayArr=>{
+    (dayArr||[]).forEach(e=>{ if(e.person===oldName) e.person=newName; });
+  });
+  recipes.forEach(r=>{ (r.ratings||[]).forEach(rt=>{ if(rt.person===oldName) rt.person=newName; }); });
+  quickRecipes.forEach(r=>{ (r.ratings||[]).forEach(rt=>{ if(rt.person===oldName) rt.person=newName; }); });
+  await Promise.all([savePeople(), saveBreakfastPlan(), saveRecipes(), saveQuickRecipes()]);
+}
+async function deletePersonEverywhere(name){
+  people = people.filter(p=>p!==name);
+  Object.keys(breakfastPlan).forEach(day=>{
+    breakfastPlan[day] = (breakfastPlan[day]||[]).filter(e=>e.person!==name);
+  });
+  recipes.forEach(r=>{ r.ratings=(r.ratings||[]).filter(x=>x.person!==name); });
+  quickRecipes.forEach(r=>{ r.ratings=(r.ratings||[]).filter(x=>x.person!==name); });
+  await Promise.all([savePeople(), saveBreakfastPlan(), saveRecipes(), saveQuickRecipes()]);
+}
+function renderPeopleManage(){
+  const wrap=document.getElementById('peopleManage');
+  if(!wrap) return;
+  if(people.length===0){ wrap.innerHTML='<div class="sub">Brak osób — dodaj pierwszą powyżej.</div>'; return; }
+  wrap.innerHTML = people.map(name=>`
+    <div class="item-row" data-name="${escapeHtml(name)}">
+      <input type="text" class="person-name-input" value="${escapeHtml(name)}" style="flex:1;min-width:0;">
+      <button class="rm" title="Usuń">✕</button>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('.person-name-input').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const oldName = e.target.closest('.item-row').dataset.name;
+      const newName = e.target.value.trim();
+      if(!newName || newName===oldName){ e.target.value=oldName; return; }
+      if(people.includes(newName)){ alert('Taka osoba już istnieje.'); e.target.value=oldName; return; }
+      await renamePersonEverywhere(oldName, newName);
+      renderPeopleManage();
+      renderBfDayGrid();
+    });
+  });
+  wrap.querySelectorAll('.rm').forEach(b=>b.addEventListener('click', async e=>{
+    const name=e.target.closest('.item-row').dataset.name;
+    const usage = countPersonUsage(name);
+    const parts=[];
+    if(usage.breakfast) parts.push(usage.breakfast+' wpis(ów) w Śniadaniach');
+    if(usage.ratings) parts.push(usage.ratings+' ocenion(ych) przepis(ów)');
+    const warn = parts.length ? ` Zostanie to też usunięte: ${parts.join(', ')}.` : '';
+    if(!confirm(`Usunąć osobę "${name}"?${warn}`)) return;
+    await deletePersonEverywhere(name);
+    renderPeopleManage();
+    renderBfDayGrid();
+  }));
+}
+document.getElementById('addPersonBtn').addEventListener('click', addNewPersonFromManage);
+bindEnterSubmit(document.getElementById('newPersonName'), addNewPersonFromManage);
+async function addNewPersonFromManage(){
+  const inp=document.getElementById('newPersonName');
+  const val=inp.value.trim();
+  if(!val || people.includes(val)) return;
+  people.push(val); inp.value='';
+  await savePeople(); renderPeopleManage();
+}
+/* ============ RATINGS (gwiazdki 1-5 + serduszko, per osoba) ============ */
+function ratingStats(item){
+  const ratings = (item.ratings||[]).filter(r=>r && r.person);
+  const starsList = ratings.filter(r=>r.stars>0).map(r=>r.stars);
+  const avg = starsList.length ? (starsList.reduce((a,b)=>a+b,0)/starsList.length) : null;
+  const hearts = ratings.filter(r=>r.favorite).length;
+  return {avg, hearts, ratings};
+}
+function personRatingOf(item, personName){
+  return (item.ratings||[]).find(r=>r.person===personName) || null;
+}
+function starsStaticHtml(n, size){
+  size = size||14;
+  let h='';
+  for(let i=1;i<=5;i++){
+    h += `<span style="font-size:${size}px;color:${i<=Math.round(n)?'var(--mustard)':'var(--line)'};">${i<=Math.round(n)?'★':'☆'}</span>`;
+  }
+  return h;
+}
+function ratingSummaryHtml(item, size){
+  const {avg, hearts} = ratingStats(item);
+  if(avg===null && hearts===0) return '<span class="sub">Brak ocen.</span>';
+  return `<span style="display:inline-flex;align-items:center;gap:6px;">
+    <span style="color:var(--mustard);">★</span><span>${avg!==null?avg.toFixed(1):'—'}</span>
+    <span style="color:var(--line);">·</span>
+    <span style="color:var(--rust);">❤</span><span>${hearts}</span>
+  </span>`;
+}
+function ratingBreakdownHtml(item){
+  const {ratings} = ratingStats(item);
+  if(ratings.length===0) return '<div class="sub">Nikt jeszcze nie ocenił.</div>';
+  return ratings.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+      <span>${escapeHtml(r.person)}</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span>${starsStaticHtml(r.stars||0, 14)}</span>
+        <span style="color:${r.favorite?'var(--rust)':'var(--line)'};">${r.favorite?'❤':'♡'}</span>
+      </span>
+    </div>
+  `).join('');
+}
+/* Interactive rating editor used inside recipe/quick-recipe edit modals.
+   Returns { get: () => ratings array } */
+function buildRatingEditor(container, initialRatings){
+  let ratings = (initialRatings||[]).map(r=>({...r}));
+  let activePerson = people[0] || null;
+  function findOrCreate(person){
+    let r = ratings.find(x=>x.person===person);
+    if(!r){ r = {person, stars:0, favorite:false}; ratings.push(r); }
+    return r;
+  }
+  function render(){
+    const peopleOptions = people.map(p=>`<button type="button" class="filter-pill ${p===activePerson?'active':''}" data-p="${escapeHtml(p)}">${escapeHtml(p)}</button>`).join('');
+    const current = activePerson ? (ratings.find(x=>x.person===activePerson) || {stars:0, favorite:false}) : {stars:0, favorite:false};
+    container.innerHTML = `
+      <div class="filter-row" id="ratingPeopleRow" style="margin-bottom:10px;">
+        ${peopleOptions}
+      </div>
+      <div class="field" style="display:flex;gap:6px;margin-bottom:12px;">
+        <input type="text" id="ratingNewPerson" placeholder="dodaj nową osobę...">
+        <button type="button" class="btn btn-ghost" id="ratingAddPerson" style="white-space:nowrap;">+ Dodaj</button>
+      </div>
+      ${activePerson ? `
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div id="ratingStars" style="display:flex;gap:4px;">
+          ${[1,2,3,4,5].map(i=>`<span class="rating-star" data-i="${i}" style="font-size:28px;cursor:pointer;color:${i<=current.stars?'var(--mustard)':'var(--line)'};">${i<=current.stars?'★':'☆'}</span>`).join('')}
+        </div>
+        <span id="ratingHeart" style="font-size:26px;cursor:pointer;color:${current.favorite?'var(--rust)':'var(--line)'};">${current.favorite?'❤':'♡'}</span>
+      </div>` : '<div class="sub">Dodaj osobę, aby zacząć oceniać.</div>'}
+    `;
+    container.querySelectorAll('#ratingPeopleRow .filter-pill').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ activePerson = btn.dataset.p; render(); });
+    });
+    const addBtn = container.querySelector('#ratingAddPerson');
+    const addInp = container.querySelector('#ratingNewPerson');
+    async function doAddPerson(){
+      const val = addInp.value.trim();
+      if(!val) return;
+      if(!people.includes(val)){ people.push(val); await savePeople(); }
+      activePerson = val;
+      addInp.value='';
+      render();
+    }
+    addBtn.addEventListener('click', doAddPerson);
+    bindEnterSubmit(addInp, doAddPerson);
+    if(activePerson){
+      container.querySelectorAll('.rating-star').forEach(star=>{
+        star.addEventListener('click', ()=>{
+          const n = parseInt(star.dataset.i,10);
+          const r = findOrCreate(activePerson);
+          r.stars = (r.stars===n) ? 0 : n;
+          render();
+        });
+      });
+      container.querySelector('#ratingHeart').addEventListener('click', ()=>{
+        const r = findOrCreate(activePerson);
+        r.favorite = !r.favorite;
+        render();
+      });
+    }
+  }
+  render();
+  return { get: ()=> ratings.filter(r=>r.stars>0 || r.favorite) };
+}
 async function saveMealCategories(){ schedulePersist(); }
 async function saveQuickRecipes(){ schedulePersist(); }
 async function saveRecipeCategories(){ schedulePersist(); }
@@ -644,6 +863,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     if(btn.dataset.tab==='proposals') renderProposals();
     if(btn.dataset.tab==='breakfast'){ renderBfWeekRange(); renderBfDayGrid(); }
     if(btn.dataset.tab==='quick'){ renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value); }
+    if(btn.dataset.tab==='people'){ renderPeopleManage(); }
   });
 });
 
@@ -873,7 +1093,7 @@ function openRecipePickerModal(opts){
       if(list.length===0){ listEl.innerHTML = '<div class="empty-state">Nic nie znaleziono.</div>'; return; }
       listEl.innerHTML = list.map(r=>`
         <div class="rpm-item" data-id="${r.id}">
-          <span>${escapeHtml(r.name)}${r.favorite?' ★':''}</span>
+          <div><div>${escapeHtml(r.name)}</div><div style="font-size:12px;margin-top:2px;">${ratingSummaryHtml(r,12)}</div></div>
           <span class="cat">${(r.mealCategories||[]).concat(r.categories||[]).slice(0,2).map(escapeHtml).join(' · ')}</span>
         </div>
       `).join('');
@@ -897,7 +1117,7 @@ function openRecipePickerModal(opts){
       if(list.length===0){ listEl.innerHTML = '<div class="empty-state">Nic nie znaleziono.</div>'; return; }
       listEl.innerHTML = list.map(r=>`
         <div class="rpm-item" data-id="${r.id}">
-          <span>${escapeHtml(r.name)}</span>
+          <div><div>${escapeHtml(r.name)}</div><div style="font-size:12px;margin-top:2px;">${ratingSummaryHtml(r,12)}</div></div>
           <span class="cat">${(r.mealCategories||[]).concat(r.categories||[]).slice(0,2).map(escapeHtml).join(' · ')}</span>
         </div>
       `).join('');
@@ -927,7 +1147,7 @@ function openRecipePickerModal(opts){
     const newQ = {
       id:uid(), name:val, description:'',
       mealCategories: matchMealLabel ? [matchMealLabel] : [],
-      categories:[], tags:[], imageData:''
+      categories:[], tags:[], ratings:[], imageData:''
     };
     quickRecipes.push(newQ);
     await saveQuickRecipes();
@@ -978,8 +1198,7 @@ function renderMealFilterRow(){
 function renderCatFilterRow(){
   const row=document.getElementById('catFilterRow');
   row.innerHTML = `<span class="filter-pill${activeCatFilter===null?' active':''}" data-v="">Wszystkie</span>` +
-    recipeCategories.map(c=>`<span class="filter-pill${activeCatFilter===c.name?' active':''}" data-v="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>`).join('') +
-    `<span class="filter-pill${activeCatFilter==='__fav__'?' active':''}" data-v="__fav__">★ Ulubione</span>`;
+    recipeCategories.map(c=>`<span class="filter-pill${activeCatFilter===c.name?' active':''}" data-v="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>`).join('');
   row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click',()=>{
     activeCatFilter = p.dataset.v==='' ? null : p.dataset.v;
     renderCatFilterRow(); renderRecipes(document.getElementById('recipeSearch').value);
@@ -1006,13 +1225,39 @@ function recipeMatchesQuery(r, q){
   if((r.instructions||'').toLowerCase().includes(q)) return true;
   return false;
 }
+function applyRatingSortFilter(list, sortVal, filterPerson, filterMin){
+  if(filterPerson && filterMin){
+    list = list.filter(it=>{
+      const pr = personRatingOf(it, filterPerson);
+      return pr && pr.stars >= filterMin;
+    });
+  }
+  if(sortVal==='avg_desc' || sortVal==='avg_asc'){
+    list = [...list].sort((a,b)=>{
+      const av=ratingStats(a).avg, bv=ratingStats(b).avg;
+      const an = av===null ? -1 : av, bn = bv===null ? -1 : bv;
+      return sortVal==='avg_desc' ? bn-an : an-bn;
+    });
+  } else if(sortVal && sortVal.startsWith('person:')){
+    const person = sortVal.slice(7);
+    list = [...list].sort((a,b)=>{
+      const ar = personRatingOf(a, person), br = personRatingOf(b, person);
+      const an = ar ? ar.stars : -1, bn = br ? br.stars : -1;
+      return bn-an;
+    });
+  }
+  return list;
+}
 function renderRecipes(filter){
   const grid=document.getElementById('recipeGrid');
+  populateRatingSortSelect(document.getElementById('recipeRatingSortSel'), recipeRatingSort);
+  populateRatingPersonSelect(document.getElementById('recipeRatingPersonSel'), recipeRatingFilterPerson);
+  document.getElementById('recipeRatingMinSel').value = String(recipeRatingFilterMin||0);
   let list=recipes.filter(r=>recipeMatchesQuery(r, filter));
   if(activeMealFilter) list=list.filter(r=>(r.mealCategories||[]).includes(activeMealFilter));
-  if(activeCatFilter==='__fav__') list=list.filter(r=>r.favorite);
-  else if(activeCatFilter) list=list.filter(r=>(r.categories||[]).includes(activeCatFilter));
+  if(activeCatFilter) list=list.filter(r=>(r.categories||[]).includes(activeCatFilter));
   if(activeTagFilter) list=list.filter(r=>(r.tags||[]).includes(activeTagFilter));
+  list = applyRatingSortFilter(list, recipeRatingSort, recipeRatingFilterPerson, recipeRatingFilterMin);
   if(recipes.length===0){
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;"><b>Brak przepisów</b><br>Dodaj pierwszy przepis, aby móc planować z niego posiłki.</div>`;
     return;
@@ -1031,9 +1276,9 @@ function renderRecipes(filter){
         ${(r.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
       </div>
       <div class="servings-line">Porcje: ${r.baseServings||4}</div>
+      <div class="rating-line">${ratingSummaryHtml(r)}</div>
       <div class="desc-clamp">${escapeHtml(r.instructions||'')}</div>
       <div class="actions">
-        <button class="btn-star ${r.favorite?'on':''}" title="Ulubione">★</button>
         <span class="spacer"></span>
         <button class="btn-icon edit-r" title="Edytuj">✎</button>
         <button class="btn-icon del-r" title="Usuń">🗑</button>
@@ -1046,12 +1291,6 @@ function renderRecipes(filter){
       openRecipePreview(recipes.find(r=>r.id===card.dataset.id));
     });
   });
-  grid.querySelectorAll('.btn-star').forEach(b=>b.addEventListener('click', async e=>{
-    e.stopPropagation();
-    const id=e.target.closest('.recipe-card').dataset.id;
-    const rec=recipes.find(r=>r.id===id); rec.favorite=!rec.favorite;
-    await saveRecipes(); renderRecipes(document.getElementById('recipeSearch').value);
-  }));
   grid.querySelectorAll('.edit-r').forEach(b=>b.addEventListener('click', e=>{
     e.stopPropagation();
     const id=e.target.closest('.recipe-card').dataset.id;
@@ -1069,6 +1308,21 @@ function renderRecipes(filter){
 }
 document.getElementById('recipeSearch').addEventListener('input', e=>renderRecipes(e.target.value));
 document.getElementById('newRecipeBtn').addEventListener('click', ()=>openRecipeModal(null));
+function populateRatingSortSelect(sel, keep){
+  const opts = ['<option value="">Sortuj: domyślnie</option>',
+    '<option value="avg_desc">Sortuj: średnia ocena ↓</option>',
+    '<option value="avg_asc">Sortuj: średnia ocena ↑</option>']
+    .concat(people.map(p=>`<option value="person:${escapeHtml(p)}">Sortuj: ocena — ${escapeHtml(p)}</option>`));
+  sel.innerHTML = opts.join('');
+  sel.value = keep || '';
+}
+function populateRatingPersonSelect(sel, keep){
+  sel.innerHTML = '<option value="">— wybierz osobę —</option>' + people.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+  sel.value = keep || '';
+}
+document.getElementById('recipeRatingSortSel').addEventListener('change', e=>{ recipeRatingSort=e.target.value; renderRecipes(document.getElementById('recipeSearch').value); });
+document.getElementById('recipeRatingPersonSel').addEventListener('change', e=>{ recipeRatingFilterPerson=e.target.value; renderRecipes(document.getElementById('recipeSearch').value); });
+document.getElementById('recipeRatingMinSel').addEventListener('change', e=>{ recipeRatingFilterMin=parseInt(e.target.value,10)||0; renderRecipes(document.getElementById('recipeSearch').value); });
 
 /* ============ QUICK RECIPES (szybkie przepisy — bez skladnikow/instrukcji) ============ */
 let activeQuickMealFilter=null, activeQuickCatFilter=null, activeQuickTagFilter=null;
@@ -1112,10 +1366,14 @@ function quickRecipeMatchesQuery(q, query){
 }
 function renderQuickRecipes(filter){
   const grid=document.getElementById('quickGrid');
+  populateRatingSortSelect(document.getElementById('quickRatingSortSel'), quickRatingSort);
+  populateRatingPersonSelect(document.getElementById('quickRatingPersonSel'), quickRatingFilterPerson);
+  document.getElementById('quickRatingMinSel').value = String(quickRatingFilterMin||0);
   let list=quickRecipes.filter(q=>quickRecipeMatchesQuery(q, filter));
   if(activeQuickMealFilter) list=list.filter(q=>(q.mealCategories||[]).includes(activeQuickMealFilter));
   if(activeQuickCatFilter) list=list.filter(q=>(q.categories||[]).includes(activeQuickCatFilter));
   if(activeQuickTagFilter) list=list.filter(q=>(q.tags||[]).includes(activeQuickTagFilter));
+  list = applyRatingSortFilter(list, quickRatingSort, quickRatingFilterPerson, quickRatingFilterMin);
   if(quickRecipes.length===0){
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1;"><b>Brak szybkich przepisów</b><br>Dodaj pierwszy, np. "Kanapka z pasztetem".</div>`;
     return;
@@ -1133,6 +1391,7 @@ function renderQuickRecipes(filter){
         ${(q.categories||[]).map(c=>`<span class="cat-badge2">${escapeHtml(c)}</span>`).join('')}
         ${(q.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
       </div>
+      <div class="rating-line">${ratingSummaryHtml(q)}</div>
       <div class="desc-clamp">${escapeHtml(q.description||'')}</div>
       <div class="actions">
         <span class="spacer"></span>
@@ -1158,18 +1417,57 @@ function renderQuickRecipes(filter){
   grid.querySelectorAll('.recipe-card').forEach(card=>{
     card.addEventListener('click', e=>{
       if(e.target.closest('.actions')) return;
-      openQuickRecipeModal(quickRecipes.find(q=>q.id===card.dataset.id));
+      openQuickRecipePreview(quickRecipes.find(q=>q.id===card.dataset.id));
     });
+  });
+}
+function openQuickRecipePreview(q){
+  if(!q) return;
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.innerHTML=`
+    <div class="modal">
+      ${q.imageData?`<img class="preview-hero" src="${q.imageData}" alt="">`:''}
+      <h2>${escapeHtml(q.name)}</h2>
+      <div class="meta" style="margin-bottom:8px;">
+        ${(q.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
+        ${(q.categories||[]).map(c=>`<span class="cat-badge2">${escapeHtml(c)}</span>`).join('')}
+        ${(q.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
+      </div>
+      ${q.description?`<p>${escapeHtml(q.description)}</p>`:''}
+      <h3 class="section">Oceny</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        ${ratingSummaryHtml(q)}
+        <button class="btn btn-ghost" id="qpv-toggle-ratings" style="font-size:12.5px;">Pokaż oceny</button>
+      </div>
+      <div id="qpv-ratings-breakdown" style="display:none;margin-top:8px;">${ratingBreakdownHtml(q)}</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="qpv-close">Zamknij</button>
+        <button class="btn btn-primary" id="qpv-edit">Edytuj</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#qpv-close').addEventListener('click', ()=>overlay.remove());
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#qpv-edit').addEventListener('click', ()=>{ overlay.remove(); openQuickRecipeModal(q); });
+  overlay.querySelector('#qpv-toggle-ratings').addEventListener('click', e=>{
+    const box=overlay.querySelector('#qpv-ratings-breakdown');
+    const show = box.style.display==='none';
+    box.style.display = show?'block':'none';
+    e.target.textContent = show?'Ukryj oceny':'Pokaż oceny';
   });
 }
 document.getElementById('quickSearch').addEventListener('input', e=>renderQuickRecipes(e.target.value));
 document.getElementById('newQuickBtn').addEventListener('click', ()=>openQuickRecipeModal(null));
+document.getElementById('quickRatingSortSel').addEventListener('change', e=>{ quickRatingSort=e.target.value; renderQuickRecipes(document.getElementById('quickSearch').value); });
+document.getElementById('quickRatingPersonSel').addEventListener('change', e=>{ quickRatingFilterPerson=e.target.value; renderQuickRecipes(document.getElementById('quickSearch').value); });
+document.getElementById('quickRatingMinSel').addEventListener('change', e=>{ quickRatingFilterMin=parseInt(e.target.value,10)||0; renderQuickRecipes(document.getElementById('quickSearch').value); });
 
 function openQuickRecipeModal(existing){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   const isEdit=!!existing;
-  const q = existing || {id:uid(), name:'', description:'', mealCategories:[], categories:[], tags:[], imageData:''};
+  const q = existing || {id:uid(), name:'', description:'', mealCategories:[], categories:[], tags:[], ratings:[], imageData:''};
   overlay.innerHTML = `
     <div class="modal">
       <h2>${isEdit?'Edytuj szybki przepis':'Nowy szybki przepis'}</h2>
@@ -1191,6 +1489,7 @@ function openQuickRecipeModal(existing){
           <button type="button" class="btn btn-ghost" id="qm-image-remove">Usuń zdjęcie</button>
         </div>
       </div>
+      <div class="field"><label>Oceny</label><div id="qm-ratings"></div></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="qm-cancel">Anuluj</button>
         <button class="btn btn-primary" id="qm-save">Zapisz</button>
@@ -1231,6 +1530,7 @@ function openQuickRecipeModal(existing){
     ()=> tags,
     async (val)=>{ tags.push(val); }
   );
+  const qRatingsAPI = buildRatingEditor(overlay.querySelector('#qm-ratings'), q.ratings||[]);
 
   overlay.querySelector('#qm-cancel').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
@@ -1240,7 +1540,7 @@ function openQuickRecipeModal(existing){
     const description = overlay.querySelector('#qm-desc').value.trim();
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newQ = {id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, imageData};
+    const newQ = {id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, ratings:qRatingsAPI.get(), imageData};
     const idx = quickRecipes.findIndex(x=>x.id===q.id);
     if(idx>=0) quickRecipes[idx]=newQ; else quickRecipes.push(newQ);
     await Promise.all([saveQuickRecipes(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -1381,7 +1681,8 @@ async function handleImportedRecipes(importedList){
     recipes.push({
       id: uid(), name: r.name.trim(), mealCategories: mCats, categories: dCats, tags: rTags,
       baseServings: r.baseServings||4, ingredients: ings, instructions: r.instructions||'',
-      favorite: !!r.favorite, imageData: r.imageData||'', sourceUrl: r.sourceUrl||''
+      ratings: Array.isArray(r.ratings) ? r.ratings.filter(x=>x && x.person).map(x=>({person:String(x.person), stars:Math.max(0,Math.min(5,parseInt(x.stars)||0)), favorite:!!x.favorite})) : [],
+      imageData: r.imageData||'', sourceUrl: r.sourceUrl||''
     });
     added++;
   });
@@ -1480,7 +1781,7 @@ document.getElementById('importLinkBtn').addEventListener('click', ()=>{
         baseServings: parseInt(parsed.baseServings)||4,
         ingredients: Array.isArray(parsed.ingredients) && parsed.ingredients.length ? parsed.ingredients.map(i=>({name:i.name||'', qty:i.qty!=null?String(i.qty):'', unit:i.unit||''})) : [{name:'',qty:'',unit:''}],
         instructions: parsed.instructions || '',
-        favorite:false, imageData:'', sourceUrl: url
+        ratings:[], imageData:'', sourceUrl: url
       };
       openRecipeModal(draft, true);
     }catch(err){
@@ -1512,6 +1813,12 @@ function openRecipePreview(rec){
       <h3 class="section">Składniki</h3>
       <ul class="preview-ing-list">${rec.ingredients.map(i=>`<li>${escapeHtml(i.name)}${i.qty?` — ${i.qty}${i.unit?' '+escapeHtml(i.unit):''}`:''}</li>`).join('')}</ul>
       ${rec.instructions?`<h3 class="section">Instrukcje</h3><div class="preview-instr">${nl2br(rec.instructions)}</div>`:''}
+      <h3 class="section">Oceny</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        ${ratingSummaryHtml(rec)}
+        <button class="btn btn-ghost" id="pv-toggle-ratings" style="font-size:12.5px;">Pokaż oceny</button>
+      </div>
+      <div id="pv-ratings-breakdown" style="display:none;margin-top:8px;">${ratingBreakdownHtml(rec)}</div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="pv-close">Zamknij</button>
         <button class="btn btn-primary" id="pv-edit">Edytuj</button>
@@ -1521,6 +1828,12 @@ function openRecipePreview(rec){
   overlay.querySelector('#pv-close').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#pv-edit').addEventListener('click', ()=>{ overlay.remove(); openRecipeModal(rec); });
+  overlay.querySelector('#pv-toggle-ratings').addEventListener('click', e=>{
+    const box=overlay.querySelector('#pv-ratings-breakdown');
+    const show = box.style.display==='none';
+    box.style.display = show?'block':'none';
+    e.target.textContent = show?'Ukryj oceny':'Pokaż oceny';
+  });
 }
 
 /* ============ RECIPE MODAL (edit/create) ============ */
@@ -1670,7 +1983,7 @@ function openRecipeModal(existing, forceNew){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   const isEdit=!!existing && !forceNew;
-  const rec = existing || {id:uid(), name:'', mealCategories:[], categories:[], tags:[], baseServings:4, ingredients:[{name:'',qty:'',unit:''}], instructions:'', favorite:false, imageData:'', sourceUrl:''};
+  const rec = existing || {id:uid(), name:'', mealCategories:[], categories:[], tags:[], baseServings:4, ingredients:[{name:'',qty:'',unit:''}], instructions:'', ratings:[], imageData:'', sourceUrl:''};
   overlay.innerHTML = `
     <div class="modal">
       <h2>${isEdit?'Edytuj przepis':'Nowy przepis'}</h2>
@@ -1705,6 +2018,7 @@ function openRecipeModal(existing, forceNew){
         <button class="add-ing" id="addIng">+ Dodaj składnik</button>
       </div>
       <div class="field"><label>Instrukcje</label><textarea id="m-instr" rows="4" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
+      <div class="field"><label>Oceny</label><div id="m-ratings"></div></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="m-cancel">Anuluj</button>
         <button class="btn btn-primary" id="m-save">Zapisz</button>
@@ -1746,6 +2060,7 @@ function openRecipeModal(existing, forceNew){
     ()=> tags,
     async (val)=>{ tags.push(val); }
   );
+  const ratingsAPI = buildRatingEditor(overlay.querySelector('#m-ratings'), rec.ratings||[]);
 
   /* ingredients with autocomplete + unit autofill + enter-to-add */
   let ings = rec.ingredients.map(i=>({...i}));
@@ -1846,7 +2161,7 @@ function openRecipeModal(existing, forceNew){
     cleanIngs.forEach(i=> ensureProduct(i.name, i.unit));
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newRec = {id:rec.id, name, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, favorite:rec.favorite||false, imageData, sourceUrl};
+    const newRec = {id:rec.id, name, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl};
     const idx = recipes.findIndex(r=>r.id===rec.id);
     if(idx>=0) recipes[idx]=newRec; else recipes.push(newRec);
     await Promise.all([saveRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -2372,7 +2687,7 @@ document.getElementById('proposalsGrid').addEventListener('click', async e=>{
     if(!p) return;
     const draft = {
       id: uid(), name:'', mealCategories:[], categories:[], tags:[], baseServings:4,
-      ingredients:[{name:'',qty:'',unit:''}], instructions: p.text||'', favorite:false,
+      ingredients:[{name:'',qty:'',unit:''}], instructions: p.text||'', ratings:[],
       imageData: p.imageData||'', sourceUrl: p.link||''
     };
     openRecipeModal(draft, true);
@@ -2532,6 +2847,7 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
       if(!Array.isArray(q.tags)) q.tags=[];
       if(q.description===undefined) q.description='';
       if(q.imageData===undefined) q.imageData='';
+      if(!Array.isArray(q.ratings)) q.ratings=[];
     });
     mealCategories = migrateCategoryList(data.mealCategories, DEFAULT_MEAL_CATEGORIES);
     recipeCategories = migrateCategoryList(data.recipeCategories, DEFAULT_DISH_CATEGORIES);
@@ -2542,6 +2858,7 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
       if(!Array.isArray(r.categories)) r.categories = [];
       if(r.imageData===undefined) r.imageData = '';
       if(r.sourceUrl===undefined) r.sourceUrl = '';
+      if(!Array.isArray(r.ratings)) r.ratings=[];
     });
     products.forEach(p=>{ if(p.unit===undefined) p.unit=''; });
     await Promise.all([
