@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4A6741">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Planer obiadów</title>
 <meta name="robots" content="noindex, nofollow, noarchive">
 <style>
@@ -70,6 +74,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .slot-label .rm-slot{font-size:12px;color:var(--ink-soft);background:none;border:none;cursor:pointer;}
 .meal-chip{display:flex;align-items:center;gap:6px;background:#F2EEE2;border-radius:7px;padding:5px 8px;margin-bottom:5px;font-size:12.5px;}
 .meal-chip .nm{flex:1;}
+.meal-chip .nm.open-prev{cursor:pointer;}
 .meal-chip .servings{width:34px;padding:2px 4px;font-size:11.5px;text-align:center;}
 .meal-chip .rm{cursor:pointer;color:var(--ink-soft);font-size:12px;border:none;background:none;}
 .meal-chip .rm:hover{color:var(--rust);}
@@ -650,6 +655,7 @@ async function loadAll(){
     if(!Array.isArray(r.categories)) r.categories = [];
     if(r.imageData===undefined) r.imageData = '';
     if(r.sourceUrl===undefined) r.sourceUrl = '';
+    if(!Array.isArray(r.links)) r.links = r.sourceUrl ? [{url:r.sourceUrl,label:''}] : [];
     if(!Array.isArray(r.ratings)) r.ratings=[];
   });
   products.forEach(p=>{ if(p.unit===undefined) p.unit=''; });
@@ -903,18 +909,33 @@ function mealItemHtml(item, dayKey, slotType, extraId){
   if(item.quickRecipeId!==undefined){
     const qr = quickRecipes.find(q=>q.id===item.quickRecipeId);
     const qname = qr ? qr.name : '(usunięty szybki przepis)';
-    return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}">
-      <span class="nm">⚡ ${escapeHtml(qname)}</span>
+    return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-qid="${item.quickRecipeId}">
+      <span class="nm open-prev">⚡ ${escapeHtml(qname)}</span>
       <button class="rm">✕</button>
     </div>`;
   }
   const rec = recipes.find(r=>r.id===item.recipeId);
   const name = rec ? rec.name : '(usunięty przepis)';
-  return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}">
-    <span class="nm">${escapeHtml(name)}</span>
+  return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-rid="${item.recipeId}">
+    <span class="nm open-prev">${escapeHtml(name)}</span>
     <input type="number" min="1" class="servings" value="${item.servings}" title="liczba porcji">
     <button class="rm">✕</button>
   </div>`;
+}
+function wirePreviewClicks(root){
+  root.querySelectorAll('.open-prev').forEach(el=>el.addEventListener('click', ()=>{
+    const chip=el.closest('.meal-chip');
+    if(chip.dataset.rid){ const r=recipes.find(x=>x.id===chip.dataset.rid); if(r) openRecipePreview(r); }
+    else if(chip.dataset.qid){ const q=quickRecipes.find(x=>x.id===chip.dataset.qid); if(q) openQuickRecipePreview(q); }
+  }));
+}
+function recipeLinks(r){
+  const arr = Array.isArray(r.links) && r.links.length ? r.links : (r.sourceUrl ? [{url:r.sourceUrl,label:''}] : []);
+  return arr.filter(l=>l && l.url);
+}
+function linkLabel(l){
+  if(l.label) return l.label;
+  try{ return new URL(l.url).hostname.replace(/^www\./,''); }catch(e){ return l.url; }
 }
 function renderDayGrid(){
   const grid=document.getElementById('dayGrid');
@@ -949,6 +970,7 @@ function renderDayGrid(){
     `;
     grid.appendChild(card);
   }
+  wirePreviewClicks(grid);
   grid.querySelectorAll('.rm').forEach(b=>b.addEventListener('click', onRemoveMeal));
   grid.querySelectorAll('.servings').forEach(inp=>inp.addEventListener('change', onServingsChange));
   grid.querySelectorAll('.add-meal-main').forEach(b=>b.addEventListener('click', e=>openMealTypeChooser(b, b.dataset.day)));
@@ -1570,7 +1592,7 @@ function exportRecipesTxt(){
     if((r.categories||[]).length) content += 'Kategorie przepisu: '+r.categories.join(', ')+'\n';
     if((r.tags||[]).length) content += 'Tagi: '+r.tags.map(t=>'#'+t).join(', ')+'\n';
     content += 'Porcje bazowe: '+(r.baseServings||4)+'\n';
-    if(r.sourceUrl) content += 'Źródło: '+r.sourceUrl+'\n';
+    recipeLinks(r).forEach(l=>{ content += 'Źródło: '+l.url+(l.label?' ('+l.label+')':'')+'\n'; });
     content += '\nSkładniki:\n';
     (r.ingredients||[]).forEach(i=>{ content += '- '+i.name+(i.qty?` — ${i.qty}${i.unit?' '+i.unit:''}`:'')+'\n'; });
     if(r.instructions){ content += '\nInstrukcje:\n'+r.instructions+'\n'; }
@@ -1591,7 +1613,7 @@ function exportRecipesXlsx(){
     'Porcje bazowe': r.baseServings||4,
     'Składniki': (r.ingredients||[]).map(i=>`${i.name}${i.qty?` ${i.qty}${i.unit?' '+i.unit:''}`:''}`).join('; '),
     'Instrukcje': r.instructions||'',
-    'Źródło': r.sourceUrl||''
+    'Źródło': recipeLinks(r).map(l=>l.url+(l.label?' ('+l.label+')':'')).join(' | ')
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = [{wch:22},{wch:18},{wch:18},{wch:16},{wch:10},{wch:50},{wch:50},{wch:24}];
@@ -1607,7 +1629,7 @@ function exportRecipesPdf(){
     const cats = [...(r.mealCategories||[]), ...(r.categories||[])];
     html += `<div class="print-recipe">
       <h2>${escapeHtml(r.name)}</h2>
-      <div class="print-meta">${cats.map(escapeHtml).join(' · ')}${cats.length?' · ':''}Porcje: ${r.baseServings||4}${r.sourceUrl?' · '+escapeHtml(r.sourceUrl):''}</div>
+      <div class="print-meta">${cats.map(escapeHtml).join(' · ')}${cats.length?' · ':''}Porcje: ${r.baseServings||4}${recipeLinks(r).map(l=>' · '+escapeHtml(l.url)).join('')}</div>
       <div><b>Składniki:</b> ${(r.ingredients||[]).map(i=>escapeHtml(i.name)+(i.qty?` (${i.qty}${i.unit?' '+escapeHtml(i.unit):''})`:'')).join(', ')}</div>
       ${r.instructions?`<div class="print-instr"><b>Instrukcje:</b><br>${nl2br(r.instructions)}</div>`:''}
     </div>`;
@@ -1663,7 +1685,8 @@ function importFromXlsxWorkbook(wb){
     baseServings: parseInt(row['Porcje bazowe'])||4,
     ingredients: (row['Składniki']||'').split(';').map(s=>s.trim()).filter(Boolean).map(parseIngredientStr),
     instructions: row['Instrukcje']||'',
-    sourceUrl: row['Źródło']||''
+    links: String(row['Źródło']||'').split('|').map(x=>x.trim()).filter(Boolean).map(x=>{ const m=x.match(/^(\S+)\s*(?:\((.*)\))?$/); return m?{url:m[1],label:(m[2]||'').trim()}:{url:x,label:''}; }),
+    sourceUrl: String(row['Źródło']||'').split('|')[0].trim().split(' ')[0]
   }));
 }
 async function handleImportedRecipes(importedList){
@@ -1682,7 +1705,8 @@ async function handleImportedRecipes(importedList){
       id: uid(), name: r.name.trim(), mealCategories: mCats, categories: dCats, tags: rTags,
       baseServings: r.baseServings||4, ingredients: ings, instructions: r.instructions||'',
       ratings: Array.isArray(r.ratings) ? r.ratings.filter(x=>x && x.person).map(x=>({person:String(x.person), stars:Math.max(0,Math.min(5,parseInt(x.stars)||0)), favorite:!!x.favorite})) : [],
-      imageData: r.imageData||'', sourceUrl: r.sourceUrl||''
+      imageData: r.imageData||'', sourceUrl: r.sourceUrl||'',
+      links: Array.isArray(r.links) ? r.links.filter(l=>l&&l.url).map(l=>({url:String(l.url),label:String(l.label||'')})) : (r.sourceUrl?[{url:r.sourceUrl,label:''}]:[])
     });
     added++;
   });
@@ -1781,7 +1805,7 @@ document.getElementById('importLinkBtn').addEventListener('click', ()=>{
         baseServings: parseInt(parsed.baseServings)||4,
         ingredients: Array.isArray(parsed.ingredients) && parsed.ingredients.length ? parsed.ingredients.map(i=>({name:i.name||'', qty:i.qty!=null?String(i.qty):'', unit:i.unit||''})) : [{name:'',qty:'',unit:''}],
         instructions: parsed.instructions || '',
-        ratings:[], imageData:'', sourceUrl: url
+        ratings:[], imageData:'', sourceUrl: url, links:[{url:url,label:''}]
       };
       openRecipeModal(draft, true);
     }catch(err){
@@ -1809,7 +1833,7 @@ function openRecipePreview(rec){
         ${(rec.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
       </div>
       <div class="sub" style="margin-bottom:6px;">Porcje bazowe: ${rec.baseServings||4}</div>
-      ${rec.sourceUrl?`<a class="recipe-link" style="font-size:12.5px;color:var(--green-dark);" href="${escapeHtml(rec.sourceUrl)}" target="_blank" rel="noopener">🔗 Źródło przepisu</a>`:''}
+      ${recipeLinks(rec).map(l=>`<a class="recipe-link" style="display:block;font-size:12.5px;color:var(--green-dark);margin-top:3px;" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(linkLabel(l))}</a>`).join('')}
       <h3 class="section">Składniki</h3>
       <ul class="preview-ing-list">${rec.ingredients.map(i=>`<li>${escapeHtml(i.name)}${i.qty?` — ${i.qty}${i.unit?' '+escapeHtml(i.unit):''}`:''}</li>`).join('')}</ul>
       ${rec.instructions?`<h3 class="section">Instrukcje</h3><div class="preview-instr">${nl2br(rec.instructions)}</div>`:''}
@@ -1983,7 +2007,7 @@ function openRecipeModal(existing, forceNew){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   const isEdit=!!existing && !forceNew;
-  const rec = existing || {id:uid(), name:'', mealCategories:[], categories:[], tags:[], baseServings:4, ingredients:[{name:'',qty:'',unit:''}], instructions:'', ratings:[], imageData:'', sourceUrl:''};
+  const rec = existing || {id:uid(), name:'', mealCategories:[], categories:[], tags:[], baseServings:4, ingredients:[{name:'',qty:'',unit:''}], instructions:'', ratings:[], imageData:'', sourceUrl:'', links:[]};
   overlay.innerHTML = `
     <div class="modal">
       <h2>${isEdit?'Edytuj przepis':'Nowy przepis'}</h2>
@@ -2005,11 +2029,9 @@ function openRecipeModal(existing, forceNew){
           <button type="button" class="btn btn-ghost" id="m-image-remove">Usuń zdjęcie</button>
         </div>
       </div>
-      <div class="field"><label>Link do przepisu (źródło)</label>
-        <div style="display:flex;gap:8px;">
-          <input type="url" id="m-source" value="${escapeHtml(rec.sourceUrl)}" placeholder="https://..." style="flex:1;">
-          <button type="button" class="btn btn-ghost" id="m-import-btn" style="white-space:nowrap;">⬇ Zaimportuj</button>
-        </div>
+      <div class="field"><label>Linki do przepisu (źródła)</label>
+        <div id="m-links"></div>
+        <button type="button" class="btn btn-ghost" id="m-add-link" style="font-size:12.5px;">+ Dodaj link</button>
         <p class="hint" id="m-import-status" style="margin:6px 0 0;"></p>
       </div>
       <div class="field">
@@ -2017,7 +2039,7 @@ function openRecipeModal(existing, forceNew){
         <div id="ingList"></div>
         <button class="add-ing" id="addIng">+ Dodaj składnik</button>
       </div>
-      <div class="field"><label>Instrukcje</label><textarea id="m-instr" rows="4" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
+      <div class="field"><label>Instrukcje</label><textarea id="m-instr" rows="1" style="overflow-y:auto;resize:none;" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
       <div class="field"><label>Oceny</label><div id="m-ratings"></div></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="m-cancel">Anuluj</button>
@@ -2124,11 +2146,37 @@ function openRecipeModal(existing, forceNew){
   renderIngs();
   overlay.querySelector('#addIng').addEventListener('click', ()=>{ ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); });
 
-  overlay.querySelector('#m-import-btn').addEventListener('click', async ()=>{
-    const url = overlay.querySelector('#m-source').value.trim();
+  let links = recipeLinks(rec).map(l=>({url:l.url,label:l.label||''}));
+  if(!links.length) links=[{url:'',label:''}];
+  function renderLinks(){
+    const box=overlay.querySelector('#m-links');
+    box.innerHTML = links.map((l,i)=>`
+      <div class="link-row" data-i="${i}" style="margin-bottom:8px;">
+        <div style="display:flex;gap:8px;">
+          <input type="url" class="lk-url" value="${escapeHtml(l.url)}" placeholder="https://..." style="flex:1;min-width:0;">
+          <button type="button" class="btn btn-ghost lk-imp" style="white-space:nowrap;">⬇ Zaimportuj</button>
+          ${links.length>1?'<button type="button" class="btn btn-ghost lk-rm" title="Usuń link">✕</button>':''}
+        </div>
+        <input type="text" class="lk-label" value="${escapeHtml(l.label)}" placeholder="Podpis (opcjonalnie), np. wersja babci" style="margin-top:4px;font-size:13px;">
+      </div>`).join('');
+    box.querySelectorAll('.link-row').forEach(row=>{
+      const i=+row.dataset.i;
+      row.querySelector('.lk-url').addEventListener('input', e=>{ links[i].url=e.target.value; });
+      row.querySelector('.lk-label').addEventListener('input', e=>{ links[i].label=e.target.value; });
+      const rm=row.querySelector('.lk-rm');
+      if(rm) rm.addEventListener('click', ()=>{ links.splice(i,1); renderLinks(); });
+      row.querySelector('.lk-imp').addEventListener('click', e=>doImport(i, e.currentTarget));
+    });
+  }
+  renderLinks();
+  overlay.querySelector('#m-add-link').addEventListener('click', ()=>{
+    links.push({url:'',label:''}); renderLinks();
+    const inp=overlay.querySelectorAll('#m-links .lk-url'); inp[inp.length-1].focus();
+  });
+  async function doImport(i, btn){
+    const url = (links[i].url||'').trim();
     const statusEl = overlay.querySelector('#m-import-status');
-    const btn = overlay.querySelector('#m-import-btn');
-    if(!url){ statusEl.textContent = 'Wklej najpierw link do przepisu powyżej.'; return; }
+    if(!url){ statusEl.textContent = 'Wklej najpierw link do przepisu.'; return; }
     btn.disabled = true; const origLabel = btn.textContent; btn.textContent = 'Importuję…';
     statusEl.textContent = 'Pobieram i analizuję stronę…';
     try {
@@ -2139,7 +2187,7 @@ function openRecipeModal(existing, forceNew){
         ings = imported.ingredients;
         renderIngs();
       }
-      if(imported.instructions) overlay.querySelector('#m-instr').value = imported.instructions;
+      if(imported.instructions){ overlay.querySelector('#m-instr').value = imported.instructions; autoGrowInstr(); }
       statusEl.textContent = 'Zaimportowano — sprawdź i popraw dane poniżej przed zapisem.';
     } catch(e){
       console.error(e);
@@ -2147,7 +2195,18 @@ function openRecipeModal(existing, forceNew){
     } finally {
       btn.disabled = false; btn.textContent = origLabel;
     }
-  });
+  }
+  const instrTa = overlay.querySelector('#m-instr');
+  function autoGrowInstr(){
+    const cs = getComputedStyle(instrTa);
+    const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize)*1.4);
+    const pad = (parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0);
+    const max = lh*12 + pad;
+    instrTa.style.height='auto';
+    instrTa.style.height = Math.min(instrTa.scrollHeight + (parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0), max)+'px';
+  }
+  instrTa.addEventListener('input', autoGrowInstr);
+  autoGrowInstr(); setTimeout(autoGrowInstr, 50);
 
   overlay.querySelector('#m-cancel').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
@@ -2156,12 +2215,13 @@ function openRecipeModal(existing, forceNew){
     if(!name){ overlay.querySelector('#m-name').focus(); return; }
     const baseServings = Math.max(1, parseInt(overlay.querySelector('#m-servings').value)||4);
     const instructions = overlay.querySelector('#m-instr').value.trim();
-    const sourceUrl = overlay.querySelector('#m-source').value.trim();
+    const cleanLinks = links.map(l=>({url:(l.url||'').trim(), label:(l.label||'').trim()})).filter(l=>l.url);
+    const sourceUrl = cleanLinks.length ? cleanLinks[0].url : '';
     const cleanIngs = ings.filter(i=>i.name.trim());
     cleanIngs.forEach(i=> ensureProduct(i.name, i.unit));
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newRec = {id:rec.id, name, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl};
+    const newRec = {id:rec.id, name, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
     const idx = recipes.findIndex(r=>r.id===rec.id);
     if(idx>=0) recipes[idx]=newRec; else recipes.push(newRec);
     await Promise.all([saveRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -2688,7 +2748,7 @@ document.getElementById('proposalsGrid').addEventListener('click', async e=>{
     const draft = {
       id: uid(), name:'', mealCategories:[], categories:[], tags:[], baseServings:4,
       ingredients:[{name:'',qty:'',unit:''}], instructions: p.text||'', ratings:[],
-      imageData: p.imageData||'', sourceUrl: p.link||''
+      imageData: p.imageData||'', sourceUrl: p.link||'', links: p.link?[{url:p.link,label:''}]:[]
     };
     openRecipeModal(draft, true);
     return;
@@ -2719,8 +2779,8 @@ function bfEntryHtml(entry, dayKey){
   } else {
     content = escapeHtml(entry.text||'');
   }
-  return `<div class="meal-chip" data-day="${dayKey}" data-item="${entry.id}">
-    <span class="nm">👤 <b>${escapeHtml(entry.person)}</b>: ${content}</span>
+  return `<div class="meal-chip" data-day="${dayKey}" data-item="${entry.id}" data-rid="${entry.recipeId||''}" data-qid="${entry.quickRecipeId||''}">
+    <span class="nm ${(entry.recipeId||entry.quickRecipeId)?'open-prev':''}">👤 <b>${escapeHtml(entry.person)}</b>: ${content}</span>
     <button class="rm">✕</button>
   </div>`;
 }
@@ -2742,6 +2802,7 @@ function renderBfDayGrid(){
     `;
     grid.appendChild(card);
   }
+  wirePreviewClicks(grid);
   grid.querySelectorAll('.rm').forEach(b=>b.addEventListener('click', async e=>{
     const chip=e.target.closest('.meal-chip');
     const arr=bfGetDay(chip.dataset.day);
@@ -2858,6 +2919,7 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
       if(!Array.isArray(r.categories)) r.categories = [];
       if(r.imageData===undefined) r.imageData = '';
       if(r.sourceUrl===undefined) r.sourceUrl = '';
+    if(!Array.isArray(r.links)) r.links = r.sourceUrl ? [{url:r.sourceUrl,label:''}] : [];
       if(!Array.isArray(r.ratings)) r.ratings=[];
     });
     products.forEach(p=>{ if(p.unit===undefined) p.unit=''; });
@@ -2893,6 +2955,8 @@ async function init(){
   renderShopping();
 }
 init();
+
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 </script>
 </body>
 </html>
