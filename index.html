@@ -46,9 +46,32 @@
     background: var(--surface-alt); padding: 7px 16px; border-radius: 999px;
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-soft); text-align: center; }
+  #splash{position:fixed;inset:0;z-index:100000;background:#78A5E6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .45s ease;}
+  #splash.hide{opacity:0;pointer-events:none;}
+  #splash img{width:min(52vw,240px);height:auto;border-radius:28%;box-shadow:0 8px 28px rgba(40,70,120,.28);animation:splashPop .6s ease-out both;}
+  #splash .splash-name{font-family:'Fredoka',sans-serif;font-weight:600;font-size:30px;color:#fff;letter-spacing:.5px;animation:splashPop .6s .1s ease-out both;}
+  @keyframes splashPop{from{opacity:0;transform:scale(.85);}to{opacity:1;transform:scale(1);}}
 </style>
 </head>
 <body>
+<div id="splash" role="presentation">
+  <img src="icon-512.png" alt="">
+  <div class="splash-name">Pieseczkowo</div>
+</div>
+<script>
+(function(){
+  var sp=document.getElementById('splash');
+  var standalone=false, seen=false;
+  try{ standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true; }catch(e){}
+  try{ seen = sessionStorage.getItem('splashShown')==='1'; }catch(e){}
+  if(!standalone || seen){ sp.parentNode.removeChild(sp); return; }   // tylko przy włączaniu zainstalowanej aplikacji
+  try{ sessionStorage.setItem('splashShown','1'); }catch(e){}
+  function close(){ sp.classList.add('hide'); setTimeout(function(){ if(sp.parentNode) sp.parentNode.removeChild(sp); }, 500); }
+  var t=setTimeout(close, 2000);
+  sp.addEventListener('click', function(){ clearTimeout(t); close(); });
+})();
+</script>
+
   <div class="brand-icon">
     <svg viewBox="0 0 48 48" fill="none">
       <circle cx="24" cy="24" r="24" fill="var(--secondary)"/>
