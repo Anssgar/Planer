@@ -1,6 +1,6 @@
 {
-  "name": "Nasze Apki",
-  "short_name": "Apki",
+  "name": "Pieseczkowo",
+  "short_name": "Pieseczkowo",
   "description": "Planer obiadów, Domowe sprawy, Lista zakupowa",
   "start_url": "./index.html",
   "scope": "./",
