@@ -929,6 +929,20 @@ function wirePreviewClicks(root){
     else if(chip.dataset.qid){ const q=quickRecipes.find(x=>x.id===chip.dataset.qid); if(q) openQuickRecipePreview(q); }
   }));
 }
+function setupAutoGrow(ta, maxRows){
+  ta.style.overflowY='auto'; ta.style.resize='none';
+  function grow(){
+    const cs=getComputedStyle(ta);
+    const lh=parseFloat(cs.lineHeight)||(parseFloat(cs.fontSize)*1.4);
+    const bord=(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0);
+    const pad=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
+    ta.style.height='auto';
+    ta.style.height=Math.min(ta.scrollHeight+bord, lh*maxRows+pad+bord)+'px';
+  }
+  ta.addEventListener('input', grow);
+  grow(); setTimeout(grow,50);
+  return grow;
+}
 function recipeLinks(r){
   const arr = Array.isArray(r.links) && r.links.length ? r.links : (r.sourceUrl ? [{url:r.sourceUrl,label:''}] : []);
   return arr.filter(l=>l && l.url);
@@ -1519,6 +1533,7 @@ function openQuickRecipeModal(existing){
     </div>
   `;
   document.body.appendChild(overlay);
+  setupAutoGrow(overlay.querySelector('#qm-desc'), 8);
 
   let imageData = q.imageData || '';
   const fileInput = overlay.querySelector('#qm-image-file');
@@ -2704,6 +2719,7 @@ function openProposalModal(existing){
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  setupAutoGrow(overlay.querySelector('#pr-text'), 12);
   let imageData = p.imageData||'';
   const fileInput=overlay.querySelector('#pr-image-file');
   const previewWrap=overlay.querySelector('#pr-image-preview');
