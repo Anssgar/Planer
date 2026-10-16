@@ -137,10 +137,12 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .tag-sugg-btn{border:1.5px dashed var(--green-dark);background:none;color:var(--green-dark);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;}
 .tag-sugg-btn:hover{background:var(--bg);}
 .tag-sugg-all{border:none;background:var(--green-dark);color:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;}
+.tag-row .tag-hash{color:var(--ink-soft);font-weight:700;}
+.tag-row input.tag-name{flex:1;min-width:0;font-weight:600;padding:6px 8px;}
 .usage-link{background:none;border:none;padding:0;font:inherit;color:var(--green-dark);text-decoration:underline;cursor:pointer;}
 .prod-sortbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
 .prod-sortbar select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;font-size:13px;}
-tr.prod-group td{background:var(--bg);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);padding:8px 10px;}
+tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700;font-size:17px;letter-spacing:0;text-transform:none;color:var(--green-dark);padding:11px 10px;border-top:2px solid var(--green);border-bottom:1px solid var(--line);}
 .usage-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:11px 4px;font:inherit;font-size:15px;cursor:pointer;color:var(--ink);}
 .usage-item:hover{background:var(--bg);}
 .ing-row input{width:100%;}
@@ -423,7 +425,7 @@ tr.prod-group td{background:var(--bg);font-weight:800;font-size:12px;text-transf
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 09:32</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 09:53</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -2983,23 +2985,88 @@ document.getElementById('addShopCat').addEventListener('click', async ()=>{
 });
 
 /* ============ TAGS TAB ============ */
+function tagUsage(t){
+  return {
+    recipes: recipes.filter(r=>(r.tags||[]).includes(t)),
+    quick: quickRecipes.filter(q=>(q.tags||[]).includes(t))
+  };
+}
+function plItems(n){ return n===1 ? '1 przepis' : ((n%10>=2 && n%10<=4 && !(n%100>=12 && n%100<=14)) ? n+' przepisy' : n+' przepisów'); }
+function refreshAfterTagChange(){
+  renderTagsManage(); renderTagFilterRow();
+  try{ renderQuickTagFilterRow(); }catch(e){}
+  renderRecipes(document.getElementById('recipeSearch').value);
+  if(typeof renderQuickRecipes==='function'){ try{ renderQuickRecipes(); }catch(e){} }
+}
+function openTagUsageModal(t){
+  const u = tagUsage(t);
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  const items = [
+    ...u.recipes.map(r=>({id:r.id, name:r.name, kind:'r', label:''})),
+    ...u.quick.map(q=>({id:q.id, name:q.name, kind:'q', label:'szybki'}))
+  ].sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+  overlay.innerHTML=`<div class="modal">
+    <h2>#${escapeHtml(t)}</h2>
+    <div class="sub" style="margin-bottom:10px;">Przepisy z tym tagiem (kliknij, aby otworzyć):</div>
+    ${items.map(i=>`<button type="button" class="usage-item" data-k="${i.kind}" data-id="${i.id}">${escapeHtml(i.name)}${i.label?` <span class="sub">· ${i.label}</span>`:''}</button>`).join('')}
+    <div class="modal-actions"><button class="btn btn-ghost" id="tu-close">Zamknij</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#tu-close').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelectorAll('.usage-item').forEach(b=>b.addEventListener('click', ()=>{
+    if(b.dataset.k==='r'){ const r=recipes.find(x=>x.id===b.dataset.id); if(r) openRecipePreview(r); }
+    else { const q=quickRecipes.find(x=>x.id===b.dataset.id); if(q) openQuickRecipePreview(q); }
+  }));
+}
 function renderTagsManage(){
   const wrap=document.getElementById('tagsManage');
   if(tags.length===0){ wrap.innerHTML='<div class="sub">Brak tagów — pojawią się tu tagi dodane w przepisach, albo dodaj własny powyżej.</div>'; return; }
-  wrap.innerHTML = tags.map(t=>`
-    <div class="item-row" data-tag="${escapeHtml(t)}">
-      <span class="name">#${escapeHtml(t)}</span>
-      <span class="usage">${recipes.filter(r=>(r.tags||[]).includes(t)).length} przepis(ów)</span>
+  wrap.innerHTML = tags.map(t=>{
+    const u=tagUsage(t), n=u.recipes.length+u.quick.length;
+    return `
+    <div class="item-row tag-row" data-tag="${escapeHtml(t)}">
+      <span class="tag-hash">#</span>
+      <input type="text" class="tag-name" value="${escapeHtml(t)}" title="Zmień nazwę tagu">
+      ${n?`<button type="button" class="usage-link tag-usage">${plItems(n)}</button>`:'<span class="usage">0 przepisów</span>'}
       <button class="rm">✕</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.tag-usage').forEach(b=>b.addEventListener('click', e=>{
+    openTagUsageModal(e.target.closest('.item-row').dataset.tag);
+  }));
+  wrap.querySelectorAll('.tag-name').forEach(inp=>{
+    const commit = async ()=>{
+      const old=inp.closest('.item-row').dataset.tag;
+      const val=inp.value.trim();
+      if(!val || val===old){ inp.value=old; return; }
+      const dup = tags.find(x=>x!==old && x.toLowerCase()===val.toLowerCase());
+      if(dup && !confirm(`Tag "${dup}" już istnieje. Połączyć "${old}" z "${dup}"?`)){ inp.value=old; return; }
+      const target = dup || val;
+      const swap = list=>{ list.forEach(x=>{
+        if((x.tags||[]).includes(old)){
+          x.tags = x.tags.map(g=>g===old?target:g).filter((g,i,arr)=>arr.indexOf(g)===i);
+        }
+      }); };
+      swap(recipes); swap(quickRecipes);
+      tags = dup ? tags.filter(x=>x!==old) : tags.map(x=>x===old?target:x);
+      if(activeTagFilter===old) activeTagFilter=target;
+      if(activeQuickTagFilter===old) activeQuickTagFilter=target;
+      await saveTags(); await saveRecipes(); await saveQuickRecipes();
+      refreshAfterTagChange();
+    };
+    inp.addEventListener('change', commit);
+    bindEnterSubmit(inp, ()=>inp.blur());
+  });
   wrap.querySelectorAll('.rm').forEach(b=>b.addEventListener('click', async e=>{
     const t=e.target.closest('.item-row').dataset.tag;
     if(!confirm(`Usunąć tag "#${t}"? Zostanie też usunięty z przepisów.`)) return;
     tags = tags.filter(x=>x!==t);
     recipes.forEach(r=>{ r.tags=(r.tags||[]).filter(x=>x!==t); });
-    await saveTags(); await saveRecipes();
-    renderTagsManage(); renderTagFilterRow(); renderRecipes(document.getElementById('recipeSearch').value);
+    quickRecipes.forEach(q=>{ q.tags=(q.tags||[]).filter(x=>x!==t); });
+    await saveTags(); await saveRecipes(); await saveQuickRecipes();
+    refreshAfterTagChange();
   }));
 }
 document.getElementById('addTagBtn').addEventListener('click', addNewTagFromManage);
