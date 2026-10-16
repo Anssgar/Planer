@@ -26,7 +26,8 @@ body{margin:0;background:var(--bg);
 header.top{display:flex;flex-direction:column;gap:14px;margin-bottom:22px;}
 h1{font-family:'Fraunces',serif;font-optical-sizing:auto;font-weight:700;font-size:clamp(28px,5vw,40px);margin:0;letter-spacing:-0.5px;}
 h1 span{color:var(--rust);}
-.sub{font-size:14px;color:var(--ink-soft);margin-top:-8px;}
+.sub{font-size:14px;color:var(--ink-soft);margin-top:0;}
+header.top h1{margin-bottom:4px;}
 
 nav.tabs{display:flex;gap:2px;background:var(--line);border-radius:10px;padding:3px;width:fit-content;flex-wrap:wrap;}
 nav.tabs button{font-family:'Karla',sans-serif;font-weight:700;font-size:13px;border:none;background:transparent;color:var(--ink-soft);padding:8px 12px;border-radius:8px;cursor:pointer;transition:background .15s,color .15s;}
@@ -129,7 +130,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .field .hint{text-transform:none;font-weight:400;color:var(--ink-soft);}
 .field input,.field textarea,.field select{width:100%;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.ing-row{display:grid;grid-template-columns:24px 1fr 60px 60px 26px;gap:6px;margin-bottom:6px;position:relative;align-items:center;}
+.ing-row{display:grid;grid-template-columns:24px minmax(0,1fr) 58px 92px 26px;gap:6px;margin-bottom:6px;position:relative;align-items:center;}
 .ing-move{display:flex;flex-direction:column;gap:1px;}
 .ing-move button{border:none;background:var(--bg);color:var(--ink-soft);font-size:10px;line-height:1;height:17px;border-radius:4px;cursor:pointer;padding:0;}
 .ing-move button:disabled{opacity:.25;cursor:default;}
@@ -137,8 +138,17 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .tag-sugg-btn{border:1.5px dashed var(--green-dark);background:none;color:var(--green-dark);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;}
 .tag-sugg-btn:hover{background:var(--bg);}
 .tag-sugg-all{border:none;background:var(--green-dark);color:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;}
+.plain-name{border:none;background:none;font-size:14px;padding:4px 2px;min-width:0;text-overflow:ellipsis;}
+input[type=text].plain-name{border:none;background:none;}
+input[type=text].plain-name:focus{background:#fff;border:1px solid var(--line);}
+.products-table input.p-name{width:100%;}
+.btn-danger{color:var(--rust);}
 .tag-row .tag-hash{color:var(--ink-soft);font-weight:700;}
-.tag-row input.tag-name{flex:1;min-width:0;font-weight:600;padding:6px 8px;}
+.tag-row input.tag-name{flex:1;min-width:0;font-weight:600;}
+.new-badge{display:inline-block;min-width:18px;padding:1px 6px;border-radius:999px;background:var(--rust);color:#fff;font-size:11px;font-weight:700;text-align:center;}
+.products-table tr.is-new td:first-child{border-left:4px solid var(--rust);background:rgba(193,68,14,.07);}
+.p-newtag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--rust);color:#fff;font-size:10.5px;font-weight:700;vertical-align:middle;}
+.prod-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 10px;}
 .usage-link{background:none;border:none;padding:0;font:inherit;color:var(--green-dark);text-decoration:underline;cursor:pointer;}
 .prod-sortbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
 .prod-sortbar select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;font-size:13px;}
@@ -186,14 +196,35 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 
 /* ---- PRODUCTS ---- */
 .products-table{width:100%;max-width:640px;border-collapse:collapse;font-size:13.5px;}
-.products-table th{text-align:left;font-size:10.5px;text-transform:uppercase;color:var(--ink-soft);padding:6px 8px;border-bottom:1px solid var(--line);}
-.products-table td{padding:6px 8px;border-bottom:1px solid var(--line);}
+.products-table th{text-align:left;font-size:10.5px;text-transform:uppercase;color:var(--ink-soft);padding:6px 4px;border-bottom:1px solid var(--line);}
+.products-table td{padding:6px 4px;border-bottom:1px solid var(--line);}
 .products-table select{font-size:12.5px;padding:5px 6px;}
+.products-table td:first-child{min-width:110px;}
+.products-table select.p-cat{max-width:118px;}
+.products-table select.p-unit{max-width:84px;}
+@media (max-width:620px){
+  .products-table{max-width:none;}
+  .products-table thead{display:none;}
+  .products-table, .products-table tbody{display:block;}
+  .products-table tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;padding:9px 6px;border-bottom:1px solid var(--line);align-items:center;}
+  .products-table td{display:block;border:none;padding:0;min-width:0;}
+  .products-table td:first-child{grid-column:1/-1;min-width:0;}
+  .products-table td:first-child input.p-name{font-size:15px;font-weight:600;}
+  .products-table select.p-cat,.products-table select.p-unit{width:100%;max-width:none;}
+  .products-table td:nth-child(4){font-size:12.5px;}
+  .products-table td:nth-child(5){text-align:right;}
+  .products-table tr.is-new{border-left:4px solid var(--rust);background:rgba(193,68,14,.07);}
+  .products-table tr.is-new td:first-child{border-left:none;background:none;}
+  .products-table tr.prod-group{display:block;padding:0;}
+  .products-table tr.prod-group td{display:block;}
+}
 
 /* ---- CATEGORIES TAB ---- */
 .cat-manage-section{margin-bottom:26px;max-width:420px;}
 .cat-manage-section h3{font-family:'Fraunces',serif;font-size:16px;margin-bottom:4px;}
 .unit-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(74,103,65,.1);color:var(--green-dark);font-size:12px;padding:4px 10px;border-radius:20px;}
+.unit-chip input.u-name{border:none;background:none;font:inherit;color:inherit;padding:0;min-width:1ch;width:auto;}
+.unit-chip input.u-name:focus{background:#fff;outline:1px solid var(--line);border-radius:4px;padding:0 3px;}
 .unit-chip button{background:none;border:none;color:inherit;cursor:pointer;font-size:11px;}
 .cat-manage-section .sub{margin-bottom:10px;font-size:12.5px;}
 .cat-row{display:flex;align-items:center;gap:8px;padding:6px 2px;}
@@ -207,8 +238,10 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 
 @media (max-width:520px){
   .day-grid{grid-template-columns:1fr;}
-  .recipes-toolbar{flex-direction:column;align-items:stretch;}
-  .recipes-toolbar input{max-width:none;}
+  .recipes-toolbar{align-items:stretch;}
+  .recipes-toolbar input{flex:1 1 100%;max-width:none;}
+  .recipes-toolbar #newRecipeBtn,.recipes-toolbar #newQuickBtn{flex:1 1 100%;}
+  .shopping-toolbar .btn{padding:8px 10px;font-size:12.5px;}
   .row2{grid-template-columns:1fr;}
 }
 #printArea{display:none;}
@@ -343,11 +376,12 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   <section id="tab-shopping" class="tab-panel">
     <div class="shopping-toolbar">
       <button class="btn btn-primary" id="genFromPlan">↻ Generuj z planu</button>
-      <button class="btn btn-ghost" id="addFromRecipeBtn">+ Dodaj składniki z przepisu</button>
-      <button class="btn btn-ghost" id="mergeModeBtn">⇄ Połącz pozycje</button>
-      <button class="btn btn-ghost" id="clearChecked">Usuń zaznaczone (kupione)</button>
+      <button class="btn btn-ghost" id="addFromRecipeBtn" title="Dodaj składniki wybranego przepisu">+ Z przepisu</button>
+      <button class="btn btn-ghost" id="mergeModeBtn" title="Połącz kilka pozycji w jedną">⇄ Połącz</button>
+      <button class="btn btn-ghost" id="clearChecked" title="Usuń pozycje oznaczone jako kupione">Usuń kupione</button>
+      <button class="btn btn-ghost btn-danger" id="clearAllShopping" title="Usuń wszystkie pozycje z listy">🗑 Wyczyść listę</button>
       <button class="btn btn-ghost" id="shopExportBtn">⬇ Eksportuj</button>
-      <button class="btn btn-ghost" id="transferToListaBtn">➜ Przenieś do głównej listy</button>
+      <button class="btn btn-ghost" id="transferToListaBtn" title="Przenieś do głównej listy zakupów">➜ Do głównej listy</button>
     </div>
     <div class="add-item-bar">
       <input type="text" id="newItemName" placeholder="dodaj pozycję ręcznie...">
@@ -372,6 +406,11 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
     <div class="sub" style="margin-bottom:14px;">Baza produktów rośnie automatycznie, gdy dodajesz składniki do przepisów. Tu możesz poprawić kategorię i domyślną jednostkę.</div>
     <div class="add-item-bar" style="max-width:280px;">
       <input type="text" id="productSearch" placeholder="Szukaj produktu...">
+    </div>
+    <div class="prod-filters">
+      <span class="filter-pill active" id="pfAll">Wszystkie</span>
+      <span class="filter-pill" id="pfNew">🆕 Nowe (0)</span>
+      <button class="btn btn-ghost" id="pfReviewAll" style="display:none;">✓ Oznacz wszystkie jako sprawdzone</button>
     </div>
     <div class="prod-sortbar">
       <label class="sub" for="productSort">Sortuj:</label>
@@ -425,7 +464,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 09:53</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 21:41</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -534,7 +573,7 @@ function findProduct(name){ return products.find(p=>namesMatch(p.name,name)); }
 function ensureProduct(name, unit){
   let p = findProduct(name);
   if(p){ if(unit && unit.trim() && !p.unit) p.unit = unit.trim(); return p; }
-  p = {id:uid(), name:name.trim(), category:guessCategory(name), unit:(unit||'').trim(), type:'spozywcze'};
+  p = {id:uid(), name:name.trim(), category:guessCategory(name), unit:(unit||'').trim(), type:'spozywcze', isNew:true, addedAt:Date.now()};
   products.push(p);
   return p;
 }
@@ -769,11 +808,18 @@ function applyData(data){
     if(!Array.isArray(r.ratings)) r.ratings=[];
   });
   products.forEach(p=>{ if(p.unit===undefined) p.unit=''; });
+  try{ updateProductsBadge(); }catch(e){}
 }
 async function saveRecipes(){ schedulePersist(); }
 async function savePlan(){ schedulePersist(); }
 async function saveShopping(){ schedulePersist(); }
-async function saveProducts(){ schedulePersist(); }
+async function saveProducts(){ schedulePersist(); try{ updateProductsBadge(); }catch(e){} }
+function newProductsCount(){ return products.filter(p=>p.isNew && isFoodProduct(p)).length; }
+function updateProductsBadge(){
+  const b=document.querySelector('nav.tabs button[data-tab="products"]'); if(!b) return;
+  const n=newProductsCount();
+  b.innerHTML = 'Produkty' + (n ? ` <span class="new-badge">${n}</span>` : '');
+}
 async function saveTags(){ schedulePersist(); }
 async function saveUnits(){ schedulePersist(); }
 async function saveProposals(){ schedulePersist(); }
@@ -814,7 +860,7 @@ function renderPeopleManage(){
   if(people.length===0){ wrap.innerHTML='<div class="sub">Brak osób — dodaj pierwszą powyżej.</div>'; return; }
   wrap.innerHTML = people.map(name=>`
     <div class="item-row" data-name="${escapeHtml(name)}">
-      <input type="text" class="person-name-input" value="${escapeHtml(name)}" style="flex:1;min-width:0;">
+      <input type="text" class="person-name-input plain-name" value="${escapeHtml(name)}" title="Dotknij nazwy, aby ją zmienić" style="flex:1;min-width:0;">
       <button class="rm" title="Usuń">✕</button>
     </div>
   `).join('');
@@ -1889,34 +1935,6 @@ document.getElementById('importFile').addEventListener('change', async e=>{
 });
 
 /* ============ IMPORT FROM LINK (uses Claude API from within the artifact) ============ */
-async function fetchRecipeFromUrl(url){
-  const prompt = `Wejdź na stronę pod adresem: ${url}
-Jeśli to strona z przepisem kulinarnym, wyodrębnij z niej: nazwę dania, listę składników (nazwa, ilość, jednostka), kroki przygotowania (zwięźle, każdy krok w nowej linii), liczbę porcji (jeśli nie podano, wpisz 4), 1-2 kategorie posiłku po polsku (np. Obiad, Kolacja, Śniadanie, Przekąski) oraz 1-2 kategorie rodzaju dania po polsku (np. Zupa, Sałatka, Deser, Danie główne).
-Jeśli to link do filmu (YouTube, TikTok, Instagram itp.), poszukaj informacji o przepisie pokazanym w filmie — w jego opisie, transkrypcji, komentarzach, albo w innych źródłach w sieci, które go omawiają — i zrekonstruuj przepis najlepiej jak się da.
-Odpowiedz WYŁĄCZNIE obiektem JSON, bez żadnego innego tekstu, bez markdown, bez potrójnych apostrofów:
-{"name":"","baseServings":4,"ingredients":[{"name":"","qty":"","unit":""}],"instructions":"","mealCategories":[],"categories":[],"tags":[]}
-Jeśli nie udało się znaleźć przepisu, zwróć: {"error":"krótki powód po polsku"}`;
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }],
-      tools: [{ type: "web_search_20250305", name: "web_search" }]
-    })
-  });
-  if(!response.ok) throw new Error('Błąd połączenia z Claude (status '+response.status+')');
-  const data = await response.json();
-  const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-  const clean = text.replace(/```json|```/g,'').trim();
-  const jsonMatch = clean.match(/\{[\s\S]*\}/);
-  if(!jsonMatch) throw new Error('Nie udało się odczytać odpowiedzi jako JSON.');
-  const parsed = JSON.parse(jsonMatch[0]);
-  if(parsed.error) throw new Error(parsed.error);
-  if(!parsed.name) throw new Error('Nie udało się rozpoznać nazwy dania.');
-  return parsed;
-}
 document.getElementById('importLinkBtn').addEventListener('click', ()=>{
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -1944,7 +1962,7 @@ document.getElementById('importLinkBtn').addEventListener('click', ()=>{
     fetchBtn.disabled = true;
     statusEl.textContent = 'Szukam przepisu, to może chwilę potrwać...';
     try{
-      const parsed = await fetchRecipeFromUrl(url);
+      const parsed = await importRecipeFromUrl(url);
       overlay.remove();
       const draft = {
         id: uid(),
@@ -1952,7 +1970,7 @@ document.getElementById('importLinkBtn').addEventListener('click', ()=>{
         mealCategories: Array.isArray(parsed.mealCategories) ? parsed.mealCategories : [],
         categories: Array.isArray(parsed.categories) ? parsed.categories : [],
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-        baseServings: parseInt(parsed.baseServings)||4,
+        baseServings: parseInt(parsed.baseServings||parsed.servings)||4,
         ingredients: Array.isArray(parsed.ingredients) && parsed.ingredients.length ? parsed.ingredients.map(i=>({name:i.name||'', qty:i.qty!=null?String(i.qty):'', unit:i.unit||''})) : [{name:'',qty:'',unit:''}],
         instructions: parsed.instructions || '',
         ratings:[], imageData:'', sourceUrl: url, links:[{url:url,label:''}]
@@ -2664,6 +2682,14 @@ document.getElementById('clearChecked').addEventListener('click', async ()=>{
   shopping = shopping.filter(i=>!i.checked);
   await saveShopping(); renderShopping();
 });
+document.getElementById('clearAllShopping').addEventListener('click', async ()=>{
+  if(shopping.length===0){ alert('Lista zakupów jest już pusta.'); return; }
+  const unchecked = shopping.filter(i=>!i.checked).length;
+  const extra = unchecked ? `\n\nUwaga: ${unchecked} z nich NIE jest jeszcze oznaczone jako kupione.` : '';
+  if(!confirm(`Usunąć WSZYSTKIE pozycje z listy zakupów (${shopping.length})?${extra}\n\nTej operacji nie można cofnąć.`)) return;
+  shopping = [];
+  await saveShopping(); renderShopping();
+});
 function shoppingCatsForExport(){
   const cats = shoppingCategories.map(c=>c.name);
   shopping.forEach(i=>{ if(!cats.includes(i.category)) cats.push(i.category||'Inne'); });
@@ -2823,9 +2849,27 @@ document.getElementById('addFromRecipeBtn').addEventListener('click', ()=>{
 });
 
 /* ============ PRODUCTS TAB ============ */
+let productsOnlyNew = false;
+function syncProductFilters(){
+  const n=newProductsCount();
+  const pn=document.getElementById('pfNew'), pa=document.getElementById('pfAll'), ra=document.getElementById('pfReviewAll');
+  if(!pn) return;
+  pn.textContent = `🆕 Nowe (${n})`;
+  pn.classList.toggle('active', productsOnlyNew); pa.classList.toggle('active', !productsOnlyNew);
+  ra.style.display = n ? '' : 'none';
+  updateProductsBadge();
+}
 function renderProducts(filter){
   const body=document.getElementById('productsBody');
-  const foodProducts = products.filter(isFoodProduct);
+  syncProductFilters();
+  let foodProducts = products.filter(isFoodProduct);
+  if(productsOnlyNew){
+    foodProducts = foodProducts.filter(p=>p.isNew);
+    if(foodProducts.length===0){
+      body.innerHTML = `<tr><td colspan="5" class="usage">Brak nowych produktów — wszystkie są sprawdzone. 🎉</td></tr>`;
+      return;
+    }
+  }
   if(foodProducts.length===0){
     body.innerHTML = `<tr><td colspan="5" class="usage">Baza jest pusta — pojawią się tu produkty dodane w przepisach.</td></tr>`;
     return;
@@ -2863,12 +2907,12 @@ function renderProducts(filter){
     if(!catNames.includes(p.category)) catNames.push(p.category||'Inne');
     const unitList = [...units];
     if(p.unit && !unitList.includes(p.unit)) unitList.push(p.unit);
-    return groupRow + `<tr data-id="${p.id}">
-      <td>${escapeHtml(p.name)}</td>
+    return groupRow + `<tr data-id="${p.id}"${p.isNew?' class="is-new"':''}>
+      <td><input type="text" class="p-name plain-name" value="${escapeHtml(p.name)}" title="Dotknij nazwy, aby ją zmienić"></td>
       <td><select class="p-cat">${catNames.map(c=>`<option value="${escapeHtml(c)}" ${c===p.category?'selected':''}>${escapeHtml(c)}</option>`).join('')}<option value="__new__">+ Nowa...</option></select></td>
       <td><select class="p-unit"><option value="">—</option>${unitList.map(u=>`<option value="${escapeHtml(u)}" ${u===p.unit?'selected':''}>${escapeHtml(u)}</option>`).join('')}</select></td>
       <td class="usage">${used?`<button type="button" class="usage-link p-usage">${plRecipes(used)}</button>`:'0 przepisów'}</td>
-      <td>${used===0?'<button class="btn-icon p-del">🗑</button>':''}</td>
+      <td style="white-space:nowrap;">${p.isNew?'<button class="btn-icon p-ok" title="Oznacz jako sprawdzony">✓</button>':''}${used===0?'<button class="btn-icon p-del">🗑</button>':''}</td>
     </tr>`;
   }).join('');
   body.querySelectorAll('.p-cat').forEach(sel=>sel.addEventListener('change', async e=>{
@@ -2882,6 +2926,7 @@ function renderProducts(filter){
         p.category=name.trim();
       } else { e.target.value = p.category; return; }
     } else { p.category = e.target.value; }
+    delete p.isNew; delete p.addedAt;
     shopping.forEach(it=>{ if(namesMatch(it.name,p.name)) it.category = p.category; });
     await saveProducts(); await saveShopping();
     renderProducts(); renderShopping();
@@ -2890,12 +2935,30 @@ function renderProducts(filter){
     const id=e.target.closest('tr').dataset.id;
     const p=products.find(x=>x.id===id);
     p.unit = e.target.value;
+    delete p.isNew; delete p.addedAt;
     await saveProducts();
+    renderProducts(document.getElementById('productSearch').value);
   }));
+  body.querySelectorAll('.p-name').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const id=e.target.closest('tr').dataset.id;
+      const prod=products.find(x=>x.id===id);
+      const newName=e.target.value.trim();
+      if(!prod || !newName || newName===prod.name){ if(prod) e.target.value=prod.name; return; }
+      const ok = await renameProductEverywhere(prod, newName);
+      if(!ok) e.target.value = prod.name; else { delete prod.isNew; delete prod.addedAt; await saveProducts(); }
+      renderProducts(document.getElementById('productSearch').value); renderShopping();
+    });
+    bindEnterSubmit(inp, ()=>inp.blur());
+  });
   body.querySelectorAll('.p-usage').forEach(b=>b.addEventListener('click', e=>{
     const id=e.target.closest('tr').dataset.id;
     const p=products.find(x=>x.id===id);
     if(p) openProductUsageModal(p, usageList(p.name));
+  }));
+  body.querySelectorAll('.p-ok').forEach(b=>b.addEventListener('click', async e=>{
+    const p=products.find(x=>x.id===e.target.closest('tr').dataset.id);
+    if(p){ delete p.isNew; delete p.addedAt; await saveProducts(); renderProducts(document.getElementById('productSearch').value); }
   }));
   body.querySelectorAll('.p-del').forEach(b=>b.addEventListener('click', async e=>{
     const id=e.target.closest('tr').dataset.id;
@@ -2905,6 +2968,22 @@ function renderProducts(filter){
   }));
 }
 
+async function renameProductEverywhere(prod, newName){
+  const old = prod.name;
+  const clash = products.find(x=>x.id!==prod.id && normalizeName(x.name)===normalizeName(newName));
+  if(clash){ alert(`Produkt "${clash.name}" już istnieje. Wybierz inną nazwę.`); return false; }
+  const recs = recipes.filter(r=>(r.ingredients||[]).some(i=>namesMatch(i.name,old)));
+  const shop = shopping.filter(it=>namesMatch(it.name,old));
+  if(recs.length || shop.length){
+    const parts=[]; if(recs.length) parts.push(plItems(recs.length)); if(shop.length) parts.push(shop.length+' poz. na liście zakupów');
+    if(!confirm(`Zmienić nazwę "${old}" na "${newName}" także w: ${parts.join(' i ')}?`)) return false;
+  }
+  recs.forEach(r=>r.ingredients.forEach(i=>{ if(namesMatch(i.name,old)) i.name=newName; }));
+  shop.forEach(it=>{ it.name=newName; });
+  prod.name = newName;
+  await Promise.all([saveProducts(), saveRecipes(), saveShopping()]);
+  return true;
+}
 function openProductUsageModal(p, list){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -2937,26 +3016,68 @@ function openProductUsageModal(p, list){
 })();
 
 /* ============ CATEGORIES TAB (flat, no subcategories) ============ */
-function renderCatManager(containerId, listRef, saveFn, onChange){
+const CAT_KINDS = {
+  meal: {
+    count: n=> recipes.filter(r=>(r.mealCategories||[]).includes(n)).length + quickRecipes.filter(q=>(q.mealCategories||[]).includes(n)).length,
+    rename: (o,n)=>{ [...recipes,...quickRecipes].forEach(x=>{ if((x.mealCategories||[]).includes(o)) x.mealCategories=x.mealCategories.map(c=>c===o?n:c); }); },
+    remove: o=>{ [...recipes,...quickRecipes].forEach(x=>{ x.mealCategories=(x.mealCategories||[]).filter(c=>c!==o); }); },
+    save: ()=>Promise.all([saveRecipes(), saveQuickRecipes()]), what:'przepisów'
+  },
+  recipe: {
+    count: n=> recipes.filter(r=>(r.categories||[]).includes(n)).length + quickRecipes.filter(q=>(q.categories||[]).includes(n)).length,
+    rename: (o,n)=>{ [...recipes,...quickRecipes].forEach(x=>{ if((x.categories||[]).includes(o)) x.categories=x.categories.map(c=>c===o?n:c); }); },
+    remove: o=>{ [...recipes,...quickRecipes].forEach(x=>{ x.categories=(x.categories||[]).filter(c=>c!==o); }); },
+    save: ()=>Promise.all([saveRecipes(), saveQuickRecipes()]), what:'przepisów'
+  },
+  shop: {
+    count: n=> products.filter(p=>p.category===n).length + shopping.filter(i=>i.category===n).length,
+    rename: (o,n)=>{ products.forEach(p=>{ if(p.category===o) p.category=n; }); shopping.forEach(i=>{ if(i.category===o) i.category=n; }); },
+    remove: o=>{ products.forEach(p=>{ if(p.category===o) p.category='Inne'; }); shopping.forEach(i=>{ if(i.category===o) i.category='Inne'; }); },
+    save: ()=>Promise.all([saveProducts(), saveShopping()]), what:'produktów i pozycji listy'
+  }
+};
+function renderCatManager(containerId, listRef, saveFn, onChange, kind){
   const wrap = document.getElementById(containerId);
+  const K = kind ? CAT_KINDS[kind] : null;
   wrap.innerHTML = listRef.map(cat=>`
-    <div class="cat-row" data-id="${cat.id}">
+    <div class="cat-row" data-id="${cat.id}" data-name="${escapeHtml(cat.name)}">
       <input type="text" class="cat-name" value="${escapeHtml(cat.name)}">
       <button class="btn-icon cat-del" title="Usuń">🗑</button>
     </div>
   `).join('') || '<div class="sub">Brak kategorii.</div>';
   wrap.querySelectorAll('.cat-name').forEach(inp=>inp.addEventListener('change', async e=>{
-    const id=e.target.closest('.cat-row').dataset.id;
+    const row=e.target.closest('.cat-row');
+    const id=row.dataset.id;
     const cat=listRef.find(c=>c.id===id);
-    cat.name = e.target.value.trim() || cat.name;
+    const oldName=cat.name;
+    const newName=e.target.value.trim();
+    if(!newName || newName===oldName){ e.target.value=oldName; return; }
+    if(listRef.some(c=>c.id!==id && c.name.toLowerCase()===newName.toLowerCase())){ alert('Taka kategoria już istnieje.'); e.target.value=oldName; return; }
+    cat.name = newName;
+    if(K){ K.rename(oldName,newName); await K.save(); }
     await saveFn(); if(onChange) onChange();
+    renderCatManager(containerId,listRef,saveFn,onChange,kind);
   }));
   wrap.querySelectorAll('.cat-del').forEach(b=>b.addEventListener('click', async e=>{
-    const id=e.target.closest('.cat-row').dataset.id;
-    if(!confirm('Usunąć tę kategorię?')) return;
+    const row=e.target.closest('.cat-row');
+    const id=row.dataset.id;
+    const cat=listRef.find(c=>c.id===id);
+    const n = K ? K.count(cat.name) : 0;
+    if(kind==='shop' && cat.name==='Inne' && n>0){
+      alert('Kategoria "Inne" jest kategorią zapasową — przenieś najpierw produkty do innych kategorii, aby ją usunąć.'); return;
+    }
+    let msg = `Usunąć kategorię "${cat.name}"?`;
+    if(n){
+      msg += kind==='shop'
+        ? ` Używa jej ${n} ${K.what} — zostaną przeniesione do kategorii "Inne".`
+        : ` Zostanie też usunięta z ${n} ${K.what}.`;
+    }
+    if(!confirm(msg)) return;
+    if(kind==='shop' && n && !listRef.some(c=>c.name==='Inne')) listRef.push({id:uid(), name:'Inne'});
+    if(K){ K.remove(cat.name); await K.save(); }
     const idx=listRef.findIndex(c=>c.id===id);
     listRef.splice(idx,1);
-    await saveFn(); renderCatManager(containerId,listRef,saveFn,onChange); if(onChange) onChange();
+    await saveFn(); renderCatManager(containerId,listRef,saveFn,onChange,kind); if(onChange) onChange();
   }));
 }
 document.getElementById('addMealCat').addEventListener('click', async ()=>{
@@ -3028,7 +3149,7 @@ function renderTagsManage(){
     return `
     <div class="item-row tag-row" data-tag="${escapeHtml(t)}">
       <span class="tag-hash">#</span>
-      <input type="text" class="tag-name" value="${escapeHtml(t)}" title="Zmień nazwę tagu">
+      <input type="text" class="tag-name plain-name" value="${escapeHtml(t)}" title="Dotknij nazwy, aby ją zmienić">
       ${n?`<button type="button" class="usage-link tag-usage">${plItems(n)}</button>`:'<span class="usage">0 przepisów</span>'}
       <button class="rm">✕</button>
     </div>`;
@@ -3079,11 +3200,36 @@ async function addNewTagFromManage(){
   await saveTags(); renderTagsManage(); renderTagFilterRow();
 }
 document.getElementById('productSearch').addEventListener('input', e=>renderProducts(e.target.value));
+document.getElementById('pfAll').addEventListener('click', ()=>{ productsOnlyNew=false; renderProducts(document.getElementById('productSearch').value); });
+document.getElementById('pfNew').addEventListener('click', ()=>{ productsOnlyNew=true; renderProducts(document.getElementById('productSearch').value); });
+document.getElementById('pfReviewAll').addEventListener('click', async ()=>{
+  const n=newProductsCount();
+  if(!n || !confirm(`Oznaczyć wszystkie nowe produkty (${n}) jako sprawdzone?`)) return;
+  products.forEach(p=>{ if(p.isNew){ delete p.isNew; delete p.addedAt; } });
+  await saveProducts(); renderProducts(document.getElementById('productSearch').value);
+});
 
 /* ============ UNITS MANAGEMENT ============ */
 function renderUnitsManage(){
   const wrap=document.getElementById('unitsManage');
-  wrap.innerHTML = units.map(u=>`<span class="unit-chip" data-u="${escapeHtml(u)}">${escapeHtml(u)} <button type="button" class="u-del">✕</button></span>`).join('') || '<div class="sub">Brak jednostek.</div>';
+  wrap.innerHTML = units.map(u=>`<span class="unit-chip" data-u="${escapeHtml(u)}"><input type="text" class="u-name" value="${escapeHtml(u)}" style="width:${Math.max(1.6,u.length+0.9)}ch" title="Dotknij nazwy, aby ją zmienić"> <button type="button" class="u-del">✕</button></span>`).join('') || '<div class="sub">Brak jednostek.</div>';
+  wrap.querySelectorAll('.u-name').forEach(inp=>{
+    inp.addEventListener('input', ()=>{ inp.style.width = Math.max(1.6, inp.value.length+0.9)+'ch'; });
+    inp.addEventListener('change', async ()=>{
+      const old = inp.closest('.unit-chip').dataset.u;
+      const val = inp.value.trim();
+      if(!val || val===old){ inp.value=old; inp.style.width=Math.max(1.6,old.length+0.9)+'ch'; return; }
+      if(units.some(x=>x!==old && x.toLowerCase()===val.toLowerCase())){ alert('Taka jednostka już istnieje.'); inp.value=old; return; }
+      let n=0;
+      products.forEach(p=>{ if(p.unit===old){ p.unit=val; n++; } });
+      recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{ if(i.unit===old){ i.unit=val; n++; } }));
+      shopping.forEach(i=>{ if(i.unit===old){ i.unit=val; n++; } });
+      units = units.map(x=>x===old?val:x);
+      await Promise.all([saveUnits(), saveProducts(), saveRecipes(), saveShopping()]);
+      renderUnitsManage(); renderProducts(document.getElementById('productSearch').value); renderShopping();
+    });
+    bindEnterSubmit(inp, ()=>inp.blur());
+  });
   wrap.querySelectorAll('.u-del').forEach(b=>b.addEventListener('click', async e=>{
     const u=e.target.closest('.unit-chip').dataset.u;
     if(!confirm(`Usunąć jednostkę "${u}"?`)) return;
@@ -3116,7 +3262,7 @@ function renderProposals(){
       ${p.imageData?`<img class="recipe-thumb" src="${p.imageData}" alt="">`:''}
       ${p.text?`<div class="desc-clamp" style="-webkit-line-clamp:4;">${escapeHtml(p.text)}</div>`:'<div class="sub">(bez opisu)</div>'}
       ${p.link?`<a class="recipe-link" href="${escapeHtml(p.link)}" target="_blank" rel="noopener">🔗 ${escapeHtml(p.link)}</a>`:''}
-      <div class="sub" style="font-size:11px;margin-top:8px;">${new Date(p.createdAt).toLocaleDateString('pl-PL')}</div>
+      <div class="sub" style="font-size:11px;margin-top:8px;">${p.createdAt?new Date(p.createdAt).toLocaleDateString('pl-PL'):''}</div>
       <div class="actions">
         <span class="spacer"></span>
         <button type="button" class="btn-icon prop-edit" data-id="${p.id}" title="Edytuj propozycję">✎</button>
