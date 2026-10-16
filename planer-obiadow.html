@@ -129,7 +129,20 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .field .hint{text-transform:none;font-weight:400;color:var(--ink-soft);}
 .field input,.field textarea,.field select{width:100%;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.ing-row{display:grid;grid-template-columns:1fr 60px 60px 26px;gap:6px;margin-bottom:6px;position:relative;}
+.ing-row{display:grid;grid-template-columns:24px 1fr 60px 60px 26px;gap:6px;margin-bottom:6px;position:relative;align-items:center;}
+.ing-move{display:flex;flex-direction:column;gap:1px;}
+.ing-move button{border:none;background:var(--bg);color:var(--ink-soft);font-size:10px;line-height:1;height:17px;border-radius:4px;cursor:pointer;padding:0;}
+.ing-move button:disabled{opacity:.25;cursor:default;}
+.tag-sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag-sugg-btn{border:1.5px dashed var(--green-dark);background:none;color:var(--green-dark);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;}
+.tag-sugg-btn:hover{background:var(--bg);}
+.tag-sugg-all{border:none;background:var(--green-dark);color:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;}
+.usage-link{background:none;border:none;padding:0;font:inherit;color:var(--green-dark);text-decoration:underline;cursor:pointer;}
+.prod-sortbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.prod-sortbar select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;font-size:13px;}
+tr.prod-group td{background:var(--bg);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);padding:8px 10px;}
+.usage-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:11px 4px;font:inherit;font-size:15px;cursor:pointer;color:var(--ink);}
+.usage-item:hover{background:var(--bg);}
 .ing-row input{width:100%;}
 .add-ing{font-size:12.5px;color:var(--green-dark);background:none;border:none;cursor:pointer;padding:4px 0;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
@@ -206,6 +219,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
   .print-meta{font-size:12px; color:#666; margin-bottom:6px;}
   .print-instr{white-space:pre-wrap; font-size:13px; line-height:1.5;}
 }
+.last-update{margin:28px 0 12px;text-align:center;font-size:12px;color:var(--ink-soft);opacity:.85;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -357,6 +371,13 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
     <div class="add-item-bar" style="max-width:280px;">
       <input type="text" id="productSearch" placeholder="Szukaj produktu...">
     </div>
+    <div class="prod-sortbar">
+      <label class="sub" for="productSort">Sortuj:</label>
+      <select id="productSort">
+        <option value="alpha">alfabetycznie (A–Z)</option>
+        <option value="cat">po kategorii (a w niej A–Z)</option>
+      </select>
+    </div>
     <table class="products-table">
       <thead><tr><th>Produkt</th><th>Kategoria</th><th>Jednostka</th><th>Użycie</th><th></th></tr></thead>
       <tbody id="productsBody"></tbody>
@@ -402,6 +423,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
   </section>
 </div>
 
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 09:11</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -1672,6 +1694,13 @@ function openQuickRecipeModal(existing){
     async (val)=>{ tags.push(val); }
   );
   const qRatingsAPI = buildRatingEditor(overlay.querySelector('#qm-ratings'), q.ratings||[]);
+  attachTagSuggester(overlay, '#qmTagsInput', tagsAPI, ()=>({
+    name: overlay.querySelector('#qm-name').value,
+    ingredients: [],
+    instructions: overlay.querySelector('#qm-desc').value,
+    recId: q.id,
+    skip: [...dishCatsAPI.get(), ...mealCatsAPI.get()]
+  }));
 
   overlay.querySelector('#qm-cancel').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
@@ -2123,8 +2152,143 @@ function buildChipInputGeneric(wrapEl, inputEl, initial, allOptionsFn, onCreateN
     }
   });
   renderChips();
-  return { get: ()=>selected };
+  return { get: ()=>selected, add: v=>{ if(v && !selected.includes(v)){ selected.push(v); renderChips(); } } };
 }
+/* ============ PROPOZYCJE TAGÓW (analiza przepisu) ============ */
+const TAGSUGG_GENERIC = ['sol','pieprz','olej','oliwa','woda','cukier','maka','maslo','jajk','jaj','czosnek','cebul','przypraw','ocet','smietan','mleko','drozdz','proszek','bulion','kostka'];
+function tsNorm(s){ return normalizeName(String(s||'')); }
+function tsHas(text, stems){ return stems.some(st=> new RegExp('(^|[^a-z0-9])'+st).test(text)); }
+function tsMinutes(text){
+  let total=0, found=false, m;
+  const reMin=/(\d+)\s*(?:-\s*\d+\s*)?(?:min\b|minut|minuty)/g;
+  while((m=reMin.exec(text))){ total+=parseInt(m[1],10); found=true; }
+  const reH=/(\d+(?:[.,]\d+)?)\s*(?:-\s*\d+\s*)?(?:godz|h\b)/g;
+  while((m=reH.exec(text))){ total+=Math.round(parseFloat(m[1].replace(',','.'))*60); found=true; }
+  return found ? total : null;
+}
+function suggestTagsFor(input){
+  const name = tsNorm(input.name);
+  const ingNames = (input.ingredients||[]).map(tsNorm).filter(Boolean);
+  const ingText = ingNames.join(' | ');
+  const instr = tsNorm(input.instructions);
+  const all = name+' | '+ingText+' | '+instr;
+  const out = []; // {tag, why, own}
+  const add = (tag, why)=>{ out.push({tag, why}); };
+
+  const MEAT=['kurczak','piers','udk','skrzydelk','indyk','kaczk','wolowin','wieprzow','schab','karkowk','poledwic','boczek','szynk','kielbas','parowk','mieso','zeberk','golonk','salami','chorizo','bekon','wedlin','cielecin','baranin','jagniec','kabanos','watrob'];
+  const FISH=['losos','dorsz','tunczyk','sledz','makrel','krewetk','ryba','ryby','karp','pstrag','sandacz','miruna','sardynk','anchois','mintaj','dorad','kalmar','malz','owoce morza'];
+  const ANIMAL=['jaj','mleko','smietan','maslo','ser ','serek','twarog','jogurt','miod','kefir','maslank','mascarpone','parmezan','feta','mozzarella','ricotta','zolty','gouda','majonez','zelatyn','camembert','brie'];
+  const hasMeat = tsHas(ingText, MEAT), hasFish = tsHas(ingText, FISH);
+  if(ingNames.length>=2){
+    if(!hasMeat && !hasFish){
+      if(!tsHas(ingText+' ', ANIMAL)) add('Wegańskie','w składnikach nie ma mięsa, ryb, nabiału ani jajek');
+      add('Wegetariańskie','w składnikach nie ma mięsa ani ryb');
+    }
+  }
+  const MAIN = [
+    [['kurczak','piers','udk','skrzydelk'],'Kurczak'],[['indyk'],'Indyk'],[['wolowin'],'Wołowina'],
+    [['wieprzow','schab','karkowk','boczek'],'Wieprzowina'],[['mieso mielone','mielone mieso'],'Mięso mielone'],
+    [['krewetk'],'Krewetki'],[['losos'],'Łosoś'],[['tunczyk'],'Tuńczyk'],
+    [['makaron','spaghetti','penne','tagliatelle','fusilli','lasagne','nitki'],'Makaron'],[['ryz'],'Ryż'],
+    [['ziemniak'],'Ziemniaki'],[['kasza','kaszy'],'Kasza'],[['kalafior'],'Kalafior'],[['brokul'],'Brokuły'],
+    [['dyni'],'Dynia'],[['grzyb','pieczark','borowik','kurk'],'Grzyby'],[['soczewic','ciecierzyc','fasol','groch'],'Strączkowe'],
+    [['kapust'],'Kapusta'],[['szpinak'],'Szpinak'],[['cukini'],'Cukinia'],[['pomidor'],'Pomidory']
+  ];
+  MAIN.forEach(([stems,tag])=>{ if(tsHas(ingText, stems)) add(tag,'jest w składnikach'); });
+  if(tsHas(ingText,['ser ','serek','mozzarella','parmezan','feta','zolty','gouda','twarog'])) add('Ser','ser w składnikach');
+
+  const TYPE = [
+    [['zup','krem ','rosol','barszcz','zurek','krupnik','chlodnik','bulion'],'Zupa'],
+    [['salatk','surowk'],'Sałatka'],[['pierog','uszk'],'Pierogi'],[['klusk','kopytk','knedl','gnocchi'],'Kluski'],
+    [['nalesnik'],'Naleśniki'],[['placki','racuch'],'Placki'],[['omlet','jajecznic'],'Jajka'],[['pizza'],'Pizza'],
+    [['zapiekank'],'Zapiekanka'],[['curry'],'Curry'],[['risotto'],'Risotto'],[['gulasz','leczo','bigos','potrawk'],'Gulasz'],
+    [['kotlet','sznycel','schabowy'],'Kotlety'],[['burger'],'Burger'],[['kanapk','tost','wrap','tortill'],'Kanapki'],
+    [['owsiank','granola','jaglank'],'Owsianka'],[['smoothie','koktajl'],'Koktajl'],[['sos ','dip','pesto','hummus'],'Sos'],
+    [['ciast','sernik','szarlot','brownie','muffin','babk','tarta','tort','ciastk','makowiec','piernik'],'Ciasto'],
+    [['przetwor','dzem','konfitur'],'Przetwory'],[['lemoniad','kompot','herbat'],'Napój']
+  ];
+  const nameOnly = name+' ';
+  TYPE.forEach(([stems,tag])=>{ if(tsHas(nameOnly, stems)) add(tag,'wynika z nazwy'); });
+  const sweet = tsHas(nameOnly,['ciast','sernik','szarlot','brownie','muffin','babk','tarta','tort','ciastk','makowiec','piernik','deser','budyn','lody','tiramisu','galaretk','panna cotta']);
+  if(sweet) add('Na słodko','deser / ciasto');
+
+  if(tsHas(instr,['piekarnik','upiec','upiecz','zapiec','blach'])) add('Z piekarnika','w instrukcji jest piekarnik');
+  if(tsHas(instr,['patelni','smaz'])) add('Patelnia','w instrukcji jest patelnia');
+  if(tsHas(instr,['jednym garnku','jeden garnek','jednego garnka','jednym naczyniu'])) add('Jednogarnkowe','w instrukcji jeden garnek');
+  if(tsHas(all,['grill'])) add('Grill','jest grill');
+  if(tsHas(all,['airfryer','frytkownic'])) add('Airfryer','jest airfryer');
+  if(tsHas(all,['wolnowar','slow cooker'])) add('Wolnowar','jest wolnowar');
+  if(tsHas(instr,['blender','zmiksuj','zblenduj'])) add('Blender','w instrukcji jest blender');
+  if(sweet && !tsHas(instr,['piekarnik','upiec','upiecz','zapiec'])) add('Bez pieczenia','deser bez piekarnika');
+
+  const minutes = tsMinutes(name+' '+instr);
+  const ingCount = ingNames.length;
+  if(minutes!==null && minutes<=30) add('Szybkie','czas w instrukcji: ok. '+minutes+' min');
+  else if(minutes===null && ingCount>=2 && ingCount<=6 && instr.length<500) add('Szybkie','mało składników i krótka instrukcja');
+  if(ingCount>=2 && ingCount<=6) add('Proste','tylko '+ingCount+' składników');
+  if(minutes!==null && minutes>=120) add('Czasochłonne','czas w instrukcji: ok. '+minutes+' min');
+
+  if(tsHas(name+' | '+ingText,['dyni','sliwk','grzyb','borowik'])) add('Jesienne','sezonowe składniki');
+  if(tsHas(name+' | '+ingText,['truskawk','malin','jagod','arbuz','czeresn','cukini'])) add('Letnie','sezonowe składniki');
+  if(tsHas(name+' | '+ingText,['szparag','rzodkiew','szczaw'])) add('Wiosenne','sezonowe składniki');
+  if(tsHas(name+' | '+ingText,['wigil','swiat','makowiec','piernik','kutia'])) add('Świąteczne','świąteczne danie');
+
+  // własne tagi użytkownika: pasują do tekstu albo do podobnych przepisów
+  const taken = new Set(out.map(o=>tsNorm(o.tag).slice(0,5)));
+  const stemOf = t=>{ const n=tsNorm(t); return n.length>=6 ? n.slice(0,n.length-2) : n; };
+  (input.allTags||[]).forEach(t=>{
+    const key=tsNorm(t).slice(0,5); if(taken.has(key)) return;
+    const st=stemOf(t);
+    if(st.length>=4 && new RegExp('(^|[^a-z0-9])'+st).test(all)){ out.push({tag:t, why:'twój tag pasuje do opisu'}); taken.add(key); return; }
+    const own = (input.recipes||[]).filter(r=>r.id!==input.recId && (r.tags||[]).includes(t));
+    if(!own.length) return;
+    const mine = new Set(ingNames.filter(n=>!tsHas(n,TAGSUGG_GENERIC)));
+    let similar=0;
+    own.forEach(r=>{
+      const rs=(r.ingredients||[]).map(i=>tsNorm(i.name)).filter(n=>n && !tsHas(n,TAGSUGG_GENERIC));
+      const common = rs.filter(n=>[...mine].some(m=>m===n || m.startsWith(n.slice(0,5)) && n.length>=5)).length;
+      if(common>=2) similar++;
+    });
+    if(similar>=2 || (own.length===1 && similar===1 && mine.size>=3)){
+      out.push({tag:t, why:'podobne składniki jak w twoich przepisach z tym tagiem'}); taken.add(key);
+    }
+  });
+
+  // dopasuj pisownię do już istniejących tagów, odfiltruj wybrane / kategorie, usuń duplikaty
+  const skipKeys = new Set((input.skip||[]).map(s=>tsNorm(s).slice(0,5)));
+  const seen=new Set(), res=[];
+  out.forEach(o=>{
+    let tag=o.tag, why=o.why;
+    const key=tsNorm(tag).slice(0,5);
+    const existing=(input.allTags||[]).find(t=>tsNorm(t).slice(0,5)===key);
+    if(existing && existing!==tag){ tag=existing; }
+    if(skipKeys.has(key) || seen.has(key)) return;
+    seen.add(key); res.push({tag, why});
+  });
+  return res.slice(0,12);
+}
+function attachTagSuggester(overlay, tagsInputSel, tagsAPI, collect){
+  const wrap = overlay.querySelector(tagsInputSel).parentElement;
+  const box = document.createElement('div');
+  box.innerHTML = `<button type="button" class="btn btn-ghost tg-btn" style="margin-top:6px;font-size:13px;">✨ Zaproponuj tagi</button><div class="tg-res"></div>`;
+  wrap.appendChild(box);
+  const res = box.querySelector('.tg-res');
+  function render(list){
+    if(!list.length){ res.innerHTML='<div class="sub" style="margin-top:6px;">Nie mam nowych propozycji — dodaj więcej składników lub opis i spróbuj ponownie.</div>'; return; }
+    res.innerHTML = '<div class="tag-sugg">'+list.map((s,i)=>`<button type="button" class="tag-sugg-btn" data-i="${i}" title="${escapeHtml(s.why)}">+ ${escapeHtml(s.tag)}</button>`).join('')
+      + (list.length>1?'<button type="button" class="tag-sugg-all">Dodaj wszystkie</button>':'')+'</div><div class="sub" style="margin-top:4px;">Kliknij tag, aby go dodać. Przytrzymaj, aby zobaczyć dlaczego.</div>';
+    res.querySelectorAll('.tag-sugg-btn').forEach(b=>b.addEventListener('click',()=>{ tagsAPI.add(list[+b.dataset.i].tag); b.remove(); }));
+    const all=res.querySelector('.tag-sugg-all');
+    if(all) all.addEventListener('click',()=>{ list.forEach(s=>tagsAPI.add(s.tag)); res.innerHTML='<div class="sub" style="margin-top:6px;">Dodano.</div>'; });
+  }
+  box.querySelector('.tg-btn').addEventListener('click',()=>{
+    const inp = collect();
+    inp.allTags = tags; inp.recipes = recipes;
+    inp.skip = [...(inp.skip||[]), ...tagsAPI.get()];
+    render(suggestTagsFor(inp));
+  });
+}
+
 function openRecipeModal(existing, forceNew){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -2205,6 +2369,13 @@ function openRecipeModal(existing, forceNew){
     async (val)=>{ tags.push(val); }
   );
   const ratingsAPI = buildRatingEditor(overlay.querySelector('#m-ratings'), rec.ratings||[]);
+  attachTagSuggester(overlay, '#tagsInput', tagsAPI, ()=>({
+    name: overlay.querySelector('#m-name').value,
+    ingredients: ings.map(i=>i.name),
+    instructions: overlay.querySelector('#m-instr').value,
+    recId: rec.id,
+    skip: [...dishCatsAPI.get(), ...mealCatsAPI.get()]
+  }));
 
   /* ingredients with autocomplete + unit autofill + enter-to-add */
   let ings = rec.ingredients.map(i=>({...i}));
@@ -2246,6 +2417,7 @@ function openRecipeModal(existing, forceNew){
     const wrap=overlay.querySelector('#ingList');
     wrap.innerHTML = ings.map((ing,idx)=>`
       <div class="ing-row" data-idx="${idx}">
+        <div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>
         <input type="text" class="ing-name" placeholder="składnik" value="${escapeHtml(ing.name)}" autocomplete="off">
         <input type="text" class="ing-qty" placeholder="ilość" value="${escapeHtml(ing.qty)}">
         <select class="ing-unit">${unitOptionsHtml(ing.unit)}</select>
@@ -2263,6 +2435,9 @@ function openRecipeModal(existing, forceNew){
       bindEnterSubmit(nameInp, ()=>{ ings[idx].name = nameInp.value; closeIngSugg(); goToNextIngRow(idx); });
       bindEnterSubmit(qtyInp, ()=>{ closeIngSugg(); goToNextIngRow(idx); });
       row.querySelector('.ing-rm').addEventListener('click', ()=>{ ings.splice(idx,1); renderIngs(); });
+      const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
+      row.querySelector('.ing-up').addEventListener('click', ()=>moveIng(idx,idx-1));
+      row.querySelector('.ing-down').addEventListener('click', ()=>moveIng(idx,idx+1));
     });
   }
   renderIngs();
@@ -2634,18 +2809,38 @@ function renderProducts(filter){
     body.innerHTML = `<tr><td colspan="5" class="usage">Nic nie znaleziono.</td></tr>`;
     return;
   }
-  const usageCount = (name)=> recipes.reduce((n,r)=> n + (r.ingredients.some(i=>namesMatch(i.name,name))?1:0), 0);
-  body.innerHTML = [...filtered].sort((a,b)=>a.name.localeCompare(b.name,'pl')).map(p=>{
-    const used = usageCount(p.name);
+  const usageList = (name)=> recipes.filter(r=> (r.ingredients||[]).some(i=>namesMatch(i.name,name)));
+  const plRecipes = n => n===1 ? '1 przepis' : ((n%10>=2 && n%10<=4 && !(n%100>=12 && n%100<=14)) ? n+' przepisy' : n+' przepisów');
+  const sortMode = (document.getElementById('productSort')||{}).value || 'alpha';
+  const catOrder = shoppingCategories.map(c=>c.name);
+  const catRank = c => { const i=catOrder.indexOf(c||'Inne'); return i<0 ? 9999 : i; };
+  const sorted = [...filtered].sort((a,b)=>{
+    if(sortMode==='cat'){
+      const d = catRank(a.category)-catRank(b.category);
+      if(d) return d;
+      const c = (a.category||'Inne').localeCompare(b.category||'Inne','pl');
+      if(c) return c;
+    }
+    return a.name.localeCompare(b.name,'pl');
+  });
+  let lastCat = null;
+  body.innerHTML = sorted.map(p=>{
+    const usedRecipes = usageList(p.name);
+    const used = usedRecipes.length;
+    let groupRow = '';
+    if(sortMode==='cat' && (p.category||'Inne')!==lastCat){
+      lastCat = p.category||'Inne';
+      groupRow = `<tr class="prod-group"><td colspan="5">${escapeHtml(lastCat)}</td></tr>`;
+    }
     const catNames = shoppingCategories.map(c=>c.name);
     if(!catNames.includes(p.category)) catNames.push(p.category||'Inne');
     const unitList = [...units];
     if(p.unit && !unitList.includes(p.unit)) unitList.push(p.unit);
-    return `<tr data-id="${p.id}">
+    return groupRow + `<tr data-id="${p.id}">
       <td>${escapeHtml(p.name)}</td>
       <td><select class="p-cat">${catNames.map(c=>`<option value="${escapeHtml(c)}" ${c===p.category?'selected':''}>${escapeHtml(c)}</option>`).join('')}<option value="__new__">+ Nowa...</option></select></td>
       <td><select class="p-unit"><option value="">—</option>${unitList.map(u=>`<option value="${escapeHtml(u)}" ${u===p.unit?'selected':''}>${escapeHtml(u)}</option>`).join('')}</select></td>
-      <td class="usage">${used} przepis(ów)</td>
+      <td class="usage">${used?`<button type="button" class="usage-link p-usage">${plRecipes(used)}</button>`:'0 przepisów'}</td>
       <td>${used===0?'<button class="btn-icon p-del">🗑</button>':''}</td>
     </tr>`;
   }).join('');
@@ -2670,6 +2865,11 @@ function renderProducts(filter){
     p.unit = e.target.value;
     await saveProducts();
   }));
+  body.querySelectorAll('.p-usage').forEach(b=>b.addEventListener('click', e=>{
+    const id=e.target.closest('tr').dataset.id;
+    const p=products.find(x=>x.id===id);
+    if(p) openProductUsageModal(p, usageList(p.name));
+  }));
   body.querySelectorAll('.p-del').forEach(b=>b.addEventListener('click', async e=>{
     const id=e.target.closest('tr').dataset.id;
     products = products.filter(p=>p.id!==id);
@@ -2677,6 +2877,37 @@ function renderProducts(filter){
     renderProducts();
   }));
 }
+
+function openProductUsageModal(p, list){
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal">
+    <h2>${escapeHtml(p.name)}</h2>
+    <div class="sub" style="margin-bottom:10px;">Występuje w przepisach (kliknij, aby otworzyć):</div>
+    ${[...list].sort((a,b)=>a.name.localeCompare(b.name,'pl')).map(r=>{
+      const ing=(r.ingredients||[]).find(i=>namesMatch(i.name,p.name));
+      const q = ing && ing.qty ? ' — '+escapeHtml(String(ing.qty))+(ing.unit?' '+escapeHtml(ing.unit):'') : '';
+      return `<button type="button" class="usage-item" data-rid="${r.id}">${escapeHtml(r.name)}<span class="sub">${q}</span></button>`;
+    }).join('')}
+    <div class="modal-actions"><button class="btn btn-ghost" id="pu-close">Zamknij</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#pu-close').addEventListener('click', ()=>overlay.remove());
+  overlay.querySelectorAll('.usage-item').forEach(b=>b.addEventListener('click', ()=>{
+    const r=recipes.find(x=>x.id===b.dataset.rid);
+    if(r) openRecipePreview(r);
+  }));
+}
+(function(){
+  const sel=document.getElementById('productSort');
+  if(!sel) return;
+  try{ const v=localStorage.getItem('productSortMode'); if(v==='alpha'||v==='cat') sel.value=v; }catch(e){}
+  sel.addEventListener('change', ()=>{
+    try{ localStorage.setItem('productSortMode', sel.value); }catch(e){}
+    renderProducts(document.getElementById('productSearch').value);
+  });
+})();
 
 /* ============ CATEGORIES TAB (flat, no subcategories) ============ */
 function renderCatManager(containerId, listRef, saveFn, onChange){
