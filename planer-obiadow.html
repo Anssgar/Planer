@@ -423,7 +423,7 @@ tr.prod-group td{background:var(--bg);font-weight:800;font-size:12px;text-transf
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 09:11</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 09:32</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -2276,16 +2276,41 @@ function attachTagSuggester(overlay, tagsInputSel, tagsAPI, collect){
   function render(list){
     if(!list.length){ res.innerHTML='<div class="sub" style="margin-top:6px;">Nie mam nowych propozycji — dodaj więcej składników lub opis i spróbuj ponownie.</div>'; return; }
     res.innerHTML = '<div class="tag-sugg">'+list.map((s,i)=>`<button type="button" class="tag-sugg-btn" data-i="${i}" title="${escapeHtml(s.why)}">+ ${escapeHtml(s.tag)}</button>`).join('')
-      + (list.length>1?'<button type="button" class="tag-sugg-all">Dodaj wszystkie</button>':'')+'</div><div class="sub" style="margin-top:4px;">Kliknij tag, aby go dodać. Przytrzymaj, aby zobaczyć dlaczego.</div>';
+      + (list.length>1?'<button type="button" class="tag-sugg-all">Dodaj wszystkie</button>':'')+'</div><div class="sub" style="margin-top:4px;">Kliknij tag, aby go dodać. Przytrzymaj, aby zobaczyć skąd propozycja.</div>';
     res.querySelectorAll('.tag-sugg-btn').forEach(b=>b.addEventListener('click',()=>{ tagsAPI.add(list[+b.dataset.i].tag); b.remove(); }));
     const all=res.querySelector('.tag-sugg-all');
     if(all) all.addEventListener('click',()=>{ list.forEach(s=>tagsAPI.add(s.tag)); res.innerHTML='<div class="sub" style="margin-top:6px;">Dodano.</div>'; });
   }
-  box.querySelector('.tg-btn').addEventListener('click',()=>{
+  const btn = box.querySelector('.tg-btn');
+  btn.addEventListener('click', async ()=>{
     const inp = collect();
     inp.allTags = tags; inp.recipes = recipes;
     inp.skip = [...(inp.skip||[]), ...tagsAPI.get()];
-    render(suggestTagsFor(inp));
+    const rules = suggestTagsFor(inp);
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = '✨ Analizuję…';
+    res.innerHTML = '';
+    let ai = [], note = '';
+    try {
+      const r = await fetchWithTimeout(RECIPE_AI_WORKER_URL, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({mode:'tags', name:inp.name, ingredients:(inp.ingredients||[]).filter(Boolean), instructions:inp.instructions, knownTags:tags})
+      }, 25000);
+      const d = await r.json();
+      if(r.ok && Array.isArray(d.tags)) ai = d.tags.map(t=>({tag:t, why:'propozycja AI'}));
+      else note = 'AI niedostępne (' + ((d && d.error) || ('HTTP '+r.status)) + ') — pokazuję propozycje z reguł.';
+    } catch(e){ note = 'AI niedostępne — pokazuję propozycje z reguł.'; }
+    // scal: najpierw AI, potem reguły; dopasuj pisownię do istniejących tagów, pomiń wybrane i duplikaty
+    const skipKeys = new Set(inp.skip.map(x=>tsNorm(x).slice(0,5)));
+    const seen = new Set(), merged = [];
+    [...ai, ...rules].forEach(o=>{
+      let tag=o.tag; const key=tsNorm(tag).slice(0,5);
+      const ex = tags.find(t=>tsNorm(t).slice(0,5)===key); if(ex) tag=ex;
+      if(skipKeys.has(key) || seen.has(key)) return;
+      seen.add(key); merged.push({tag, why:o.why});
+    });
+    btn.disabled = false; btn.textContent = orig;
+    render(merged.slice(0,14));
+    if(note) res.insertAdjacentHTML('afterbegin','<div class="sub" style="margin-top:6px;color:var(--rust);">'+escapeHtml(note)+'</div>');
   });
 }
 
