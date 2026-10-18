@@ -99,6 +99,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 /* ---- RECIPES ---- */
 .recipes-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
 .recipes-toolbar input{flex:1;max-width:280px;}
+.filter-toggle{background:none;border:none;color:var(--green-dark);font-size:12px;font-weight:600;cursor:pointer;padding:4px 0;margin-top:2px;}
 .filter-caption{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);margin:8px 0 4px;}
 .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
 .filter-pill{font-size:11.5px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);padding:5px 11px;border-radius:20px;cursor:pointer;}
@@ -130,23 +131,22 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .field .hint{text-transform:none;font-weight:400;color:var(--ink-soft);}
 .field input,.field textarea,.field select{width:100%;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.ing-row{display:grid;grid-template-columns:24px minmax(0,1fr) 58px 92px 26px;gap:6px;margin-bottom:6px;position:relative;align-items:center;}
+.ing-row{display:grid;grid-template-columns:16px minmax(0,1fr) 44px 72px 28px;gap:4px;margin-bottom:6px;position:relative;align-items:center;}
+.ing-row input,.ing-row select{padding:8px 6px;font-size:14px;}
+.ing-row input.ing-name{padding-left:10px;}
+.ing-row select.ing-unit{-webkit-appearance:none;appearance:none;padding-right:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238a7f6f'/%3E%3C/svg%3E") no-repeat right 5px center;}
 .ing-namewrap{position:relative;min-width:0;}
-.ing-namewrap input.ing-name{padding-right:30px;}
-.ing-more{position:absolute;right:2px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--ink-soft);font-size:18px;line-height:1;padding:2px 7px;cursor:pointer;}
-.ing-extra{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;background:rgba(232,163,61,.12);border-radius:8px;padding:6px 8px;font-size:12.5px;}
-.ing-extra select{font-size:12.5px;padding:4px 6px;}
-.ing-extra label{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);}
-.ing-extra input[type=checkbox]{width:auto;height:auto;}
-@media (max-width:520px){
-  .ing-row{grid-template-columns:24px 76px minmax(0,1fr) 26px;}
-  .ing-row .ing-move{grid-row:1/3;}
-  .ing-row .ing-namewrap{grid-column:2/-1;}
-  .ing-row .ing-qty{grid-column:2;}
-  .ing-row .ing-unit{grid-column:3;}
-  .ing-row .ing-rm{grid-column:4;}
-}
-.ing-badge{grid-column:1/-1;justify-self:start;border:none;background:rgba(232,163,61,.18);color:var(--ink);border-radius:999px;padding:2px 10px;font-size:11.5px;cursor:pointer;}
+.ing-namewrap input.ing-name{padding-right:6px;}
+.ing-more{align-self:stretch;min-height:34px;border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);font-size:16px;line-height:1;border-radius:8px;cursor:pointer;padding:0;}
+.ing-badge{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:none;background:rgba(232,163,61,.28);color:var(--ink);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;}
+.ing-namewrap input.ing-name.has-badge{padding-right:44px;}
+.ing-menu{position:fixed;z-index:5000;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.18);padding:4px;min-width:200px;}
+.ing-menu button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:none;background:none;padding:9px 10px;font-size:14px;color:var(--ink);border-radius:7px;cursor:pointer;}
+.ing-menu button:hover{background:var(--bg);}
+.ing-menu button:disabled{opacity:.35;cursor:default;}
+.ing-menu button.danger{color:#b3261e;}
+.ing-menu .ck{width:14px;color:var(--green-dark);font-weight:700;}
+.ing-menu hr{border:none;border-top:1px solid var(--line);margin:4px 0;}
 .ing-opt,.ing-or{color:var(--ink-soft);font-size:.9em;}
 .ing-or{font-weight:700;margin:0 4px;}
 .choice-group{margin:8px 0 12px;padding:8px 10px;background:var(--bg);border-radius:10px;}
@@ -186,7 +186,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .partial-badge{font-size:12px;margin-right:4px;}
 .cat-badge.partial{background:rgba(180,140,20,.16);color:#7a5a00;}
 .slot-hint{font-size:11px;color:#7a5a00;background:rgba(180,140,20,.12);border-radius:8px;padding:4px 8px;margin-top:4px;}
-.ing-refname{display:block;padding:8px 10px;font-weight:600;color:var(--green-dark);background:var(--bg);border-radius:8px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ing-refname{display:block;padding:8px 10px;font-weight:600;color:var(--green-dark);background:var(--bg);border-radius:8px;font-size:14px;line-height:1.2;word-break:break-word;}
 .ing-unit-static{font-size:13px;color:var(--muted,#8a7f6f);}
 .add-ing-row{display:flex;gap:14px;flex-wrap:wrap;}
 .preview-ing-list li.ing-ref-li{cursor:pointer;color:var(--green-dark);}
@@ -500,7 +500,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 18.10.2026, 10:49</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 18.10.2026, 11:39</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -1291,10 +1291,13 @@ function openRecipePickerModal(opts){
       <div class="field"><input type="text" id="rpm-search" placeholder="Szukaj po nazwie, tagu, kategorii, opisie..."></div>
       <div class="filter-caption">Kategoria posiłku</div>
       <div class="filter-row" id="rpm-meal-filters"></div>
-      <div class="filter-caption">Kategoria przepisu</div>
-      <div class="filter-row" id="rpm-dish-filters"></div>
-      <div class="filter-caption">Tag</div>
-      <div class="filter-row" id="rpm-tag-filters"></div>
+      <button type="button" class="filter-toggle" id="rpm-more-toggle" style="display:none;">Więcej filtrów ▾</button>
+      <div id="rpm-more" style="${recipesOnly?'display:none;':''}">
+        <div class="filter-caption">Kategoria przepisu</div>
+        <div class="filter-row" id="rpm-dish-filters"></div>
+        <div class="filter-caption">Tag</div>
+        <div class="filter-row" id="rpm-tag-filters"></div>
+      </div>
       <div id="rpm-list" style="max-height:280px;overflow-y:auto;margin-top:8px;border-top:1px dashed var(--line);"></div>
       <div class="modal-actions"><button class="btn btn-ghost" id="rpm-cancel">Zamknij</button></div>
     </div>`;
@@ -1312,7 +1315,7 @@ function openRecipePickerModal(opts){
       names.map(n=>`<span class="filter-pill${active===n?' active':''}" data-v="${escapeHtml(n)}">${escapeHtml(pillLabel(n))}</span>`).join('');
     row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click', ()=>onClick(p.dataset.v===''?null:p.dataset.v)));
   }
-  function renderMealPills(){ renderPillRow('rpm-meal-filters', [...mealCategories.map(c=>c.name), PARTIAL_FILTER], activeMeal, v=>{ activeMeal=v; renderMealPills(); renderList(); }); }
+  function renderMealPills(){ renderPillRow('rpm-meal-filters', recipesOnly ? [PARTIAL_FILTER] : [...mealCategories.map(c=>c.name), PARTIAL_FILTER], activeMeal, v=>{ activeMeal=v; renderMealPills(); renderList(); }); }
   function renderDishPills(){ renderPillRow('rpm-dish-filters', recipeCategories.map(c=>c.name), activeDish, v=>{ activeDish=v; renderDishPills(); renderList(); }); }
   function renderTagPills(){ renderPillRow('rpm-tag-filters', tags, activeTag, v=>{ activeTag=v; renderTagPills(); renderList(); }); }
 
@@ -1382,6 +1385,10 @@ function openRecipePickerModal(opts){
   overlay.querySelector('#rpm-subtab-recipes').addEventListener('click', ()=>setSubTab('recipes'));
   overlay.querySelector('#rpm-subtab-quick').addEventListener('click', ()=>setSubTab('quick'));
   overlay.querySelector('#rpm-search').addEventListener('input', renderList);
+  overlay.querySelector('#rpm-more-toggle').addEventListener('click', e=>{
+    const box=overlay.querySelector('#rpm-more'), open=box.style.display==='none';
+    box.style.display=open?'block':'none'; e.target.textContent=open?'Mniej filtrów ▴':'Więcej filtrów ▾';
+  });
   renderMealPills(); renderDishPills(); renderTagPills(); renderList();
 
   const quickAddInput = overlay.querySelector('#rpm-quickadd');
@@ -2078,7 +2085,7 @@ function openRecipePreview(rec){
       ${rec.imageData?`<img class="preview-hero" src="${rec.imageData}" alt="">`:''}
       <h2>${escapeHtml(rec.name)}</h2>
       <div class="meta" style="margin-bottom:8px;">
-        ${rec.partial?'<span class="cat-badge partial">🧩 Baza / dodatek — niekompletne danie</span>':''}
+        ${rec.partial?'<span class="cat-badge partial">🧩 Baza / dodatek</span>':''}
         ${(rec.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
         ${(rec.categories||[]).map(c=>`<span class="cat-badge2">${escapeHtml(c)}</span>`).join('')}
         ${(rec.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
@@ -2439,8 +2446,7 @@ function openRecipeModal(existing, forceNew){
       <div class="field"><label>Tagi</label>
         <div class="chips-input" id="tagsInput"><input type="text" id="tagInput" placeholder="dodaj tag i Enter..."></div>
       </div>
-      <div class="field"><label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;"><input type="checkbox" id="m-partial" ${rec.partial?'checked':''} style="width:18px;height:18px;flex:none;accent-color:var(--green);"> 🧩 Niekompletne danie — baza lub dodatek</label>
-        <p class="hint" style="margin:4px 0 0;">Np. sos, makaron orzo, surówka. Przy dodawaniu do planu dostaniesz przypomnienie, żeby dodać resztę posiłku.</p></div>
+      <div class="field" style="margin-bottom:8px;"><label title="Niekompletne danie, np. sos, makaron orzo, surówka — przy dodawaniu do planu dostaniesz przypomnienie o reszcie posiłku" style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;text-transform:none;letter-spacing:0;margin:0;cursor:pointer;"><input type="checkbox" id="m-partial" ${rec.partial?'checked':''} style="width:18px;height:18px;flex:none;accent-color:var(--green);"> 🧩 Baza / dodatek</label></div>
       <div class="field"><label>Porcje bazowe</label><input type="number" min="1" id="m-servings" value="${rec.baseServings||4}" style="max-width:120px;"></div>
       <div class="field"><label>Zdjęcie</label>
         <input type="file" id="m-image-file" accept="image/*">
@@ -2457,7 +2463,7 @@ function openRecipeModal(existing, forceNew){
       <div class="field">
         <label>Składniki <span class="hint">(Enter dodaje kolejny wiersz)</span></label>
         <div id="ingList"></div>
-        <div class="add-ing-row"><button class="add-ing" id="addIng">+ Dodaj składnik</button><button class="add-ing" id="addIngRef" title="Użyj innego przepisu (np. sosu) jako składnika">📎 Dodaj przepis jako składnik</button></div>
+        <div class="add-ing-row"><button class="add-ing" id="addIng">+ Składnik</button><button class="add-ing" id="addIngRef" title="Użyj innego przepisu (np. sosu) jako składnika">📎 Przepis jako składnik</button></div>
       </div>
       <div class="field"><label>Instrukcje</label><textarea id="m-instr" rows="1" style="overflow-y:auto;resize:none;" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
       <div class="field"><label>Oceny</label><div id="m-ratings"></div></div>
@@ -2547,60 +2553,86 @@ function openRecipeModal(existing, forceNew){
     if(currentUnit && !list.includes(currentUnit)) list.push(currentUnit);
     return `<option value="">j.</option>` + list.map(u=>`<option value="${escapeHtml(u)}" ${u===currentUnit?'selected':''}>${escapeHtml(u)}</option>`).join('');
   }
-  const openIng = new Set();
   function ingKind(ing, idx){
     if(ing.altGroup && ings.findIndex(x=>x.altGroup===ing.altGroup)!==idx) return 'alt';
     if(ing.optional && !ing.altGroup) return 'opt';
     return '';
   }
-  function ingExtraHtml(ing, idx){
-    const kind=ingKind(ing, idx), isBase=!!ing.altGroup && kind==='';
-    if(openIng.has(ing)){
-      return `<div class="ing-extra">
-        <select class="ing-kind">
-          <option value="" ${kind===''?'selected':''}>zwykły składnik</option>
-          <option value="opt" ${kind==='opt'?'selected':''}>opcjonalny</option>
-          <option value="alt" ${kind==='alt'?'selected':''} ${idx===0?'disabled':''}>zamiennik poprzedniego</option>
-        </select>
-        ${kind==='opt'?`<label><input type="checkbox" class="ing-defon" ${ing.defaultOn?'checked':''}> domyślnie zaznaczony</label>`:''}
-        ${isBase?'<span class="sub">ma zamiennik poniżej</span>':''}
-      </div>`;
-    }
-    if(kind==='alt') return '<button type="button" class="ing-badge">↳ lub (zamiennik poprzedniego)</button>';
-    if(kind==='opt') return `<button type="button" class="ing-badge">opcjonalny${ing.defaultOn?' · domyślnie zaznaczony':''}</button>`;
-    if(isBase) return '<button type="button" class="ing-badge">ma zamiennik ↓</button>';
+  function ingBadgeText(ing, idx){
+    const kind=ingKind(ing, idx);
+    if(kind==='alt') return 'lub';
+    if(kind==='opt') return 'opc.';
+    if(ing.altGroup) return 'lub ↓';
     return '';
   }
+  function ingBadgeTitle(ing, idx){
+    const kind=ingKind(ing, idx);
+    if(kind==='alt') return 'Zamiennik poprzedniego składnika';
+    if(kind==='opt') return 'Składnik opcjonalny'+(ing.defaultOn?' · domyślnie zaznaczony':'');
+    return 'Ma zamiennik poniżej';
+  }
+  /* menu wyskakujące: zwykły / opcjonalny / zamiennik poprzedniego / usuń */
+  let ingMenu=null;
+  function closeIngMenu(){ if(ingMenu){ ingMenu.remove(); ingMenu=null; document.removeEventListener('mousedown', ingMenuOutside, true); document.removeEventListener('touchstart', ingMenuOutside, true); window.removeEventListener('scroll', closeIngMenu, true); } }
+  function ingMenuOutside(e){ if(ingMenu && !ingMenu.contains(e.target)) closeIngMenu(); }
+  function openIngMenu(btn, idx){
+    closeIngMenu(); closeIngSugg();
+    const ing=ings[idx], kind=ingKind(ing, idx);
+    const altOk = idx>0 && !ings[idx-1].recipeRef;
+    const m=document.createElement('div'); m.className='ing-menu';
+    m.innerHTML=`
+      <button type="button" data-act="plain"><span class="ck">${kind===''&&!ing.altGroup?'✓':''}</span>Zwykły składnik</button>
+      <button type="button" data-act="opt"><span class="ck">${kind==='opt'?'✓':''}</span>Opcjonalny</button>
+      <button type="button" data-act="alt" ${altOk?'':'disabled'}><span class="ck">${kind==='alt'?'✓':''}</span>Zamiennik poprzedniego</button>
+      ${kind==='opt'?`<button type="button" data-act="defon"><span class="ck">${ing.defaultOn?'✓':''}</span>Domyślnie zaznaczony</button>`:''}
+      <hr><button type="button" data-act="rm" class="danger"><span class="ck">✕</span>Usuń składnik</button>`;
+    document.body.appendChild(m); ingMenu=m;
+    const r=btn.getBoundingClientRect(), mh=m.offsetHeight, mw=m.offsetWidth;
+    m.style.left=Math.max(8, Math.min(window.innerWidth-mw-8, r.right-mw))+'px';
+    m.style.top=((r.bottom+4+mh>window.innerHeight-8) ? Math.max(8, r.top-mh-4) : r.bottom+4)+'px';
+    m.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{
+      const act=b.dataset.act, it=ings[idx];
+      closeIngMenu();
+      if(act==='rm'){ ings.splice(idx,1); cleanAltGroups(ings); renderIngs(); return; }
+      if(act==='defon'){ it.defaultOn=!it.defaultOn; renderIngs(); return; }
+      delete it.optional; delete it.defaultOn; delete it.altGroup;
+      if(act==='opt'){ it.optional=true; }
+      else if(act==='alt' && idx>0){ const prev=ings[idx-1]; prev.altGroup = prev.altGroup || uid(); it.altGroup = prev.altGroup; }
+      cleanAltGroups(ings); renderIngs();
+    }));
+    setTimeout(()=>{ document.addEventListener('mousedown', ingMenuOutside, true); document.addEventListener('touchstart', ingMenuOutside, true); window.addEventListener('scroll', closeIngMenu, true); },0);
+  }
+  const moveBtns = idx=>`<div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>`;
   function renderIngs(){
+    closeIngMenu();
     const wrap=overlay.querySelector('#ingList');
     wrap.innerHTML = ings.map((ing,idx)=> ing.recipeRef ? `
       <div class="ing-row ing-ref-row" data-idx="${idx}">
-        <div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>
+        ${moveBtns(idx)}
         <div class="ing-namewrap"><span class="ing-refname" title="Przepis jako składnik">📎 ${escapeHtml(((recipes.find(r=>r.id===ing.recipeRef)||{}).name)||ing.name||'(usunięty przepis)')}</span></div>
         <input type="text" class="ing-qty" placeholder="porcje" value="${escapeHtml(ing.qty)}" inputmode="decimal">
         <span class="ing-unit ing-unit-static">porcji</span>
-        <button class="btn-icon ing-rm">✕</button>
+        <button type="button" class="ing-more" title="Usuń">✕</button>
       </div>
     ` : `
       <div class="ing-row" data-idx="${idx}">
-        <div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>
-        <div class="ing-namewrap"><input type="text" class="ing-name" placeholder="składnik" value="${escapeHtml(ing.name)}" autocomplete="off"><button type="button" class="ing-more" title="Opcjonalny / zamiennik">⋯</button></div>
+        ${moveBtns(idx)}
+        <div class="ing-namewrap"><input type="text" class="ing-name${ingBadgeText(ing,idx)?' has-badge':''}" placeholder="składnik" value="${escapeHtml(ing.name)}" autocomplete="off">${ingBadgeText(ing,idx)?`<button type="button" class="ing-badge" title="${escapeHtml(ingBadgeTitle(ing,idx))}">${ingBadgeText(ing,idx)}</button>`:''}</div>
         <input type="text" class="ing-qty" placeholder="ilość" value="${escapeHtml(ing.qty)}">
         <select class="ing-unit">${unitOptionsHtml(ing.unit)}</select>
-        <button class="btn-icon ing-rm">✕</button>
-        ${ingExtraHtml(ing, idx)}
+        <button type="button" class="ing-more" title="Opcje składnika">⋯</button>
       </div>
     `).join('');
+    const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
     wrap.querySelectorAll('.ing-row').forEach(row=>{
       const idx=+row.dataset.idx;
+      row.querySelector('.ing-up').addEventListener('click', ()=>moveIng(idx,idx-1));
+      row.querySelector('.ing-down').addEventListener('click', ()=>moveIng(idx,idx+1));
       if(ings[idx].recipeRef){
         const q=row.querySelector('.ing-qty');
         q.addEventListener('input', ()=>ings[idx].qty=q.value);
         bindEnterSubmit(q, ()=>goToNextIngRow(idx));
-        row.querySelector('.ing-rm').addEventListener('click', ()=>{ ings.splice(idx,1); renderIngs(); });
-        const mv=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); renderIngs(); };
-        row.querySelector('.ing-up').addEventListener('click', ()=>mv(idx,idx-1));
-        row.querySelector('.ing-down').addEventListener('click', ()=>mv(idx,idx+1));
+        row.querySelector('.ing-more').addEventListener('click', ()=>{ ings.splice(idx,1); renderIngs(); });
         return;
       }
       const nameInp=row.querySelector('.ing-name'), qtyInp=row.querySelector('.ing-qty'), unitInp=row.querySelector('.ing-unit');
@@ -2611,21 +2643,9 @@ function openRecipeModal(existing, forceNew){
       unitInp.addEventListener('change', ()=>ings[idx].unit=unitInp.value);
       bindEnterSubmit(nameInp, ()=>{ ings[idx].name = nameInp.value; closeIngSugg(); goToNextIngRow(idx); });
       bindEnterSubmit(qtyInp, ()=>{ closeIngSugg(); goToNextIngRow(idx); });
-      row.querySelector('.ing-rm').addEventListener('click', ()=>{ openIng.delete(ings[idx]); ings.splice(idx,1); cleanAltGroups(ings); renderIngs(); });
-      row.querySelector('.ing-more').addEventListener('click', ()=>{ const o=ings[idx]; if(openIng.has(o)) openIng.delete(o); else openIng.add(o); renderIngs(); });
-      const badge=row.querySelector('.ing-badge'); if(badge) badge.addEventListener('click', ()=>{ openIng.add(ings[idx]); renderIngs(); });
-      const kindSel=row.querySelector('.ing-kind');
-      if(kindSel) kindSel.addEventListener('change', ()=>{
-        const it=ings[idx], k=kindSel.value;
-        delete it.optional; delete it.defaultOn; delete it.altGroup;
-        if(k==='opt'){ it.optional=true; }
-        else if(k==='alt' && idx>0){ const prev=ings[idx-1]; prev.altGroup = prev.altGroup || uid(); it.altGroup = prev.altGroup; }
-        cleanAltGroups(ings); renderIngs();
-      });
-      const defOn=row.querySelector('.ing-defon'); if(defOn) defOn.addEventListener('change', ()=>{ ings[idx].defaultOn=defOn.checked; });
-      const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
-      row.querySelector('.ing-up').addEventListener('click', ()=>moveIng(idx,idx-1));
-      row.querySelector('.ing-down').addEventListener('click', ()=>moveIng(idx,idx+1));
+      const more=row.querySelector('.ing-more');
+      more.addEventListener('click', ()=>openIngMenu(more, idx));
+      const badge=row.querySelector('.ing-badge'); if(badge) badge.addEventListener('click', ()=>openIngMenu(more, idx));
     });
   }
   renderIngs();
