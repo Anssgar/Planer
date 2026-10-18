@@ -131,6 +131,33 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .field input,.field textarea,.field select{width:100%;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .ing-row{display:grid;grid-template-columns:24px minmax(0,1fr) 58px 92px 26px;gap:6px;margin-bottom:6px;position:relative;align-items:center;}
+.ing-namewrap{position:relative;min-width:0;}
+.ing-namewrap input.ing-name{padding-right:30px;}
+.ing-more{position:absolute;right:2px;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--ink-soft);font-size:18px;line-height:1;padding:2px 7px;cursor:pointer;}
+.ing-extra{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;background:rgba(232,163,61,.12);border-radius:8px;padding:6px 8px;font-size:12.5px;}
+.ing-extra select{font-size:12.5px;padding:4px 6px;}
+.ing-extra label{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);}
+.ing-extra input[type=checkbox]{width:auto;height:auto;}
+@media (max-width:520px){
+  .ing-row{grid-template-columns:24px 76px minmax(0,1fr) 26px;}
+  .ing-row .ing-move{grid-row:1/3;}
+  .ing-row .ing-namewrap{grid-column:2/-1;}
+  .ing-row .ing-qty{grid-column:2;}
+  .ing-row .ing-unit{grid-column:3;}
+  .ing-row .ing-rm{grid-column:4;}
+}
+.ing-badge{grid-column:1/-1;justify-self:start;border:none;background:rgba(232,163,61,.18);color:var(--ink);border-radius:999px;padding:2px 10px;font-size:11.5px;cursor:pointer;}
+.ing-opt,.ing-or{color:var(--ink-soft);font-size:.9em;}
+.ing-or{font-weight:700;margin:0 4px;}
+.choice-group{margin:8px 0 12px;padding:8px 10px;background:var(--bg);border-radius:10px;}
+.choice-group h4{margin:0 0 6px;font-size:13px;}
+.choice-group label{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14.5px;cursor:pointer;}
+.choice-group input{width:18px;height:18px;accent-color:var(--green);}
+.choice-group .serv-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 6px;}
+.choice-group .serv-row .btn{padding:4px 10px;min-width:36px;}
+.choice-group .serv-row>.sub{flex-basis:100%;}
+.choice-group input.ic-serv{width:56px;height:34px;text-align:center;font-size:16px;accent-color:initial;}
+
 .ing-move{display:flex;flex-direction:column;gap:1px;}
 .ing-move button{border:none;background:var(--bg);color:var(--ink-soft);font-size:10px;line-height:1;height:17px;border-radius:4px;cursor:pointer;padding:0;}
 .ing-move button:disabled{opacity:.25;cursor:default;}
@@ -156,6 +183,15 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .usage-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:11px 4px;font:inherit;font-size:15px;cursor:pointer;color:var(--ink);}
 .usage-item:hover{background:var(--bg);}
 .ing-row input{width:100%;}
+.partial-badge{font-size:12px;margin-right:4px;}
+.cat-badge.partial{background:rgba(180,140,20,.16);color:#7a5a00;}
+.slot-hint{font-size:11px;color:#7a5a00;background:rgba(180,140,20,.12);border-radius:8px;padding:4px 8px;margin-top:4px;}
+.ing-refname{display:block;padding:8px 10px;font-weight:600;color:var(--green-dark);background:var(--bg);border-radius:8px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ing-unit-static{font-size:13px;color:var(--muted,#8a7f6f);}
+.add-ing-row{display:flex;gap:14px;flex-wrap:wrap;}
+.preview-ing-list li.ing-ref-li{cursor:pointer;color:var(--green-dark);}
+.preview-ing-list li.ing-ref-li:hover{text-decoration:underline;}
+.used-in{display:flex;flex-wrap:wrap;gap:6px;}
 .add-ing{font-size:12.5px;color:var(--green-dark);background:none;border:none;cursor:pointer;padding:4px 0;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
 
@@ -464,7 +500,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 16.10.2026, 21:41</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 18.10.2026, 10:49</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -476,6 +512,17 @@ const STANDARD_SLOTS = [
   {key:'kolacja', label:'Kolacja'},
   {key:'przekaski', label:'Przekąski'}
 ];
+const PARTIAL_FILTER = '__partial__';   // wirtualna kategoria "Bazy i dodatki" (przepisy oznaczone jako niekompletne danie)
+function pillLabel(n){ return n===PARTIAL_FILTER ? '🧩 Bazy i dodatki' : n; }
+function mealMatch(r, active){ return active===PARTIAL_FILTER ? !!r.partial : (r.mealCategories||[]).includes(active); }
+/* czy przepis rootId (pośrednio) zawiera przepis targetId — ochrona przed pętlami */
+function recipeUsesRecipe(rootId, targetId, seen){
+  seen = seen || {};
+  if(seen[rootId]) return false; seen[rootId]=1;
+  const r = recipes.find(x=>x.id===rootId); if(!r) return false;
+  return (r.ingredients||[]).some(i=> i.recipeRef && (i.recipeRef===targetId || recipeUsesRecipe(i.recipeRef, targetId, seen)));
+}
+function recipesUsing(id){ return recipes.filter(r=> r.id!==id && (r.ingredients||[]).some(i=>i.recipeRef===id)); }
 const DEFAULT_MEAL_CATEGORIES = ['Śniadanie','II śniadanie','Obiad','Kolacja','Przekąski'];
 const DEFAULT_DISH_CATEGORIES = ['Zupa','Danie główne','Sałatka','Przystawka','Deser','Napój','Dodatek'];
 const DEFAULT_SHOPPING_CATEGORIES = ['Nabiał','Pieczywo','Mięso i ryby','Warzywa i owoce','Przyprawy','Produkty suche/sypkie','Mrożonki','Napoje','Inne'];
@@ -1073,7 +1120,7 @@ function mealItemHtml(item, dayKey, slotType, extraId){
   const rec = recipes.find(r=>r.id===item.recipeId);
   const name = rec ? rec.name : '(usunięty przepis)';
   return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-rid="${item.recipeId}">
-    <span class="nm open-prev">${escapeHtml(name)}</span>
+    <span class="nm open-prev">${rec&&rec.partial?'<span class="partial-badge" title="Niekompletne danie (baza/dodatek)">🧩</span>':''}${escapeHtml(name)}</span>
     <input type="number" min="1" class="servings" value="${item.servings}" title="liczba porcji">
     <button class="rm">✕</button>
   </div>`;
@@ -1121,6 +1168,7 @@ function renderDayGrid(){
       <div class="slot">
         <div class="slot-label"><span>${s.label}</span></div>
         ${day[s.key].map(it=>mealItemHtml(it,key,s.key,null)).join('')}
+        ${slotIncomplete(day[s.key])?'<div class="slot-hint">🧩 niekompletne — dodaj coś do kompletu</div>':''}
       </div>
     `).join('');
     let extraHtml = (day.extra||[]).map(ex=>`
@@ -1130,6 +1178,7 @@ function renderDayGrid(){
           <button class="rm-slot" data-day="${key}" data-extra="${ex.id}" title="Usuń posiłek">✕</button>
         </div>
         ${ex.items.map(it=>mealItemHtml(it,key,'extra',ex.id)).join('')}
+        ${slotIncomplete(ex.items)?'<div class="slot-hint">🧩 niekompletne — dodaj coś do kompletu</div>':''}
       </div>
     `).join('');
     card.innerHTML = `
@@ -1222,13 +1271,13 @@ function openMealTypeChooser(anchorEl, dayKey){
   setTimeout(()=>document.addEventListener('click', outsideClickClose),0);
 }
 function openRecipePickerModal(opts){
-  const { title='Wybierz przepis', matchMealLabel=null, defaultSub='recipes', onSelectRecipe, onSelectQuick } = opts;
+  const { title='Wybierz przepis', matchMealLabel=null, defaultSub='recipes', onSelectRecipe, onSelectQuick, recipesOnly=false, excludeIds=[], startMeal=null } = opts;
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.innerHTML=`
     <div class="modal" style="max-width:480px;">
       <h2>${escapeHtml(title)}</h2>
-      <div class="filter-row" style="margin-bottom:12px;">
+      <div class="filter-row" id="rpm-subtabs" style="margin-bottom:12px;${recipesOnly?'display:none;':''}">
         <span class="filter-pill${defaultSub==='recipes'?' active':''}" id="rpm-subtab-recipes">Przepisy</span>
         <span class="filter-pill${defaultSub==='quick'?' active':''}" id="rpm-subtab-quick">Szybkie</span>
       </div>
@@ -1253,17 +1302,17 @@ function openRecipePickerModal(opts){
   overlay.querySelector('#rpm-cancel').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
 
-  let activeMeal=null, activeDish=null, activeTag=null;
+  let activeMeal=startMeal, activeDish=null, activeTag=null;
   let activeSub=defaultSub;
 
   function renderPillRow(containerId, names, active, onClick){
     const row = overlay.querySelector('#'+containerId);
     if(names.length===0){ row.innerHTML='<span class="sub">Brak.</span>'; return; }
     row.innerHTML = `<span class="filter-pill${active===null?' active':''}" data-v="">Wszystkie</span>` +
-      names.map(n=>`<span class="filter-pill${active===n?' active':''}" data-v="${escapeHtml(n)}">${escapeHtml(n)}</span>`).join('');
+      names.map(n=>`<span class="filter-pill${active===n?' active':''}" data-v="${escapeHtml(n)}">${escapeHtml(pillLabel(n))}</span>`).join('');
     row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click', ()=>onClick(p.dataset.v===''?null:p.dataset.v)));
   }
-  function renderMealPills(){ renderPillRow('rpm-meal-filters', mealCategories.map(c=>c.name), activeMeal, v=>{ activeMeal=v; renderMealPills(); renderList(); }); }
+  function renderMealPills(){ renderPillRow('rpm-meal-filters', [...mealCategories.map(c=>c.name), PARTIAL_FILTER], activeMeal, v=>{ activeMeal=v; renderMealPills(); renderList(); }); }
   function renderDishPills(){ renderPillRow('rpm-dish-filters', recipeCategories.map(c=>c.name), activeDish, v=>{ activeDish=v; renderDishPills(); renderList(); }); }
   function renderTagPills(){ renderPillRow('rpm-tag-filters', tags, activeTag, v=>{ activeTag=v; renderTagPills(); renderList(); }); }
 
@@ -1272,7 +1321,8 @@ function openRecipePickerModal(opts){
     const listEl = overlay.querySelector('#rpm-list');
     if(activeSub==='recipes'){
       let list = recipes.filter(r=>{
-        if(activeMeal && !(r.mealCategories||[]).includes(activeMeal)) return false;
+        if(excludeIds.includes(r.id)) return false;
+        if(activeMeal && !mealMatch(r, activeMeal)) return false;
         if(activeDish && !(r.categories||[]).includes(activeDish)) return false;
         if(activeTag && !(r.tags||[]).includes(activeTag)) return false;
         if(q && !recipeMatchesQuery(r,q)) return false;
@@ -1286,7 +1336,7 @@ function openRecipePickerModal(opts){
       if(list.length===0){ listEl.innerHTML = '<div class="empty-state">Nic nie znaleziono.</div>'; return; }
       listEl.innerHTML = list.map(r=>`
         <div class="rpm-item" data-id="${r.id}">
-          <div><div>${escapeHtml(r.name)}</div><div style="font-size:11px;line-height:1.2;margin-top:3px;opacity:.9;">${ratingSummaryHtml(r,11)}</div></div>
+          <div><div>${r.partial?'<span class="partial-badge" title="Niekompletne danie">🧩</span>':''}${escapeHtml(r.name)}</div><div style="font-size:11px;line-height:1.2;margin-top:3px;opacity:.9;">${ratingSummaryHtml(r,11)}</div></div>
           <span class="cat">${(r.mealCategories||[]).concat(r.categories||[]).slice(0,2).map(escapeHtml).join(' · ')}</span>
         </div>
       `).join('');
@@ -1361,6 +1411,7 @@ function openRecipePicker(anchorEl, dayKey, slotType, extraId){
       if(arr) arr.push({id:uid(), recipeId:rec.id, servings: rec.baseServings||4});
       await savePlan();
       renderDayGrid();
+      if(arr && rec.partial && slotIncomplete(arr)) showPartialInfo(rec, dayKey, slotType, extraId);
     },
     onSelectQuick: async (qr)=>{
       const arr = findItemArray(dayKey, slotType, extraId);
@@ -1369,6 +1420,22 @@ function openRecipePicker(anchorEl, dayKey, slotType, extraId){
       renderDayGrid();
     }
   });
+}
+function slotIncomplete(items){
+  return !!items && items.length>0 && items.every(it=>{ const r=it.recipeId && recipes.find(x=>x.id===it.recipeId); return !!(r && r.partial); });
+}
+function showPartialInfo(rec, dayKey, slotType, extraId){
+  const overlay=document.createElement('div');
+  overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:380px;">
+    <h2>🧩 Niekompletne danie</h2>
+    <p style="margin:0 0 6px;">„${escapeHtml(rec.name)}” to baza lub dodatek — samo nie tworzy pełnego posiłku. Dodaj do tego posiłku danie główne albo inny element.</p>
+    <div class="modal-actions"><button class="btn btn-ghost" id="pi-ok">Zostaw tak</button><button class="btn btn-primary" id="pi-more">+ Dodaj do kompletu</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#pi-ok').addEventListener('click', ()=>overlay.remove());
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#pi-more').addEventListener('click', ()=>{ overlay.remove(); openRecipePicker(null, dayKey, slotType, extraId); });
 }
 function outsideClickClose(e){
   if(openPicker && !openPicker.contains(e.target) && !e.target.classList.contains('add-meal-main')){ closePicker(); }
@@ -1383,7 +1450,7 @@ document.getElementById('nextWeek').addEventListener('click',()=>{currentWeekSta
 function renderMealFilterRow(){
   const row=document.getElementById('mealFilterRow');
   row.innerHTML = `<span class="filter-pill${activeMealFilter===null?' active':''}" data-v="">Wszystkie</span>` +
-    mealCategories.map(c=>`<span class="filter-pill${activeMealFilter===c.name?' active':''}" data-v="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>`).join('');
+    [...mealCategories.map(c=>c.name), PARTIAL_FILTER].map(n=>`<span class="filter-pill${activeMealFilter===n?' active':''}" data-v="${escapeHtml(n)}">${escapeHtml(pillLabel(n))}</span>`).join('');
   row.querySelectorAll('.filter-pill').forEach(p=>p.addEventListener('click',()=>{
     activeMealFilter = p.dataset.v==='' ? null : p.dataset.v;
     renderMealFilterRow(); renderRecipes(document.getElementById('recipeSearch').value);
@@ -1471,7 +1538,7 @@ function renderRecipes(filter){
   populateRatingPersonSelect(document.getElementById('recipeRatingPersonSel'), recipeRatingFilterPerson);
   document.getElementById('recipeRatingMinSel').value = String(recipeRatingFilterMin||0);
   let list=recipes.filter(r=>recipeMatchesQuery(r, filter));
-  if(activeMealFilter) list=list.filter(r=>(r.mealCategories||[]).includes(activeMealFilter));
+  if(activeMealFilter) list=list.filter(r=>mealMatch(r, activeMealFilter));
   if(activeCatFilter) list=list.filter(r=>(r.categories||[]).includes(activeCatFilter));
   if(activeTagFilter) list=list.filter(r=>(r.tags||[]).includes(activeTagFilter));
   list = applyRatingSortFilter(list, recipeRatingSort, recipeRatingFilterPerson, recipeRatingFilterMin);
@@ -1489,6 +1556,7 @@ function renderRecipes(filter){
       ${r.imageData?`<img class="recipe-thumb" src="${r.imageData}" alt="">`:''}
       <h3>${escapeHtml(r.name)}</h3>
       <div class="meta">
+        ${r.partial?'<span class="cat-badge partial">🧩 Baza / dodatek</span>':''}
         ${(r.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
         ${(r.categories||[]).map(c=>`<span class="cat-badge2">${escapeHtml(c)}</span>`).join('')}
         ${(r.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
@@ -1517,7 +1585,10 @@ function renderRecipes(filter){
   grid.querySelectorAll('.del-r').forEach(b=>b.addEventListener('click', async e=>{
     e.stopPropagation();
     const id=e.target.closest('.recipe-card').dataset.id;
-    if(confirm('Usunąć ten przepis?')){
+    const users = recipesUsing(id);
+    const msg = users.length ? `Ten przepis jest składnikiem: ${users.map(r=>r.name).join(', ')}.\nPo usunięciu zniknie z ich składników. Usunąć?` : 'Usunąć ten przepis?';
+    if(confirm(msg)){
+      users.forEach(r=>{ r.ingredients = r.ingredients.filter(i=>i.recipeRef!==id); });
       recipes = recipes.filter(r=>r.id!==id);
       await saveRecipes();
       renderRecipes(document.getElementById('recipeSearch').value);
@@ -1790,7 +1861,7 @@ function exportRecipesTxt(){
     content += 'Porcje bazowe: '+(r.baseServings||4)+'\n';
     recipeLinks(r).forEach(l=>{ content += 'Źródło: '+l.url+(l.label?' ('+l.label+')':'')+'\n'; });
     content += '\nSkładniki:\n';
-    (r.ingredients||[]).forEach(i=>{ content += '- '+i.name+(i.qty?` — ${i.qty}${i.unit?' '+i.unit:''}`:'')+'\n'; });
+    ingredientLinesText(r.ingredients||[]).forEach(t=>{ content += '- '+t+'\n'; });
     if(r.instructions){ content += '\nInstrukcje:\n'+r.instructions+'\n'; }
     content += '\n\n';
   });
@@ -1807,7 +1878,7 @@ function exportRecipesXlsx(){
     'Kategorie przepisu': (r.categories||[]).join(', '),
     'Tagi': (r.tags||[]).join(', '),
     'Porcje bazowe': r.baseServings||4,
-    'Składniki': (r.ingredients||[]).map(i=>`${i.name}${i.qty?` ${i.qty}${i.unit?' '+i.unit:''}`:''}`).join('; '),
+    'Składniki': ingredientLinesText(r.ingredients||[]).map(t=>t.replace(' — ',' ')).join('; '),
     'Instrukcje': r.instructions||'',
     'Źródło': recipeLinks(r).map(l=>l.url+(l.label?' ('+l.label+')':'')).join(' | ')
   }));
@@ -1826,7 +1897,7 @@ function exportRecipesPdf(){
     html += `<div class="print-recipe">
       <h2>${escapeHtml(r.name)}</h2>
       <div class="print-meta">${cats.map(escapeHtml).join(' · ')}${cats.length?' · ':''}Porcje: ${r.baseServings||4}${recipeLinks(r).map(l=>' · '+escapeHtml(l.url)).join('')}</div>
-      <div><b>Składniki:</b> ${(r.ingredients||[]).map(i=>escapeHtml(i.name)+(i.qty?` (${i.qty}${i.unit?' '+escapeHtml(i.unit):''})`:'')).join(', ')}</div>
+      <div><b>Składniki:</b> ${ingredientLinesText(r.ingredients||[]).map(t=>escapeHtml(t)).join(', ')}</div>
       ${r.instructions?`<div class="print-instr"><b>Instrukcje:</b><br>${nl2br(r.instructions)}</div>`:''}
     </div>`;
   });
@@ -1888,17 +1959,28 @@ function importFromXlsxWorkbook(wb){
 async function handleImportedRecipes(importedList){
   if(!importedList || importedList.length===0){ alert('Nie znaleziono przepisów w pliku.'); return; }
   let added=0, skipped=0;
+  const idMap={};   // stare id przepisu z pliku -> id w tej bazie (potrzebne do składników-przepisów)
+  importedList.forEach(r=>{
+    if(!r.name || !r.name.trim() || r.id==null) return;
+    const ex = recipes.find(e=>e.name.toLowerCase()===r.name.toLowerCase());
+    idMap[r.id] = ex ? ex.id : uid();
+  });
   importedList.forEach(r=>{
     if(!r.name || !r.name.trim()) return;
     if(recipes.some(ex=>ex.name.toLowerCase()===r.name.toLowerCase())){ skipped++; return; }
     const mCats = r.mealCategories||[], dCats = r.categories||[], rTags = r.tags||[];
-    const ings = (r.ingredients||[]).map(i=>({name:i.name||'', qty:i.qty!=null?String(i.qty):'', unit:i.unit||''}));
+    const ings = (r.ingredients||[]).map(i=>{
+      const o={name:i.name||'', qty:i.qty!=null?String(i.qty):'', unit:i.unit||'', ...ingExtras(i)};
+      if(i.recipeRef){ const nid = idMap[i.recipeRef] || (recipes.some(x=>x.id===i.recipeRef) ? i.recipeRef : null); if(nid){ o.recipeRef=nid; o.unit='porcji'; } }
+      return o;
+    });
+    cleanAltGroups(ings);
     mCats.forEach(c=>{ if(!mealCategories.some(m=>m.name===c)) mealCategories.push({id:uid(), name:c}); });
     dCats.forEach(c=>{ if(!recipeCategories.some(m=>m.name===c)) recipeCategories.push({id:uid(), name:c}); });
     rTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    ings.forEach(i=>{ if(i.name) ensureProduct(i.name, i.unit); });
+    ings.forEach(i=>{ if(i.name && !i.recipeRef) ensureProduct(i.name, i.unit); });
     recipes.push({
-      id: uid(), name: r.name.trim(), mealCategories: mCats, categories: dCats, tags: rTags,
+      id: idMap[r.id] || uid(), partial: !!r.partial, name: r.name.trim(), mealCategories: mCats, categories: dCats, tags: rTags,
       baseServings: r.baseServings||4, ingredients: ings, instructions: r.instructions||'',
       ratings: Array.isArray(r.ratings) ? r.ratings.filter(x=>x && x.person).map(x=>({person:String(x.person), stars:Math.max(0,Math.min(5,parseInt(x.stars)||0)), favorite:!!x.favorite})) : [],
       imageData: r.imageData||'', sourceUrl: r.sourceUrl||'',
@@ -1996,6 +2078,7 @@ function openRecipePreview(rec){
       ${rec.imageData?`<img class="preview-hero" src="${rec.imageData}" alt="">`:''}
       <h2>${escapeHtml(rec.name)}</h2>
       <div class="meta" style="margin-bottom:8px;">
+        ${rec.partial?'<span class="cat-badge partial">🧩 Baza / dodatek — niekompletne danie</span>':''}
         ${(rec.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
         ${(rec.categories||[]).map(c=>`<span class="cat-badge2">${escapeHtml(c)}</span>`).join('')}
         ${(rec.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
@@ -2003,7 +2086,8 @@ function openRecipePreview(rec){
       <div class="sub" style="margin-bottom:6px;">Porcje bazowe: ${rec.baseServings||4}</div>
       ${recipeLinks(rec).map(l=>`<a class="recipe-link" style="display:block;font-size:12.5px;color:var(--green-dark);margin-top:3px;" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(linkLabel(l))}</a>`).join('')}
       <h3 class="section">Składniki</h3>
-      <ul class="preview-ing-list">${rec.ingredients.map(i=>`<li>${escapeHtml(i.name)}${i.qty?` — ${i.qty}${i.unit?' '+escapeHtml(i.unit):''}`:''}</li>`).join('')}</ul>
+      <ul class="preview-ing-list">${ingredientLinesHtml(rec.ingredients)}</ul>
+      ${recipesUsing(rec.id).length?`<h3 class="section">Używany w</h3><div class="used-in">${recipesUsing(rec.id).map(r=>`<button type="button" class="btn btn-ghost used-in-btn" data-id="${r.id}">${escapeHtml(r.name)}</button>`).join('')}</div>`:''}
       ${rec.instructions?`<h3 class="section">Instrukcje</h3><div class="preview-instr">${nl2br(rec.instructions)}</div>`:''}
       <h3 class="section">Oceny</h3>
       <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -2020,6 +2104,9 @@ function openRecipePreview(rec){
   overlay.querySelector('#pv-close').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#pv-edit').addEventListener('click', ()=>{ overlay.remove(); openRecipeModal(rec); });
+  const openOther = id=>{ const o=recipes.find(r=>r.id===id); if(o){ overlay.remove(); openRecipePreview(o); } };
+  overlay.querySelectorAll('.used-in-btn').forEach(b=>b.addEventListener('click', ()=>openOther(b.dataset.id)));
+  overlay.querySelectorAll('li[data-ref]').forEach(li=>li.addEventListener('click', ()=>openOther(li.dataset.ref)));
   overlay.querySelector('#pv-toggle-ratings').addEventListener('click', e=>{
     const box=overlay.querySelector('#pv-ratings-breakdown');
     const show = box.style.display==='none';
@@ -2352,6 +2439,8 @@ function openRecipeModal(existing, forceNew){
       <div class="field"><label>Tagi</label>
         <div class="chips-input" id="tagsInput"><input type="text" id="tagInput" placeholder="dodaj tag i Enter..."></div>
       </div>
+      <div class="field"><label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;"><input type="checkbox" id="m-partial" ${rec.partial?'checked':''} style="width:18px;height:18px;flex:none;accent-color:var(--green);"> 🧩 Niekompletne danie — baza lub dodatek</label>
+        <p class="hint" style="margin:4px 0 0;">Np. sos, makaron orzo, surówka. Przy dodawaniu do planu dostaniesz przypomnienie, żeby dodać resztę posiłku.</p></div>
       <div class="field"><label>Porcje bazowe</label><input type="number" min="1" id="m-servings" value="${rec.baseServings||4}" style="max-width:120px;"></div>
       <div class="field"><label>Zdjęcie</label>
         <input type="file" id="m-image-file" accept="image/*">
@@ -2368,7 +2457,7 @@ function openRecipeModal(existing, forceNew){
       <div class="field">
         <label>Składniki <span class="hint">(Enter dodaje kolejny wiersz)</span></label>
         <div id="ingList"></div>
-        <button class="add-ing" id="addIng">+ Dodaj składnik</button>
+        <div class="add-ing-row"><button class="add-ing" id="addIng">+ Dodaj składnik</button><button class="add-ing" id="addIngRef" title="Użyj innego przepisu (np. sosu) jako składnika">📎 Dodaj przepis jako składnik</button></div>
       </div>
       <div class="field"><label>Instrukcje</label><textarea id="m-instr" rows="1" style="overflow-y:auto;resize:none;" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
       <div class="field"><label>Oceny</label><div id="m-ratings"></div></div>
@@ -2447,7 +2536,7 @@ function openRecipeModal(existing, forceNew){
   }
   function focusIngRow(i){
     const rows=overlay.querySelectorAll('.ing-row');
-    if(rows[i]) rows[i].querySelector('.ing-name').focus();
+    if(rows[i]){ const el=rows[i].querySelector('.ing-name')||rows[i].querySelector('.ing-qty'); if(el) el.focus(); }
   }
   function goToNextIngRow(idx){
     if(idx === ings.length-1){ ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); }
@@ -2458,19 +2547,62 @@ function openRecipeModal(existing, forceNew){
     if(currentUnit && !list.includes(currentUnit)) list.push(currentUnit);
     return `<option value="">j.</option>` + list.map(u=>`<option value="${escapeHtml(u)}" ${u===currentUnit?'selected':''}>${escapeHtml(u)}</option>`).join('');
   }
+  const openIng = new Set();
+  function ingKind(ing, idx){
+    if(ing.altGroup && ings.findIndex(x=>x.altGroup===ing.altGroup)!==idx) return 'alt';
+    if(ing.optional && !ing.altGroup) return 'opt';
+    return '';
+  }
+  function ingExtraHtml(ing, idx){
+    const kind=ingKind(ing, idx), isBase=!!ing.altGroup && kind==='';
+    if(openIng.has(ing)){
+      return `<div class="ing-extra">
+        <select class="ing-kind">
+          <option value="" ${kind===''?'selected':''}>zwykły składnik</option>
+          <option value="opt" ${kind==='opt'?'selected':''}>opcjonalny</option>
+          <option value="alt" ${kind==='alt'?'selected':''} ${idx===0?'disabled':''}>zamiennik poprzedniego</option>
+        </select>
+        ${kind==='opt'?`<label><input type="checkbox" class="ing-defon" ${ing.defaultOn?'checked':''}> domyślnie zaznaczony</label>`:''}
+        ${isBase?'<span class="sub">ma zamiennik poniżej</span>':''}
+      </div>`;
+    }
+    if(kind==='alt') return '<button type="button" class="ing-badge">↳ lub (zamiennik poprzedniego)</button>';
+    if(kind==='opt') return `<button type="button" class="ing-badge">opcjonalny${ing.defaultOn?' · domyślnie zaznaczony':''}</button>`;
+    if(isBase) return '<button type="button" class="ing-badge">ma zamiennik ↓</button>';
+    return '';
+  }
   function renderIngs(){
     const wrap=overlay.querySelector('#ingList');
-    wrap.innerHTML = ings.map((ing,idx)=>`
+    wrap.innerHTML = ings.map((ing,idx)=> ing.recipeRef ? `
+      <div class="ing-row ing-ref-row" data-idx="${idx}">
+        <div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>
+        <div class="ing-namewrap"><span class="ing-refname" title="Przepis jako składnik">📎 ${escapeHtml(((recipes.find(r=>r.id===ing.recipeRef)||{}).name)||ing.name||'(usunięty przepis)')}</span></div>
+        <input type="text" class="ing-qty" placeholder="porcje" value="${escapeHtml(ing.qty)}" inputmode="decimal">
+        <span class="ing-unit ing-unit-static">porcji</span>
+        <button class="btn-icon ing-rm">✕</button>
+      </div>
+    ` : `
       <div class="ing-row" data-idx="${idx}">
         <div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>
-        <input type="text" class="ing-name" placeholder="składnik" value="${escapeHtml(ing.name)}" autocomplete="off">
+        <div class="ing-namewrap"><input type="text" class="ing-name" placeholder="składnik" value="${escapeHtml(ing.name)}" autocomplete="off"><button type="button" class="ing-more" title="Opcjonalny / zamiennik">⋯</button></div>
         <input type="text" class="ing-qty" placeholder="ilość" value="${escapeHtml(ing.qty)}">
         <select class="ing-unit">${unitOptionsHtml(ing.unit)}</select>
         <button class="btn-icon ing-rm">✕</button>
+        ${ingExtraHtml(ing, idx)}
       </div>
     `).join('');
     wrap.querySelectorAll('.ing-row').forEach(row=>{
       const idx=+row.dataset.idx;
+      if(ings[idx].recipeRef){
+        const q=row.querySelector('.ing-qty');
+        q.addEventListener('input', ()=>ings[idx].qty=q.value);
+        bindEnterSubmit(q, ()=>goToNextIngRow(idx));
+        row.querySelector('.ing-rm').addEventListener('click', ()=>{ ings.splice(idx,1); renderIngs(); });
+        const mv=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); renderIngs(); };
+        row.querySelector('.ing-up').addEventListener('click', ()=>mv(idx,idx-1));
+        row.querySelector('.ing-down').addEventListener('click', ()=>mv(idx,idx+1));
+        return;
+      }
       const nameInp=row.querySelector('.ing-name'), qtyInp=row.querySelector('.ing-qty'), unitInp=row.querySelector('.ing-unit');
       nameInp.addEventListener('input', ()=>{ ings[idx].name=nameInp.value; showIngSugg(row, idx); });
       nameInp.addEventListener('focus', ()=> showIngSugg(row, idx));
@@ -2479,7 +2611,18 @@ function openRecipeModal(existing, forceNew){
       unitInp.addEventListener('change', ()=>ings[idx].unit=unitInp.value);
       bindEnterSubmit(nameInp, ()=>{ ings[idx].name = nameInp.value; closeIngSugg(); goToNextIngRow(idx); });
       bindEnterSubmit(qtyInp, ()=>{ closeIngSugg(); goToNextIngRow(idx); });
-      row.querySelector('.ing-rm').addEventListener('click', ()=>{ ings.splice(idx,1); renderIngs(); });
+      row.querySelector('.ing-rm').addEventListener('click', ()=>{ openIng.delete(ings[idx]); ings.splice(idx,1); cleanAltGroups(ings); renderIngs(); });
+      row.querySelector('.ing-more').addEventListener('click', ()=>{ const o=ings[idx]; if(openIng.has(o)) openIng.delete(o); else openIng.add(o); renderIngs(); });
+      const badge=row.querySelector('.ing-badge'); if(badge) badge.addEventListener('click', ()=>{ openIng.add(ings[idx]); renderIngs(); });
+      const kindSel=row.querySelector('.ing-kind');
+      if(kindSel) kindSel.addEventListener('change', ()=>{
+        const it=ings[idx], k=kindSel.value;
+        delete it.optional; delete it.defaultOn; delete it.altGroup;
+        if(k==='opt'){ it.optional=true; }
+        else if(k==='alt' && idx>0){ const prev=ings[idx-1]; prev.altGroup = prev.altGroup || uid(); it.altGroup = prev.altGroup; }
+        cleanAltGroups(ings); renderIngs();
+      });
+      const defOn=row.querySelector('.ing-defon'); if(defOn) defOn.addEventListener('change', ()=>{ ings[idx].defaultOn=defOn.checked; });
       const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
       row.querySelector('.ing-up').addEventListener('click', ()=>moveIng(idx,idx-1));
       row.querySelector('.ing-down').addEventListener('click', ()=>moveIng(idx,idx+1));
@@ -2487,6 +2630,21 @@ function openRecipeModal(existing, forceNew){
   }
   renderIngs();
   overlay.querySelector('#addIng').addEventListener('click', ()=>{ ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); });
+  overlay.querySelector('#addIngRef').addEventListener('click', ()=>{
+    // pomijamy ten przepis i każdy, który (pośrednio) zawiera ten przepis — inaczej powstałaby pętla
+    const excl = recipes.filter(r=> r.id===rec.id || recipeUsesRecipe(r.id, rec.id)).map(r=>r.id);
+    openRecipePickerModal({
+      title:'Wybierz przepis jako składnik', recipesOnly:true, excludeIds:excl,
+      startMeal: recipes.some(r=>r.partial && !excl.includes(r.id)) ? PARTIAL_FILTER : null,
+      onSelectRecipe:(sub)=>{
+        const last=ings[ings.length-1];
+        if(last && !last.name.trim() && !last.recipeRef) ings.pop();   // zastąp pusty wiersz
+        ings.push({name:sub.name, qty:String(sub.baseServings||1), unit:'porcji', recipeRef:sub.id});
+        renderIngs();
+      },
+      onSelectQuick:()=>{}
+    });
+  });
 
   let links = recipeLinks(rec).map(l=>({url:l.url,label:l.label||''}));
   if(!links.length) links=[{url:'',label:''}];
@@ -2559,11 +2717,13 @@ function openRecipeModal(existing, forceNew){
     const instructions = overlay.querySelector('#m-instr').value.trim();
     const cleanLinks = links.map(l=>({url:(l.url||'').trim(), label:(l.label||'').trim()})).filter(l=>l.url);
     const sourceUrl = cleanLinks.length ? cleanLinks[0].url : '';
-    const cleanIngs = ings.filter(i=>i.name.trim());
-    cleanIngs.forEach(i=> ensureProduct(i.name, i.unit));
+    const cleanIngs = ings.filter(i=> i.recipeRef ? recipes.some(r=>r.id===i.recipeRef) : i.name.trim());
+    cleanIngs.forEach(i=>{ if(i.recipeRef){ const sub=recipes.find(r=>r.id===i.recipeRef); if(sub) i.name=sub.name; i.unit='porcji'; delete i.optional; delete i.defaultOn; delete i.altGroup; } });
+    cleanAltGroups(cleanIngs);
+    cleanIngs.forEach(i=>{ if(!i.recipeRef) ensureProduct(i.name, i.unit); });
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newRec = {id:rec.id, name, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
+    const newRec = {id:rec.id, name, partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
     const idx = recipes.findIndex(r=>r.id===rec.id);
     if(idx>=0) recipes[idx]=newRec; else recipes.push(newRec);
     await Promise.all([saveRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -2573,13 +2733,187 @@ function openRecipeModal(existing, forceNew){
   });
 }
 
-/* ============ SHOPPING ============ */
-function scaledIngredients(recipe, servings){
-  const factor = (servings||recipe.baseServings||1) / (recipe.baseServings||1);
-  return recipe.ingredients.map(i=>{
-    const q = parseFloat((i.qty||'').toString().replace(',','.'));
-    return {name:i.name, unit:(i.unit||'').trim(), qty: isNaN(q)? null : Math.round(q*factor*100)/100};
+
+/* ============ SKŁADNIKI OPCJONALNE I ZAMIENNIKI ============ */
+function ingExtras(i){
+  const o={};
+  if(i && i.optional) o.optional=true;
+  if(i && i.optional && i.defaultOn) o.defaultOn=true;
+  if(i && i.altGroup) o.altGroup=String(i.altGroup);
+  return o;
+}
+function cleanAltGroups(list){
+  const cnt={};
+  list.forEach(i=>{ if(i.altGroup) cnt[i.altGroup]=(cnt[i.altGroup]||0)+1; });
+  list.forEach(i=>{ if(i.altGroup && cnt[i.altGroup]<2) delete i.altGroup; });
+}
+function ingLabelText(i){
+  if(i.recipeRef){ const sub=recipes.find(r=>r.id===i.recipeRef); return '📎 '+((sub&&sub.name)||i.name||'przepis')+(i.qty?` — ${i.qty} ${i.unit||'porcji'}`:''); }
+  return (i.name||'')+(i.qty?` — ${i.qty}${i.unit?' '+i.unit:''}`:'');
+}
+/* grupy w kolejności pierwszego wystąpienia: {idxs:[...], alt:bool} */
+function ingredientGroups(list){
+  const out=[], seen={};
+  (list||[]).forEach((i,idx)=>{
+    if(i.altGroup){
+      if(seen[i.altGroup]) { seen[i.altGroup].idxs.push(idx); return; }
+      const g={idxs:[idx], alt:true}; seen[i.altGroup]=g; out.push(g);
+    } else out.push({idxs:[idx], alt:false});
   });
+  return out.map(g=> g.idxs.length>1 ? g : {idxs:g.idxs, alt:false});
+}
+function ingredientLinesHtml(list){
+  return ingredientGroups(list).map(g=>{
+    const parts=g.idxs.map(ix=>escapeHtml(ingLabelText(list[ix])));
+    const opt = !g.alt && list[g.idxs[0]].optional;
+    const ref = !g.alt && g.idxs.length===1 && list[g.idxs[0]].recipeRef;
+    if(ref) return `<li class="ing-ref-li" data-ref="${escapeHtml(ref)}" title="Otwórz przepis">`+parts.join('')+(opt?' <span class="ing-opt">(opcjonalnie)</span>':'')+'</li>';
+    return '<li>'+parts.join(' <span class="ing-or">lub</span> ')+(opt?' <span class="ing-opt">(opcjonalnie)</span>':'')+'</li>';
+  }).join('');
+}
+function ingredientLinesText(list){
+  return ingredientGroups(list).map(g=>{
+    const t=g.idxs.map(ix=>ingLabelText(list[ix])).join(' lub ');
+    return t+((!g.alt && list[g.idxs[0]].optional)?' (opcjonalnie)':'');
+  });
+}
+function hasIngredientChoices(rec){
+  return (rec.ingredients||[]).some(i=>i.optional) || ingredientGroups(rec.ingredients).some(g=>g.alt);
+}
+function defaultIngChoice(rec){
+  const ch={alt:{}, opt:{}};
+  const ings=rec.ingredients||[];
+  ingredientGroups(ings).forEach(g=>{ if(g.alt) ch.alt[ings[g.idxs[0]].altGroup]=g.idxs[0]; });
+  ings.forEach((i,ix)=>{ if(i.optional) ch.opt[ix]=!!i.defaultOn; });
+  return ch;
+}
+function loadSavedIngChoices(){ try{ return JSON.parse(localStorage.getItem('planerIngChoices')||'{}')||{}; }catch(e){ return {}; } }
+function saveIngChoices(map){
+  try{
+    const cur=loadSavedIngChoices();
+    Object.keys(map).forEach(k=>{ cur[k]=map[k]; });
+    localStorage.setItem('planerIngChoices', JSON.stringify(cur));
+  }catch(e){}
+}
+function choiceFor(rec, saved){
+  const base=defaultIngChoice(rec), sv=saved && saved[rec.id];
+  if(!sv) return base;
+  const ings=rec.ingredients||[];
+  Object.keys(base.alt).forEach(gid=>{
+    const ix=sv.alt && sv.alt[gid];
+    if(ix!==undefined && ings[ix] && ings[ix].altGroup===gid) base.alt[gid]=ix;
+  });
+  Object.keys(base.opt).forEach(ix=>{ if(sv.opt && sv.opt[ix]!==undefined) base.opt[ix]=!!sv.opt[ix]; });
+  return base;
+}
+/* entries: [{rec, servings}] — zawsze pokazuje okno: liczba porcji do zakupu (np. do mrożenia) + wybór składników opcjonalnych/alternatyw.
+   Ten sam przepis wielokrotnie w planie jest sumowany. Zwraca {choices:{recId:choice}, servings:{recId:n}} albo null (anulowano).
+   Zmiana porcji dotyczy tylko tej listy zakupów — nie zmienia planu ani przepisu. */
+function askIngredientChoices(entries){
+  const uniq=[], byId={};
+  entries.forEach(e=>{
+    if(!e.rec) return;
+    const sv=e.servings||e.rec.baseServings||1;
+    if(byId[e.rec.id]) byId[e.rec.id].servings+=sv;
+    else { const o={rec:e.rec, servings:sv}; byId[e.rec.id]=o; uniq.push(o); }
+  });
+  if(uniq.length===0) return Promise.resolve({choices:{}, servings:{}});
+  const saved=loadSavedIngChoices();
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div');
+    overlay.className='modal-overlay';
+    const scaled=(e,i)=>{
+      const base=e.rec.baseServings||1;
+      const q=parseFloat(String(i.qty||'').replace(',','.'));
+      const per=isNaN(q)?'':q/base;
+      const qq=per===''?'':Math.round(per*e.servings*100)/100;
+      return escapeHtml(i.name)+(per!==''||i.unit?` <span class="sub ic-q" data-per="${per}" data-unit="${escapeHtml(i.unit||'')}">— ${qq}${i.unit?' '+escapeHtml(i.unit):''}</span>`:'');
+    };
+    overlay.innerHTML=`<div class="modal">
+      <h2>Dodaj do listy zakupów</h2>
+      <div class="sub" style="margin-bottom:8px;">Porcje i wybór dotyczą tylko tej listy zakupów — nie zmieniają planu ani przepisów. Zwiększ porcje, jeśli gotujesz na zapas (np. do mrożenia).</div>
+      ${uniq.map(e=>{
+        const ings=e.rec.ingredients, ch=choiceFor(e.rec, saved);
+        const groups=ingredientGroups(ings);
+        const altHtml=groups.filter(g=>g.alt).map(g=>{
+          const gid=ings[g.idxs[0]].altGroup;
+          return `<div style="margin-bottom:4px;"><div class="sub">Wybierz jedno:</div>${g.idxs.map(ix=>`<label><input type="radio" name="alt-${e.rec.id}-${gid}" data-rid="${e.rec.id}" data-gid="${gid}" data-ix="${ix}" ${ch.alt[gid]===ix?'checked':''}> <span>${scaled(e,ings[ix])}</span></label>`).join('')}</div>`;
+        }).join('');
+        const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
+        const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-rid="${e.rec.id}" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${scaled(e,ings[ix])}</span></label>`).join('')}</div>`:'';
+        return `<div class="choice-group" data-rid="${e.rec.id}"><h4>${escapeHtml(e.rec.name)}</h4>
+          <div class="serv-row"><span class="sub">Porcje do kupienia:</span>
+            <button type="button" class="btn btn-ghost sv-minus" aria-label="mniej">−</button>
+            <input type="number" min="1" class="ic-serv" value="${e.servings}" data-def="${e.servings}">
+            <button type="button" class="btn btn-ghost sv-plus" aria-label="więcej">+</button>
+            <button type="button" class="btn btn-ghost sv-x2" title="Podwój porcje">×2</button>
+            <button type="button" class="btn btn-ghost sv-reset" title="Przywróć domyślne" style="display:none">↺ ${e.servings}</button>
+          </div>${altHtml}${optHtml}</div>`;
+      }).join('')}
+      <div class="modal-actions"><button class="btn btn-ghost" id="ic-cancel">Anuluj</button><button class="btn btn-primary" id="ic-ok">Dodaj do listy</button></div>
+    </div>`;
+    document.body.appendChild(overlay);
+    const getSv=g=>Math.max(1, parseInt(g.querySelector('.ic-serv').value,10)||1);
+    const upd=g=>{
+      const n=getSv(g), inp=g.querySelector('.ic-serv');
+      g.querySelectorAll('.ic-q').forEach(sp=>{
+        const per=parseFloat(sp.dataset.per), u=sp.dataset.unit;
+        const qq=isNaN(per)?'':Math.round(per*n*100)/100;
+        sp.textContent='— '+qq+(u?' '+u:'');
+      });
+      g.querySelector('.sv-reset').style.display = (n!==parseInt(inp.dataset.def,10)) ? '' : 'none';
+    };
+    overlay.querySelectorAll('.choice-group').forEach(g=>{
+      const inp=g.querySelector('.ic-serv');
+      const set=v=>{ inp.value=Math.max(1,Math.round(v)||1); upd(g); };
+      g.querySelector('.sv-minus').addEventListener('click',()=>set(getSv(g)-1));
+      g.querySelector('.sv-plus').addEventListener('click',()=>set(getSv(g)+1));
+      g.querySelector('.sv-x2').addEventListener('click',()=>set(getSv(g)*2));
+      g.querySelector('.sv-reset').addEventListener('click',()=>set(parseInt(inp.dataset.def,10)));
+      inp.addEventListener('input',()=>upd(g));
+    });
+    const done=v=>{ overlay.remove(); resolve(v); };
+    overlay.querySelector('#ic-cancel').addEventListener('click',()=>done(null));
+    overlay.addEventListener('click',ev=>{ if(ev.target===overlay) done(null); });
+    overlay.querySelector('#ic-ok').addEventListener('click',()=>{
+      const toSave={}, choices={}, servings={};
+      uniq.forEach(e=>{
+        const ch=choiceFor(e.rec, saved);
+        if(hasIngredientChoices(e.rec)){
+          overlay.querySelectorAll(`input[type=radio][data-rid="${e.rec.id}"]:checked`).forEach(r=>{ ch.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
+          overlay.querySelectorAll(`input[type=checkbox][data-rid="${e.rec.id}"]`).forEach(c=>{ ch.opt[c.dataset.opt]=c.checked; });
+          toSave[e.rec.id]=ch;
+        }
+        choices[e.rec.id]=ch;
+        servings[e.rec.id]=getSv(overlay.querySelector(`.choice-group[data-rid="${e.rec.id}"]`));
+      });
+      saveIngChoices(toSave);
+      done({choices, servings});
+    });
+  });
+}
+
+/* ============ SHOPPING ============ */
+function scaledIngredients(recipe, servings, choice, _visited){
+  const visited = _visited || [recipe.id];
+  const factor = (servings||recipe.baseServings||1) / (recipe.baseServings||1);
+  const ch = choice || defaultIngChoice(recipe);
+  const out=[];
+  recipe.ingredients.forEach((i,ix)=>{
+    if(i.altGroup && ch.alt[i.altGroup]!==undefined && ch.alt[i.altGroup]!==ix) return;
+    if(i.optional && !i.altGroup && !ch.opt[ix]) return;
+    if(i.recipeRef){   // składnik będący przepisem: rozwijamy jego składniki (porcje × współczynnik rodzica)
+      const sub = recipes.find(r=>r.id===i.recipeRef);
+      if(!sub || visited.includes(sub.id)) return;
+      const sq = parseFloat(String(i.qty||'').replace(',','.'));
+      const subServ = (isNaN(sq) ? (sub.baseServings||1) : sq) * factor;
+      out.push(...scaledIngredients(sub, subServ, choiceFor(sub, loadSavedIngChoices()), visited.concat(sub.id)));
+      return;
+    }
+    const q = parseFloat((i.qty||'').toString().replace(',','.'));
+    out.push({name:i.name, unit:(i.unit||'').trim(), qty: isNaN(q)? null : Math.round(q*factor*100)/100});
+  });
+  return out;
 }
 function mergeIntoShopping(ingredientList, source){
   ingredientList.forEach(ing=>{
@@ -2594,21 +2928,25 @@ function mergeIntoShopping(ingredientList, source){
   });
 }
 async function regenerateFromPlan(){
-  const planItems = shopping.filter(i=>i.source==='plan');
-  shopping = shopping.filter(i=>i.source!=='plan');
-  const preservedChecked = {};
-  planItems.forEach(i=> preservedChecked[normalizeName(i.name)+'|'+i.unit] = i.checked);
-  const toMerge=[];
+  const planEntries=[];
   for(let i=0;i<7;i++){
     const key=fmtDate(addDays(currentWeekStart,i));
     const day=getDay(key);
     const allItems=[...STANDARD_SLOTS.flatMap(s=>day[s.key]||[]), ...((day.extra||[]).flatMap(e=>e.items||[]))];
     allItems.forEach(it=>{
       const rec=recipes.find(r=>r.id===it.recipeId);
-      if(!rec) return;
-      toMerge.push(...scaledIngredients(rec, it.servings));
+      if(rec) planEntries.push({rec, servings:it.servings});
     });
   }
+  const ask = await askIngredientChoices(planEntries);
+  if(!ask) return;   // anulowano — lista bez zmian
+  const choices = ask.choices;
+  const planItems = shopping.filter(i=>i.source==='plan');
+  shopping = shopping.filter(i=>i.source!=='plan');
+  const preservedChecked = {};
+  planItems.forEach(i=> preservedChecked[normalizeName(i.name)+'|'+i.unit] = i.checked);
+  const toMerge=[];
+  Object.keys(ask.servings).forEach(rid=>{ const rec=recipes.find(r=>r.id===rid); if(rec) toMerge.push(...scaledIngredients(rec, ask.servings[rid], choices[rid])); });
   mergeIntoShopping(toMerge, 'plan');
   shopping.forEach(i=>{
     if(i.source==='plan'){
@@ -2842,7 +3180,9 @@ document.getElementById('addFromRecipeBtn').addEventListener('click', ()=>{
     const rec = recipes.find(r=>r.id===sel.value);
     if(!rec) return;
     const servings = Math.max(1, parseInt(servEl.value)||rec.baseServings||1);
-    mergeIntoShopping(scaledIngredients(rec, servings), 'recipe');
+    const ask = await askIngredientChoices([{rec, servings}]);
+    if(!ask) return;
+    mergeIntoShopping(scaledIngredients(rec, ask.servings[rec.id], ask.choices[rec.id]), 'recipe');
     await saveProducts(); await saveShopping(); renderShopping();
     overlay.remove();
   });
@@ -2880,7 +3220,7 @@ function renderProducts(filter){
     body.innerHTML = `<tr><td colspan="5" class="usage">Nic nie znaleziono.</td></tr>`;
     return;
   }
-  const usageList = (name)=> recipes.filter(r=> (r.ingredients||[]).some(i=>namesMatch(i.name,name)));
+  const usageList = (name)=> recipes.filter(r=> (r.ingredients||[]).some(i=>!i.recipeRef && namesMatch(i.name,name)));
   const plRecipes = n => n===1 ? '1 przepis' : ((n%10>=2 && n%10<=4 && !(n%100>=12 && n%100<=14)) ? n+' przepisy' : n+' przepisów');
   const sortMode = (document.getElementById('productSort')||{}).value || 'alpha';
   const catOrder = shoppingCategories.map(c=>c.name);
@@ -2972,13 +3312,13 @@ async function renameProductEverywhere(prod, newName){
   const old = prod.name;
   const clash = products.find(x=>x.id!==prod.id && normalizeName(x.name)===normalizeName(newName));
   if(clash){ alert(`Produkt "${clash.name}" już istnieje. Wybierz inną nazwę.`); return false; }
-  const recs = recipes.filter(r=>(r.ingredients||[]).some(i=>namesMatch(i.name,old)));
+  const recs = recipes.filter(r=>(r.ingredients||[]).some(i=>!i.recipeRef && namesMatch(i.name,old)));
   const shop = shopping.filter(it=>namesMatch(it.name,old));
   if(recs.length || shop.length){
     const parts=[]; if(recs.length) parts.push(plItems(recs.length)); if(shop.length) parts.push(shop.length+' poz. na liście zakupów');
     if(!confirm(`Zmienić nazwę "${old}" na "${newName}" także w: ${parts.join(' i ')}?`)) return false;
   }
-  recs.forEach(r=>r.ingredients.forEach(i=>{ if(namesMatch(i.name,old)) i.name=newName; }));
+  recs.forEach(r=>r.ingredients.forEach(i=>{ if(!i.recipeRef && namesMatch(i.name,old)) i.name=newName; }));
   shop.forEach(it=>{ it.name=newName; });
   prod.name = newName;
   await Promise.all([saveProducts(), saveRecipes(), saveShopping()]);
@@ -2991,7 +3331,7 @@ function openProductUsageModal(p, list){
     <h2>${escapeHtml(p.name)}</h2>
     <div class="sub" style="margin-bottom:10px;">Występuje w przepisach (kliknij, aby otworzyć):</div>
     ${[...list].sort((a,b)=>a.name.localeCompare(b.name,'pl')).map(r=>{
-      const ing=(r.ingredients||[]).find(i=>namesMatch(i.name,p.name));
+      const ing=(r.ingredients||[]).find(i=>!i.recipeRef && namesMatch(i.name,p.name));
       const q = ing && ing.qty ? ' — '+escapeHtml(String(ing.qty))+(ing.unit?' '+escapeHtml(ing.unit):'') : '';
       return `<button type="button" class="usage-item" data-rid="${r.id}">${escapeHtml(r.name)}<span class="sub">${q}</span></button>`;
     }).join('')}
@@ -3222,7 +3562,7 @@ function renderUnitsManage(){
       if(units.some(x=>x!==old && x.toLowerCase()===val.toLowerCase())){ alert('Taka jednostka już istnieje.'); inp.value=old; return; }
       let n=0;
       products.forEach(p=>{ if(p.unit===old){ p.unit=val; n++; } });
-      recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{ if(i.unit===old){ i.unit=val; n++; } }));
+      recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{ if(!i.recipeRef && i.unit===old){ i.unit=val; n++; } }));
       shopping.forEach(i=>{ if(i.unit===old){ i.unit=val; n++; } });
       units = units.map(x=>x===old?val:x);
       await Promise.all([saveUnits(), saveProducts(), saveRecipes(), saveShopping()]);
