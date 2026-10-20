@@ -138,6 +138,8 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .ing-namewrap{position:relative;min-width:0;}
 .ing-namewrap input.ing-name{padding-right:6px;}
 .ing-more{align-self:stretch;min-height:34px;border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);font-size:16px;line-height:1;border-radius:8px;cursor:pointer;padding:0;}
+.ing-order-btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer;}
+.ing-order-btn.on{background:rgba(94,122,62,.15);color:var(--green-dark);border-color:transparent;}
 .ing-badge{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:none;background:rgba(232,163,61,.28);color:var(--ink);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;}
 .ing-namewrap input.ing-name.has-badge{padding-right:44px;}
 .ing-menu{position:fixed;z-index:5000;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.18);padding:4px;min-width:200px;}
@@ -266,6 +268,9 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .cat-row{display:flex;align-items:center;gap:8px;padding:6px 2px;}
 .cat-row input.cat-name{flex:1;border:none;background:none;font-size:13.5px;padding:4px 2px;}
 .cat-row input.cat-name:focus{background:#fff;border:1px solid var(--line);}
+.cat-row input.cat-name:hover{background:rgba(0,0,0,.03);border-radius:6px;}
+.cat-row .cat-edit,.cat-row .cat-up,.cat-row .cat-down{opacity:.7;}
+.cat-row .cat-up,.cat-row .cat-down{font-size:11px;}
 
 /* ---- TAGS TAB ---- */
 #tagsManage{max-width:420px;}
@@ -500,7 +505,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 18.10.2026, 11:39</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 09:27</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -525,9 +530,12 @@ function recipeUsesRecipe(rootId, targetId, seen){
 function recipesUsing(id){ return recipes.filter(r=> r.id!==id && (r.ingredients||[]).some(i=>i.recipeRef===id)); }
 const DEFAULT_MEAL_CATEGORIES = ['Śniadanie','II śniadanie','Obiad','Kolacja','Przekąski'];
 const DEFAULT_DISH_CATEGORIES = ['Zupa','Danie główne','Sałatka','Przystawka','Deser','Napój','Dodatek'];
-const DEFAULT_SHOPPING_CATEGORIES = ['Nabiał','Pieczywo','Mięso i ryby','Warzywa i owoce','Przyprawy','Produkty suche/sypkie','Mrożonki','Napoje','Inne'];
+const DEFAULT_SHOPPING_CATEGORIES = ['Warzywa i owoce','Nabiał','Wegańskie','Produkty suche/sypkie','Pieczywo','Przyprawy','Mięso i ryby','Mrożonki','Napoje','Inne'];
+/* kolejność kategorii = kolejność składników w przepisie i na liście zakupów (jak w sklepie) */
+const SHOP_CAT_ORDER_FIRST = ['Warzywa i owoce','Nabiał','Wegańskie','Produkty suche/sypkie','Pieczywo','Przyprawy'];
 const DEFAULT_UNITS = ['g','kg','ml','l','szt','łyżka','łyżeczka','szklanka','opakowanie','ząbek','pęczek','plaster','garść','puszka'];
 const CATEGORY_KEYWORDS = {
+  'Wegańskie':['tofu','tempeh','seitan','roslinn','roślinn','weganski','wegański','wegańsk','mleko sojow','mleko owsian','mleko migdal','mleko migdał','mleko kokos','mleko ryzow','mleko ryżow','jogurt kokos','jogurt sojow'],
   'Nabiał':['mleko','ser','jogurt','maslo','masło','smietan','śmietan','twarog','twaróg','kefir','jajk','jajo','jaja','jajec'],
   'Pieczywo':['chleb','bulk','bułk','bagiet','tost','rogal','kajzer'],
   'Mięso i ryby':['kurczak','wolowin','wołowin','wieprzow','schab','mieso','mięso','ryb','losos','łosoś','indyk','kielbas','kiełbas','szynk','filet','miel'],
@@ -611,6 +619,7 @@ function namesMatch(a,b){
 function guessCategory(name){
   const n = normalizeName(name);
   for(const cat in CATEGORY_KEYWORDS){
+    if(shoppingCategories.length && !shoppingCategories.some(c=>c.name===cat)) continue;
     if(CATEGORY_KEYWORDS[cat].some(k=>n.includes(k))) return cat;
   }
   return 'Inne';
@@ -624,6 +633,16 @@ function ensureProduct(name, unit){
   products.push(p);
   return p;
 }
+let catOrderV2=false;
+function migrateShopCatOrder(flag){
+  if(flag){ catOrderV2=true; return false; }
+  if(!shoppingCategories.some(c=>c.name==='Wegańskie')) shoppingCategories.push({id:uid(), name:'Wegańskie'});
+  const head=SHOP_CAT_ORDER_FIRST.map(n=>shoppingCategories.find(c=>c.name===n)).filter(Boolean);
+  const rest=shoppingCategories.filter(c=>!head.includes(c));
+  shoppingCategories=[...head,...rest];
+  catOrderV2=true; return true;
+}
+function sortedUnits(){ return [...units].sort((a,b)=>String(a).localeCompare(String(b),'pl',{sensitivity:'base'})); }
 function migrateCategoryList(arr, defaults){
   if(!arr || arr.length===0) return defaults.map(n=>({id:uid(), name:n}));
   if(typeof arr[0]==='string') return arr.map(n=>({id:uid(), name:n}));
@@ -744,7 +763,7 @@ async function remoteLoad(){
 function currentState(){
   return {
     recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes,
-    mealCategories, recipeCategories, shoppingCategories, units
+    mealCategories, recipeCategories, shoppingCategories, units, catOrderV2
   };
 }
 let persistVersion=0, persistDirty=false, retryTimer=null, remoteLoaded=false;
@@ -830,6 +849,7 @@ function applyData(data){
   products = data.products || [];
   tags = data.tags || [];
   shoppingCategories = migrateCategoryList(data.shoppingCategories, DEFAULT_SHOPPING_CATEGORIES);
+  if(migrateShopCatOrder(data.catOrderV2)) setTimeout(()=>{ try{ schedulePersist(); }catch(e){} }, 800);
   mealCategories = migrateCategoryList(data.mealCategories, DEFAULT_MEAL_CATEGORIES);
   recipeCategories = migrateCategoryList(data.recipeCategories, DEFAULT_DISH_CATEGORIES);
   units = data.units || [...DEFAULT_UNITS];
@@ -1064,9 +1084,9 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     closePicker();
     if(btn.dataset.tab==='products'){ renderUnitsManage(); renderProducts(document.getElementById('productSearch').value); }
     if(btn.dataset.tab==='categories'){
-      renderCatManager('mealCatManage', mealCategories, saveMealCategories, ()=>{ renderMealFilterRow(); renderDayGrid(); });
-      renderCatManager('recipeCatManage', recipeCategories, saveRecipeCategories, ()=>{ renderCatFilterRow(); });
-      renderCatManager('shopCatManage', shoppingCategories, saveShoppingCategories, ()=>{ renderShopping(); renderProducts(); });
+      renderCatManager('mealCatManage', mealCategories, saveMealCategories, ()=>{ renderMealFilterRow(); renderDayGrid(); }, 'meal');
+      renderCatManager('recipeCatManage', recipeCategories, saveRecipeCategories, ()=>{ renderCatFilterRow(); }, 'recipe');
+      renderCatManager('shopCatManage', shoppingCategories, saveShoppingCategories, ()=>{ renderShopping(); renderProducts(); }, 'shop');
     }
     if(btn.dataset.tab==='tags') renderTagsManage();
     if(btn.dataset.tab==='proposals') renderProposals();
@@ -2461,7 +2481,8 @@ function openRecipeModal(existing, forceNew){
         <p class="hint" id="m-import-status" style="margin:6px 0 0;"></p>
       </div>
       <div class="field">
-        <label>Składniki <span class="hint">(Enter dodaje kolejny wiersz)</span></label>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"><label style="margin:0;">Składniki</label>
+          <button type="button" class="ing-order-btn" id="ingOrderBtn"></button></div>
         <div id="ingList"></div>
         <div class="add-ing-row"><button class="add-ing" id="addIng">+ Składnik</button><button class="add-ing" id="addIngRef" title="Użyj innego przepisu (np. sosu) jako składnika">📎 Przepis jako składnik</button></div>
       </div>
@@ -2519,6 +2540,14 @@ function openRecipeModal(existing, forceNew){
 
   /* ingredients with autocomplete + unit autofill + enter-to-add */
   let ings = rec.ingredients.map(i=>({...i}));
+  /* kolejność: nowe przepisy automatycznie wg kategorii; istniejące bez ustawienia zostają ręczne (żeby nie zepsuć Twojej kolejności) */
+  let autoOrder = isEdit ? rec.orderMode==='auto' : true;
+  function updateOrderBtn(){
+    const b=overlay.querySelector('#ingOrderBtn');
+    b.textContent = autoOrder ? '↕ wg kategorii' : '✋ ręcznie';
+    b.title = autoOrder ? 'Składniki układają się same wg kategorii (warzywa, nabiał…). Kliknij, aby ustawić kolejność ręcznie.' : 'Kolejność ręczna. Kliknij, aby ułożyć automatycznie wg kategorii.';
+    b.classList.toggle('on', autoOrder);
+  }
   let ingSuggBox=null;
   function closeIngSugg(){ if(ingSuggBox){ ingSuggBox.remove(); ingSuggBox=null; } }
   function showIngSugg(row, idx){
@@ -2545,11 +2574,11 @@ function openRecipeModal(existing, forceNew){
     if(rows[i]){ const el=rows[i].querySelector('.ing-name')||rows[i].querySelector('.ing-qty'); if(el) el.focus(); }
   }
   function goToNextIngRow(idx){
-    if(idx === ings.length-1){ ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); }
+    if(idx === ings.length-1){ if(autoOrder) ings=sortIngredientsByCategory(ings); ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); }
     else { focusIngRow(idx+1); }
   }
   function unitOptionsHtml(currentUnit){
-    const list = [...units];
+    const list = sortedUnits();
     if(currentUnit && !list.includes(currentUnit)) list.push(currentUnit);
     return `<option value="">j.</option>` + list.map(u=>`<option value="${escapeHtml(u)}" ${u===currentUnit?'selected':''}>${escapeHtml(u)}</option>`).join('');
   }
@@ -2623,7 +2652,7 @@ function openRecipeModal(existing, forceNew){
         <button type="button" class="ing-more" title="Opcje składnika">⋯</button>
       </div>
     `).join('');
-    const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
+    const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; autoOrder=false; updateOrderBtn(); const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
     wrap.querySelectorAll('.ing-row').forEach(row=>{
       const idx=+row.dataset.idx;
       row.querySelector('.ing-up').addEventListener('click', ()=>moveIng(idx,idx-1));
@@ -2648,8 +2677,13 @@ function openRecipeModal(existing, forceNew){
       const badge=row.querySelector('.ing-badge'); if(badge) badge.addEventListener('click', ()=>openIngMenu(more, idx));
     });
   }
+  updateOrderBtn();
+  overlay.querySelector('#ingOrderBtn').addEventListener('click', ()=>{
+    autoOrder=!autoOrder; updateOrderBtn();
+    if(autoOrder){ ings=sortIngredientsByCategory(ings); renderIngs(); }
+  });
   renderIngs();
-  overlay.querySelector('#addIng').addEventListener('click', ()=>{ ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); });
+  overlay.querySelector('#addIng').addEventListener('click', ()=>{ if(autoOrder) ings=sortIngredientsByCategory(ings); ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); });
   overlay.querySelector('#addIngRef').addEventListener('click', ()=>{
     // pomijamy ten przepis i każdy, który (pośrednio) zawiera ten przepis — inaczej powstałaby pętla
     const excl = recipes.filter(r=> r.id===rec.id || recipeUsesRecipe(r.id, rec.id)).map(r=>r.id);
@@ -2705,6 +2739,7 @@ function openRecipeModal(existing, forceNew){
       if(imported.servings) overlay.querySelector('#m-servings').value = imported.servings;
       if(imported.ingredients && imported.ingredients.length){
         ings = imported.ingredients;
+        if(autoOrder) ings = sortIngredientsByCategory(ings);
         renderIngs();
       }
       if(imported.instructions){ overlay.querySelector('#m-instr').value = imported.instructions; autoGrowInstr(); }
@@ -2737,13 +2772,14 @@ function openRecipeModal(existing, forceNew){
     const instructions = overlay.querySelector('#m-instr').value.trim();
     const cleanLinks = links.map(l=>({url:(l.url||'').trim(), label:(l.label||'').trim()})).filter(l=>l.url);
     const sourceUrl = cleanLinks.length ? cleanLinks[0].url : '';
-    const cleanIngs = ings.filter(i=> i.recipeRef ? recipes.some(r=>r.id===i.recipeRef) : i.name.trim());
+    let cleanIngs = ings.filter(i=> i.recipeRef ? recipes.some(r=>r.id===i.recipeRef) : i.name.trim());
     cleanIngs.forEach(i=>{ if(i.recipeRef){ const sub=recipes.find(r=>r.id===i.recipeRef); if(sub) i.name=sub.name; i.unit='porcji'; delete i.optional; delete i.defaultOn; delete i.altGroup; } });
     cleanAltGroups(cleanIngs);
+    if(autoOrder) cleanIngs = sortIngredientsByCategory(cleanIngs);
     cleanIngs.forEach(i=>{ if(!i.recipeRef) ensureProduct(i.name, i.unit); });
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newRec = {id:rec.id, name, partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
+    const newRec = {id:rec.id, name, orderMode: autoOrder?'auto':'manual', partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
     const idx = recipes.findIndex(r=>r.id===rec.id);
     if(idx>=0) recipes[idx]=newRec; else recipes.push(newRec);
     await Promise.all([saveRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -2755,6 +2791,22 @@ function openRecipeModal(existing, forceNew){
 
 
 /* ============ SKŁADNIKI OPCJONALNE I ZAMIENNIKI ============ */
+function ingCatRank(name){
+  const prod=findProduct(name);
+  const cat = prod ? prod.category : guessCategory(name);
+  const i=shoppingCategories.findIndex(c=>c.name===cat);
+  return i<0 ? 9000 : i;
+}
+/* układa składniki wg kolejności kategorii zakupowych; zamienniki zostają razem; przepisy-składniki na końcu, puste wiersze na samym końcu */
+function sortIngredientsByCategory(list){
+  const keyed=ingredientGroups(list).map((g,pos)=>{
+    const first=list[g.idxs[0]];
+    const rank = first.recipeRef ? 10000 : !(first.name||'').trim() ? 20000 : ingCatRank(first.name);
+    return {g,pos,rank};
+  });
+  keyed.sort((a,b)=>a.rank-b.rank||a.pos-b.pos);
+  return keyed.flatMap(k=>k.g.idxs.map(i=>list[i]));
+}
 function ingExtras(i){
   const o={};
   if(i && i.optional) o.optional=true;
@@ -3265,7 +3317,7 @@ function renderProducts(filter){
     }
     const catNames = shoppingCategories.map(c=>c.name);
     if(!catNames.includes(p.category)) catNames.push(p.category||'Inne');
-    const unitList = [...units];
+    const unitList = sortedUnits();
     if(p.unit && !unitList.includes(p.unit)) unitList.push(p.unit);
     return groupRow + `<tr data-id="${p.id}"${p.isNew?' class="is-new"':''}>
       <td><input type="text" class="p-name plain-name" value="${escapeHtml(p.name)}" title="Dotknij nazwy, aby ją zmienić"></td>
@@ -3402,6 +3454,8 @@ function renderCatManager(containerId, listRef, saveFn, onChange, kind){
   wrap.innerHTML = listRef.map(cat=>`
     <div class="cat-row" data-id="${cat.id}" data-name="${escapeHtml(cat.name)}">
       <input type="text" class="cat-name" value="${escapeHtml(cat.name)}">
+      ${kind==='shop'?'<button class="btn-icon cat-up" title="Wyżej">▲</button><button class="btn-icon cat-down" title="Niżej">▼</button>':''}
+      <button class="btn-icon cat-edit" title="Zmień nazwę">✎</button>
       <button class="btn-icon cat-del" title="Usuń">🗑</button>
     </div>
   `).join('') || '<div class="sub">Brak kategorii.</div>';
@@ -3413,10 +3467,28 @@ function renderCatManager(containerId, listRef, saveFn, onChange, kind){
     const newName=e.target.value.trim();
     if(!newName || newName===oldName){ e.target.value=oldName; return; }
     if(listRef.some(c=>c.id!==id && c.name.toLowerCase()===newName.toLowerCase())){ alert('Taka kategoria już istnieje.'); e.target.value=oldName; return; }
+    const used = K ? K.count(oldName) : 0;
+    if(used && !confirm(`Zmienić nazwę „${oldName}” na „${newName}”? Zmieni się też w ${used} ${K.what}.`)){ e.target.value=oldName; return; }
     cat.name = newName;
     if(K){ K.rename(oldName,newName); await K.save(); }
     await saveFn(); if(onChange) onChange();
     renderCatManager(containerId,listRef,saveFn,onChange,kind);
+  }));
+  const moveCat=async (e,dir)=>{
+    const id=e.target.closest('.cat-row').dataset.id, i=listRef.findIndex(c=>c.id===id), j=i+dir;
+    if(j<0||j>=listRef.length) return;
+    const [c]=listRef.splice(i,1); listRef.splice(j,0,c);
+    await saveFn(); renderCatManager(containerId,listRef,saveFn,onChange,kind); if(onChange) onChange();
+  };
+  wrap.querySelectorAll('.cat-up').forEach(b=>b.addEventListener('click', e=>moveCat(e,-1)));
+  wrap.querySelectorAll('.cat-down').forEach(b=>b.addEventListener('click', e=>moveCat(e,1)));
+  wrap.querySelectorAll('.cat-edit').forEach(b=>b.addEventListener('click', e=>{
+    const inp=e.target.closest('.cat-row').querySelector('.cat-name');
+    inp.focus(); inp.select();
+  }));
+  wrap.querySelectorAll('.cat-name').forEach(inp=>inp.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+    else if(e.key==='Escape'){ inp.value=inp.closest('.cat-row').dataset.name; inp.blur(); }
   }));
   wrap.querySelectorAll('.cat-del').forEach(b=>b.addEventListener('click', async e=>{
     const row=e.target.closest('.cat-row');
@@ -3445,7 +3517,7 @@ document.getElementById('addMealCat').addEventListener('click', async ()=>{
   if(name && name.trim()){
     mealCategories.push({id:uid(), name:name.trim()});
     await saveMealCategories();
-    renderCatManager('mealCatManage', mealCategories, saveMealCategories, ()=>{ renderMealFilterRow(); });
+    renderCatManager('mealCatManage', mealCategories, saveMealCategories, ()=>{ renderMealFilterRow(); }, 'meal');
   }
 });
 document.getElementById('addRecipeCat').addEventListener('click', async ()=>{
@@ -3453,7 +3525,7 @@ document.getElementById('addRecipeCat').addEventListener('click', async ()=>{
   if(name && name.trim()){
     recipeCategories.push({id:uid(), name:name.trim()});
     await saveRecipeCategories();
-    renderCatManager('recipeCatManage', recipeCategories, saveRecipeCategories, ()=>{ renderCatFilterRow(); });
+    renderCatManager('recipeCatManage', recipeCategories, saveRecipeCategories, ()=>{ renderCatFilterRow(); }, 'recipe');
   }
 });
 document.getElementById('addShopCat').addEventListener('click', async ()=>{
@@ -3461,7 +3533,7 @@ document.getElementById('addShopCat').addEventListener('click', async ()=>{
   if(name && name.trim()){
     shoppingCategories.push({id:uid(), name:name.trim()});
     await saveShoppingCategories();
-    renderCatManager('shopCatManage', shoppingCategories, saveShoppingCategories, ()=>{ renderShopping(); });
+    renderCatManager('shopCatManage', shoppingCategories, saveShoppingCategories, ()=>{ renderShopping(); try{ renderProducts(document.getElementById('productSearch').value); }catch(e){} }, 'shop');
   }
 });
 
@@ -3572,7 +3644,7 @@ document.getElementById('pfReviewAll').addEventListener('click', async ()=>{
 /* ============ UNITS MANAGEMENT ============ */
 function renderUnitsManage(){
   const wrap=document.getElementById('unitsManage');
-  wrap.innerHTML = units.map(u=>`<span class="unit-chip" data-u="${escapeHtml(u)}"><input type="text" class="u-name" value="${escapeHtml(u)}" style="width:${Math.max(1.6,u.length+0.9)}ch" title="Dotknij nazwy, aby ją zmienić"> <button type="button" class="u-del">✕</button></span>`).join('') || '<div class="sub">Brak jednostek.</div>';
+  wrap.innerHTML = sortedUnits().map(u=>`<span class="unit-chip" data-u="${escapeHtml(u)}"><input type="text" class="u-name" value="${escapeHtml(u)}" style="width:${Math.max(1.6,u.length+0.9)}ch" title="Dotknij nazwy, aby ją zmienić"> <button type="button" class="u-del">✕</button></span>`).join('') || '<div class="sub">Brak jednostek.</div>';
   wrap.querySelectorAll('.u-name').forEach(inp=>{
     inp.addEventListener('input', ()=>{ inp.style.width = Math.max(1.6, inp.value.length+0.9)+'ch'; });
     inp.addEventListener('change', async ()=>{
@@ -3865,6 +3937,7 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
     mealCategories = migrateCategoryList(data.mealCategories, DEFAULT_MEAL_CATEGORIES);
     recipeCategories = migrateCategoryList(data.recipeCategories, DEFAULT_DISH_CATEGORIES);
     shoppingCategories = migrateCategoryList(data.shoppingCategories, DEFAULT_SHOPPING_CATEGORIES);
+    if(migrateShopCatOrder(data.catOrderV2)) setTimeout(()=>{ try{ schedulePersist(); }catch(e){} }, 800);
     units = data.units || [...DEFAULT_UNITS];
     recipes.forEach(r=>{
       if(!r.mealCategories){ r.mealCategories = r.categories || []; r.categories = []; }
