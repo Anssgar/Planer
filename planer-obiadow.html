@@ -505,7 +505,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 09:27</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 09:57</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -532,7 +532,24 @@ const DEFAULT_MEAL_CATEGORIES = ['Śniadanie','II śniadanie','Obiad','Kolacja',
 const DEFAULT_DISH_CATEGORIES = ['Zupa','Danie główne','Sałatka','Przystawka','Deser','Napój','Dodatek'];
 const DEFAULT_SHOPPING_CATEGORIES = ['Warzywa i owoce','Nabiał','Wegańskie','Produkty suche/sypkie','Pieczywo','Przyprawy','Mięso i ryby','Mrożonki','Napoje','Inne'];
 /* kolejność kategorii = kolejność składników w przepisie i na liście zakupów (jak w sklepie) */
-const SHOP_CAT_ORDER_FIRST = ['Warzywa i owoce','Nabiał','Wegańskie','Produkty suche/sypkie','Pieczywo','Przyprawy'];
+const SHOP_CAT_GROUPS = ['warzywa','nabial','wegan','sypkie','pieczywo','przyprawy'];
+function catGroup(name){
+  const n=normalizeName(name);
+  if(/warzyw|owoc/.test(n)) return 'warzywa';
+  if(/nabia|mlecz/.test(n)) return 'nabial';
+  if(/wegan|roslin/.test(n)) return 'wegan';
+  if(/sypk|such|makaron|zboz/.test(n)) return 'sypkie';
+  if(/piecz/.test(n)) return 'pieczywo';
+  if(/przypraw/.test(n)) return 'przyprawy';
+  return '';
+}
+/* nazwa kategorii z listy użytkownika odpowiadająca kanonicznej (np. 'Warzywa i owoce' -> jego 'Warzywa') */
+function resolveShopCat(canon){
+  if(!shoppingCategories.length) return canon;
+  const ex=shoppingCategories.find(c=>c.name===canon); if(ex) return ex.name;
+  const g=catGroup(canon); if(!g) return null;
+  const m=shoppingCategories.find(c=>catGroup(c.name)===g); return m?m.name:null;
+}
 const DEFAULT_UNITS = ['g','kg','ml','l','szt','łyżka','łyżeczka','szklanka','opakowanie','ząbek','pęczek','plaster','garść','puszka'];
 const CATEGORY_KEYWORDS = {
   'Wegańskie':['tofu','tempeh','seitan','roslinn','roślinn','weganski','wegański','wegańsk','mleko sojow','mleko owsian','mleko migdal','mleko migdał','mleko kokos','mleko ryzow','mleko ryżow','jogurt kokos','jogurt sojow'],
@@ -619,8 +636,9 @@ function namesMatch(a,b){
 function guessCategory(name){
   const n = normalizeName(name);
   for(const cat in CATEGORY_KEYWORDS){
-    if(shoppingCategories.length && !shoppingCategories.some(c=>c.name===cat)) continue;
-    if(CATEGORY_KEYWORDS[cat].some(k=>n.includes(k))) return cat;
+    if(!CATEGORY_KEYWORDS[cat].some(k=>n.includes(k))) continue;
+    const target=resolveShopCat(cat);
+    if(target) return target;
   }
   return 'Inne';
 }
@@ -633,14 +651,14 @@ function ensureProduct(name, unit){
   products.push(p);
   return p;
 }
-let catOrderV2=false;
+let catOrderV3=false;
 function migrateShopCatOrder(flag){
-  if(flag){ catOrderV2=true; return false; }
-  if(!shoppingCategories.some(c=>c.name==='Wegańskie')) shoppingCategories.push({id:uid(), name:'Wegańskie'});
-  const head=SHOP_CAT_ORDER_FIRST.map(n=>shoppingCategories.find(c=>c.name===n)).filter(Boolean);
+  if(flag){ catOrderV3=true; return false; }
+  if(!shoppingCategories.some(c=>catGroup(c.name)==='wegan')) shoppingCategories.push({id:uid(), name:'Wegańskie'});
+  const head=SHOP_CAT_GROUPS.map(g=>shoppingCategories.find(c=>catGroup(c.name)===g)).filter(Boolean);
   const rest=shoppingCategories.filter(c=>!head.includes(c));
   shoppingCategories=[...head,...rest];
-  catOrderV2=true; return true;
+  catOrderV3=true; return true;
 }
 function sortedUnits(){ return [...units].sort((a,b)=>String(a).localeCompare(String(b),'pl',{sensitivity:'base'})); }
 function migrateCategoryList(arr, defaults){
@@ -763,7 +781,7 @@ async function remoteLoad(){
 function currentState(){
   return {
     recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes,
-    mealCategories, recipeCategories, shoppingCategories, units, catOrderV2
+    mealCategories, recipeCategories, shoppingCategories, units, catOrderV3
   };
 }
 let persistVersion=0, persistDirty=false, retryTimer=null, remoteLoaded=false;
@@ -849,7 +867,7 @@ function applyData(data){
   products = data.products || [];
   tags = data.tags || [];
   shoppingCategories = migrateCategoryList(data.shoppingCategories, DEFAULT_SHOPPING_CATEGORIES);
-  if(migrateShopCatOrder(data.catOrderV2)) setTimeout(()=>{ try{ schedulePersist(); }catch(e){} }, 800);
+  if(migrateShopCatOrder(data.catOrderV3)) setTimeout(()=>{ try{ schedulePersist(); }catch(e){} }, 800);
   mealCategories = migrateCategoryList(data.mealCategories, DEFAULT_MEAL_CATEGORIES);
   recipeCategories = migrateCategoryList(data.recipeCategories, DEFAULT_DISH_CATEGORIES);
   units = data.units || [...DEFAULT_UNITS];
@@ -2563,10 +2581,13 @@ function openRecipeModal(existing, forceNew){
     ingSuggBox.querySelectorAll('.opt').forEach(o=>o.addEventListener('mousedown', ev=>{
       ev.preventDefault();
       const prod = products.find(p=>p.name===o.dataset.n);
+      const wasLast = idx===ings.length-1;
       ings[idx].name = o.dataset.n;
       if(prod && prod.unit && !ings[idx].unit){ ings[idx].unit = prod.unit; }
       renderIngs();
       closeIngSugg();
+      if(wasLast) goToNextIngRow(idx);   // od razu nowy pusty wiersz z kursorem w nazwie
+      else resortIngs();
     }));
   }
   function focusIngRow(i){
@@ -2632,6 +2653,20 @@ function openRecipeModal(existing, forceNew){
     setTimeout(()=>{ document.addEventListener('mousedown', ingMenuOutside, true); document.addEventListener('touchstart', ingMenuOutside, true); window.addEventListener('scroll', closeIngMenu, true); },0);
   }
   const moveBtns = idx=>`<div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>`;
+  /* układa wg kategorii od razu i zachowuje fokus w tym samym polu tego samego składnika */
+  function resortIngs(){
+    if(!autoOrder) return;
+    const sorted=sortIngredientsByCategory(ings);
+    if(sorted.every((x,i)=>x===ings[i])) return;
+    const ae=document.activeElement, rowEl=ae && ae.closest ? ae.closest('.ing-row') : null;
+    let ref=null, cls=null;
+    if(rowEl && overlay.contains(rowEl)){ ref=ings[+rowEl.dataset.idx]; cls=['ing-name','ing-qty','ing-unit'].find(c=>ae.classList.contains(c)); }
+    ings=sorted; renderIngs();
+    if(ref && cls){
+      const row=overlay.querySelectorAll('.ing-row')[ings.indexOf(ref)], t=row && row.querySelector('.'+cls);
+      if(t){ t.focus(); try{ if(t.type==='text'){ const n=t.value.length; t.setSelectionRange(n,n); } }catch(e){} }
+    }
+  }
   function renderIngs(){
     closeIngMenu();
     const wrap=overlay.querySelector('#ingList');
@@ -2667,10 +2702,10 @@ function openRecipeModal(existing, forceNew){
       const nameInp=row.querySelector('.ing-name'), qtyInp=row.querySelector('.ing-qty'), unitInp=row.querySelector('.ing-unit');
       nameInp.addEventListener('input', ()=>{ ings[idx].name=nameInp.value; showIngSugg(row, idx); });
       nameInp.addEventListener('focus', ()=> showIngSugg(row, idx));
-      nameInp.addEventListener('blur', ()=> setTimeout(closeIngSugg,150));
+      nameInp.addEventListener('blur', ()=> setTimeout(()=>{ closeIngSugg(); resortIngs(); },150));
       qtyInp.addEventListener('input', ()=>ings[idx].qty=qtyInp.value);
       unitInp.addEventListener('change', ()=>ings[idx].unit=unitInp.value);
-      bindEnterSubmit(nameInp, ()=>{ ings[idx].name = nameInp.value; closeIngSugg(); goToNextIngRow(idx); });
+      bindEnterSubmit(nameInp, ()=>{ ings[idx].name = nameInp.value; const pr=findProduct(nameInp.value); if(pr && pr.unit && !ings[idx].unit) ings[idx].unit=pr.unit; closeIngSugg(); goToNextIngRow(idx); });
       bindEnterSubmit(qtyInp, ()=>{ closeIngSugg(); goToNextIngRow(idx); });
       const more=row.querySelector('.ing-more');
       more.addEventListener('click', ()=>openIngMenu(more, idx));
@@ -2793,7 +2828,8 @@ function openRecipeModal(existing, forceNew){
 /* ============ SKŁADNIKI OPCJONALNE I ZAMIENNIKI ============ */
 function ingCatRank(name){
   const prod=findProduct(name);
-  const cat = prod ? prod.category : guessCategory(name);
+  let cat = prod ? prod.category : null;
+  if(!cat || cat==='Inne') cat = guessCategory(name);
   const i=shoppingCategories.findIndex(c=>c.name===cat);
   return i<0 ? 9000 : i;
 }
@@ -3937,7 +3973,7 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
     mealCategories = migrateCategoryList(data.mealCategories, DEFAULT_MEAL_CATEGORIES);
     recipeCategories = migrateCategoryList(data.recipeCategories, DEFAULT_DISH_CATEGORIES);
     shoppingCategories = migrateCategoryList(data.shoppingCategories, DEFAULT_SHOPPING_CATEGORIES);
-    if(migrateShopCatOrder(data.catOrderV2)) setTimeout(()=>{ try{ schedulePersist(); }catch(e){} }, 800);
+    if(migrateShopCatOrder(data.catOrderV3)) setTimeout(()=>{ try{ schedulePersist(); }catch(e){} }, 800);
     units = data.units || [...DEFAULT_UNITS];
     recipes.forEach(r=>{
       if(!r.mealCategories){ r.mealCategories = r.categories || []; r.categories = []; }
