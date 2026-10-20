@@ -505,7 +505,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 09:57</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 10:33</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -2590,7 +2590,9 @@ function openRecipeModal(existing, forceNew){
       else resortIngs();
     }));
   }
+  let skipSuggUntil=0;   // po automatycznym ustawieniu kursora nie pokazujemy listy produktów (pojawiała się na ułamek sekundy)
   function focusIngRow(i){
+    skipSuggUntil=Date.now()+400;
     const rows=overlay.querySelectorAll('.ing-row');
     if(rows[i]){ const el=rows[i].querySelector('.ing-name')||rows[i].querySelector('.ing-qty'); if(el) el.focus(); }
   }
@@ -2701,7 +2703,7 @@ function openRecipeModal(existing, forceNew){
       }
       const nameInp=row.querySelector('.ing-name'), qtyInp=row.querySelector('.ing-qty'), unitInp=row.querySelector('.ing-unit');
       nameInp.addEventListener('input', ()=>{ ings[idx].name=nameInp.value; showIngSugg(row, idx); });
-      nameInp.addEventListener('focus', ()=> showIngSugg(row, idx));
+      nameInp.addEventListener('focus', ()=>{ if(Date.now()>skipSuggUntil) showIngSugg(row, idx); });
       nameInp.addEventListener('blur', ()=> setTimeout(()=>{ closeIngSugg(); resortIngs(); },150));
       qtyInp.addEventListener('input', ()=>ings[idx].qty=qtyInp.value);
       unitInp.addEventListener('change', ()=>ings[idx].unit=unitInp.value);
