@@ -505,7 +505,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 10:33</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 21:44</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -1789,6 +1789,32 @@ document.getElementById('quickRatingSortSel').addEventListener('change', e=>{ qu
 document.getElementById('quickRatingPersonSel').addEventListener('change', e=>{ quickRatingFilterPerson=e.target.value; renderQuickRecipes(document.getElementById('quickSearch').value); });
 document.getElementById('quickRatingMinSel').addEventListener('change', e=>{ quickRatingFilterMin=parseInt(e.target.value,10)||0; renderQuickRecipes(document.getElementById('quickSearch').value); });
 
+/* Zamykanie okna edycji: tło zamyka tylko, gdy nic nie zmieniono i kliknięcie zaczęło się na tle (zaznaczanie tekstu nie zamyka);
+   przy niezapisanych zmianach okno „drży” zamiast się zamknąć, a Anuluj pyta o potwierdzenie; zamknięcie karty też ostrzega. */
+function guardModalClose(overlay, isDirty, msg, cancelSel){
+  let downOnBg=false;
+  const setDown = e=>{ downOnBg = e.target===overlay; };
+  overlay.addEventListener('mousedown', setDown);
+  overlay.addEventListener('touchstart', setDown, {passive:true});
+  overlay.addEventListener('click', e=>{
+    if(e.target!==overlay || !downOnBg) return;
+    if(isDirty()){
+      const m=overlay.querySelector('.modal');
+      if(m && m.animate) m.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(0)'}],{duration:220});
+      return;
+    }
+    overlay.remove();
+  });
+  overlay.querySelector(cancelSel).addEventListener('click', ()=>{
+    if(isDirty() && !confirm(msg)) return;
+    overlay.remove();
+  });
+  const onUnload = e=>{
+    if(!document.body.contains(overlay)){ window.removeEventListener('beforeunload', onUnload); return; }
+    if(isDirty()){ e.preventDefault(); e.returnValue=''; }
+  };
+  window.addEventListener('beforeunload', onUnload);
+}
 function openQuickRecipeModal(existing){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -1866,8 +1892,9 @@ function openQuickRecipeModal(existing){
     skip: [...dishCatsAPI.get(), ...mealCatsAPI.get()]
   }));
 
-  overlay.querySelector('#qm-cancel').addEventListener('click', ()=>overlay.remove());
-  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  const qsnap = ()=>JSON.stringify([overlay.querySelector('#qm-name').value, overlay.querySelector('#qm-desc').value, mealCatsAPI.get(), dishCatsAPI.get(), tagsAPI.get(), qRatingsAPI.get()]);
+  const qsnap0 = qsnap();
+  guardModalClose(overlay, ()=>qsnap()!==qsnap0, 'Masz niezapisane zmiany. Zamknąć bez zapisywania?', '#qm-cancel');
   overlay.querySelector('#qm-save').addEventListener('click', async ()=>{
     const name=overlay.querySelector('#qm-name').value.trim();
     if(!name){ overlay.querySelector('#qm-name').focus(); return; }
@@ -2175,6 +2202,37 @@ function parseIngredientLine(line){
 // Dopóki puste, import korzysta z prostszej metody (szukanie gotowych danych na stronie), bez AI.
 const RECIPE_AI_WORKER_URL = 'https://przepisy.okowol.workers.dev';
 
+const UNIT_ALIASES = {
+  g:'g',gr:'g',gram:'g',gramy:'g',gramow:'g', kg:'kg',kilogram:'kg',kilogramy:'kg', ml:'ml',mililitr:'ml',mililitry:'ml', l:'l',litr:'l',litry:'l',
+  szt:'szt',sztuka:'szt',sztuki:'szt',sztuk:'szt', lyzka:'łyżka',lyzki:'łyżka',lyzek:'łyżka', lyzeczka:'łyżeczka',lyzeczki:'łyżeczka',lyzeczek:'łyżeczka',
+  szklanka:'szklanka',szklanki:'szklanka',szklanek:'szklanka', opakowanie:'opakowanie',opakowania:'opakowanie',opak:'opakowanie',
+  zabek:'ząbek',zabki:'ząbek',zabkow:'ząbek', peczek:'pęczek',peczki:'pęczek',peczkow:'pęczek', plaster:'plaster',plastry:'plaster',plastrow:'plaster',
+  garsc:'garść',garsci:'garść', puszka:'puszka',puszki:'puszka',puszek:'puszka'
+};
+/* rozpoznaje jednostkę z listy użytkownika (np. "łyżki" -> "łyżka"); null, jeśli to nie jest znana jednostka */
+function matchUnit(word){
+  const w = stripDiacritics(String(word||'').toLowerCase()).replace(/\.$/,'').trim();
+  if(!w) return null;
+  const direct = units.find(u=>stripDiacritics(String(u).toLowerCase())===w); if(direct) return direct;
+  const canon = UNIT_ALIASES[w]; if(!canon) return null;
+  return units.find(u=>stripDiacritics(String(u).toLowerCase())===stripDiacritics(canon)) || null;
+}
+/* AI/strona często zwracają "200 g" w polu ilości — rozdzielamy: ilość = sama liczba, jednostka osobno */
+function normalizeImportedIng(i){
+  const name=String((i&&i.name)||'').trim();
+  let qty=String(i && i.qty!=null ? i.qty : '').trim(), unit=String((i&&i.unit)||'').trim();
+  const frac={'½':'0.5','¼':'0.25','¾':'0.75','⅓':'0.33','⅔':'0.67'};
+  qty=qty.replace(/[½¼¾⅓⅔]/g,m=>frac[m]);
+  const um = unit.match(/^([\d.,\/\-–\s]*\d)\s*([^\d\s].*)$/);          // "200 g" wpisane w polu jednostki
+  if(um){ if(!qty) qty=um[1].trim(); unit=um[2].trim(); }
+  const qm = qty.match(/^([\d.,\/\-–\s]*\d)\s*([^\d\s].*)$/);          // "200 g" / "2 łyżki" / "½ szklanki" w polu ilości
+  if(qm){
+    const u=matchUnit(qm[2]);
+    if(u && (!unit || matchUnit(unit)===u)){ qty=qm[1].trim(); unit=u; }
+  }
+  if(unit){ const u=matchUnit(unit); if(u) unit=u; }
+  return {name, qty, unit};
+}
 async function importRecipeFromUrl(url){
   if(!url) throw new Error('Podaj najpierw link do przepisu.');
   let workerErr = '';
@@ -2558,13 +2616,12 @@ function openRecipeModal(existing, forceNew){
 
   /* ingredients with autocomplete + unit autofill + enter-to-add */
   let ings = rec.ingredients.map(i=>({...i}));
-  /* kolejność: nowe przepisy automatycznie wg kategorii; istniejące bez ustawienia zostają ręczne (żeby nie zepsuć Twojej kolejności) */
-  let autoOrder = isEdit ? rec.orderMode==='auto' : true;
+  /* składniki układają się wg kategorii tylko po kliknięciu „Ułóż” (nic nie przeskakuje samo) */
+  let autoOrder = false;
   function updateOrderBtn(){
     const b=overlay.querySelector('#ingOrderBtn');
-    b.textContent = autoOrder ? '↕ wg kategorii' : '✋ ręcznie';
-    b.title = autoOrder ? 'Składniki układają się same wg kategorii (warzywa, nabiał…). Kliknij, aby ustawić kolejność ręcznie.' : 'Kolejność ręczna. Kliknij, aby ułożyć automatycznie wg kategorii.';
-    b.classList.toggle('on', autoOrder);
+    b.textContent = '↕ Ułóż wg kategorii';
+    b.title = 'Układa składniki według kategorii (warzywa, nabiał, wegańskie, sypkie, pieczywo, przyprawy). Kolejność można dalej zmieniać strzałkami.';
   }
   let ingSuggBox=null;
   function closeIngSugg(){ if(ingSuggBox){ ingSuggBox.remove(); ingSuggBox=null; } }
@@ -2716,8 +2773,7 @@ function openRecipeModal(existing, forceNew){
   }
   updateOrderBtn();
   overlay.querySelector('#ingOrderBtn').addEventListener('click', ()=>{
-    autoOrder=!autoOrder; updateOrderBtn();
-    if(autoOrder){ ings=sortIngredientsByCategory(ings); renderIngs(); }
+    ings=sortIngredientsByCategory(ings); renderIngs();
   });
   renderIngs();
   overlay.querySelector('#addIng').addEventListener('click', ()=>{ if(autoOrder) ings=sortIngredientsByCategory(ings); ings.push({name:'',qty:'',unit:''}); renderIngs(); focusIngRow(ings.length-1); });
@@ -2775,8 +2831,7 @@ function openRecipeModal(existing, forceNew){
       if(imported.name) overlay.querySelector('#m-name').value = imported.name;
       if(imported.servings) overlay.querySelector('#m-servings').value = imported.servings;
       if(imported.ingredients && imported.ingredients.length){
-        ings = imported.ingredients;
-        if(autoOrder) ings = sortIngredientsByCategory(ings);
+        ings = imported.ingredients.map(normalizeImportedIng);
         renderIngs();
       }
       if(imported.instructions){ overlay.querySelector('#m-instr').value = imported.instructions; autoGrowInstr(); }
@@ -2800,8 +2855,15 @@ function openRecipeModal(existing, forceNew){
   instrTa.addEventListener('input', autoGrowInstr);
   autoGrowInstr(); setTimeout(autoGrowInstr, 50);
 
-  overlay.querySelector('#m-cancel').addEventListener('click', ()=>overlay.remove());
-  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  /* ochrona pracy: kliknięcie obok okna nie zamyka go, gdy są niezapisane zmiany; „Anuluj” pyta o potwierdzenie */
+  const snap = ()=>JSON.stringify([
+    overlay.querySelector('#m-name').value, overlay.querySelector('#m-servings').value, overlay.querySelector('#m-partial').checked, overlay.querySelector('#m-instr').value,
+    (imageData||'').length, links.map(l=>[l.url,l.label]), ings.map(i=>[i.name,i.qty,i.unit,i.optional,i.defaultOn,i.altGroup,i.recipeRef]),
+    mealCatsAPI.get(), dishCatsAPI.get(), tagsAPI.get(), ratingsAPI.get()
+  ]);
+  const snap0 = snap();
+  const isDirty = ()=>snap()!==snap0;
+  guardModalClose(overlay, isDirty, 'Masz niezapisane zmiany w przepisie. Zamknąć bez zapisywania?', '#m-cancel');
   overlay.querySelector('#m-save').addEventListener('click', async ()=>{
     const name=overlay.querySelector('#m-name').value.trim();
     if(!name){ overlay.querySelector('#m-name').focus(); return; }
@@ -2816,7 +2878,7 @@ function openRecipeModal(existing, forceNew){
     cleanIngs.forEach(i=>{ if(!i.recipeRef) ensureProduct(i.name, i.unit); });
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newRec = {id:rec.id, name, orderMode: autoOrder?'auto':'manual', partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
+    const newRec = {id:rec.id, name, partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
     const idx = recipes.findIndex(r=>r.id===rec.id);
     if(idx>=0) recipes[idx]=newRec; else recipes.push(newRec);
     await Promise.all([saveRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
