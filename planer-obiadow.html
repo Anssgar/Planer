@@ -140,6 +140,10 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--green);outline-o
 .ing-more{align-self:stretch;min-height:34px;border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);font-size:16px;line-height:1;border-radius:8px;cursor:pointer;padding:0;}
 .ing-order-btn{border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer;}
 .ing-order-btn.on{background:rgba(94,122,62,.15);color:var(--green-dark);border-color:transparent;}
+.ing-move{touch-action:none;cursor:grab;}
+.ing-row.dragging{z-index:5;background:#fff;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.28);opacity:.95;cursor:grabbing;}
+.ing-row.drop-before{box-shadow:0 -2px 0 var(--green);}
+.ing-row.drop-after{box-shadow:0 2px 0 var(--green);}
 .ing-badge{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:none;background:rgba(232,163,61,.28);color:var(--ink);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;}
 .ing-namewrap input.ing-name.has-badge{padding-right:44px;}
 .ing-menu{position:fixed;z-index:5000;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.18);padding:4px;min-width:200px;}
@@ -186,6 +190,9 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .usage-item:hover{background:var(--bg);}
 .ing-row input{width:100%;}
 .partial-badge{font-size:12px;margin-right:4px;}
+.choice-badge{border:none;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(232,163,61,.3);color:#7a5a00;white-space:nowrap;flex:none;}
+.choice-badge.set{background:rgba(94,122,62,.18);color:var(--green-dark);}
+.modal-actions.wrap{flex-wrap:wrap;gap:8px;}
 .cat-badge.partial{background:rgba(180,140,20,.16);color:#7a5a00;}
 .slot-hint{font-size:11px;color:#7a5a00;background:rgba(180,140,20,.12);border-radius:8px;padding:4px 8px;margin-top:4px;}
 .ing-refname{display:block;padding:8px 10px;font-weight:600;color:var(--green-dark);background:var(--bg);border-radius:8px;font-size:14px;line-height:1.2;word-break:break-word;}
@@ -435,15 +442,19 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 
   <section id="tab-products" class="tab-panel">
-    <div class="cat-manage-section">
-      <h3>Jednostki</h3>
-      <div class="sub">Lista dostępna do wyboru przy składnikach przepisów i produktach.</div>
+    <details class="cat-manage-section" id="unitsDetails">
+      <summary style="cursor:pointer;font-weight:700;font-size:15px;">Jednostki <span class="sub" style="font-weight:400;">— lista do wyboru przy składnikach i produktach</span></summary>
       <div id="unitsManage" style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;"></div>
       <div class="add-item-bar" style="max-width:240px;">
         <input type="text" id="newUnitName" placeholder="dodaj jednostkę...">
         <button class="btn btn-ghost" id="addUnitBtn">+</button>
       </div>
-    </div>
+    </details>
+    <details class="cat-manage-section" id="prodCatDetails">
+      <summary style="cursor:pointer;font-weight:700;font-size:15px;">Kategorie produktów <span class="sub" style="font-weight:400;">— nazwy, kolejność, usuwanie</span></summary>
+      <div id="prodCatManage" style="margin-top:6px;"></div>
+      <button class="btn btn-ghost" id="addProdCat">+ Nowa kategoria</button>
+    </details>
     <div class="sub" style="margin-bottom:14px;">Baza produktów rośnie automatycznie, gdy dodajesz składniki do przepisów. Tu możesz poprawić kategorię i domyślną jednostkę.</div>
     <div class="add-item-bar" style="max-width:280px;">
       <input type="text" id="productSearch" placeholder="Szukaj produktu...">
@@ -505,7 +516,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 20.10.2026, 21:44</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 21.10.2026, 09:43</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -1100,7 +1111,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     closePicker();
-    if(btn.dataset.tab==='products'){ renderUnitsManage(); renderProducts(document.getElementById('productSearch').value); }
+    if(btn.dataset.tab==='products'){ renderUnitsManage(); renderProdCatManage(); renderProducts(document.getElementById('productSearch').value); }
     if(btn.dataset.tab==='categories'){
       renderCatManager('mealCatManage', mealCategories, saveMealCategories, ()=>{ renderMealFilterRow(); renderDayGrid(); }, 'meal');
       renderCatManager('recipeCatManage', recipeCategories, saveRecipeCategories, ()=>{ renderCatFilterRow(); }, 'recipe');
@@ -1159,6 +1170,7 @@ function mealItemHtml(item, dayKey, slotType, extraId){
   const name = rec ? rec.name : '(usunięty przepis)';
   return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-rid="${item.recipeId}">
     <span class="nm open-prev">${rec&&rec.partial?'<span class="partial-badge" title="Niekompletne danie (baza/dodatek)">🧩</span>':''}${escapeHtml(name)}</span>
+    ${rec&&hasIngredientChoices(rec)?`<button type="button" class="choice-badge${item.choice?' set':''}" title="${item.choice?'Wybór składników zapisany — kliknij, aby zmienić':'Wybór składników jeszcze nie zrobiony — kliknij, aby wybrać'}">${item.choice?'✓ wybór':'wybór?'}</button>`:''}
     <input type="number" min="1" class="servings" value="${item.servings}" title="liczba porcji">
     <button class="rm">✕</button>
   </div>`;
@@ -1229,6 +1241,16 @@ function renderDayGrid(){
   }
   wirePreviewClicks(grid);
   grid.querySelectorAll('.rm').forEach(b=>b.addEventListener('click', onRemoveMeal));
+  grid.querySelectorAll('.choice-badge').forEach(b=>b.addEventListener('click', async e=>{
+    const chip=e.target.closest('.meal-chip');
+    const arr=findItemArray(chip.dataset.day, chip.dataset.slot, chip.dataset.extra||null);
+    const it=arr && arr.find(x=>x.id===chip.dataset.item), rec=it && recipes.find(r=>r.id===it.recipeId);
+    if(!it||!rec) return;
+    const r=await askPlanChoice(rec, it.servings, it.choice||null);
+    if(r===null) return;
+    if(r.choice) it.choice=r.choice; else delete it.choice;
+    await savePlan(); renderDayGrid();
+  }));
   grid.querySelectorAll('.servings').forEach(inp=>inp.addEventListener('change', onServingsChange));
   grid.querySelectorAll('.add-meal-main').forEach(b=>b.addEventListener('click', e=>openMealTypeChooser(b, b.dataset.day)));
   grid.querySelectorAll('.rm-slot').forEach(b=>b.addEventListener('click', onRemoveExtraSlot));
@@ -1452,8 +1474,14 @@ function openRecipePicker(anchorEl, dayKey, slotType, extraId){
     title: 'Dodaj do planu',
     matchMealLabel: matchSlot ? matchSlot.label : null,
     onSelectRecipe: async (rec)=>{
+      const item = {id:uid(), recipeId:rec.id, servings: rec.baseServings||4};
+      if(hasIngredientChoices(rec)){
+        const r = await askPlanChoice(rec, item.servings, null);
+        if(r===null) return;                 // anulowano — przepis nie trafia do planu
+        if(r.choice) item.choice = r.choice; // „zdecyduj później” — bez zapisanego wyboru
+      }
       const arr = findItemArray(dayKey, slotType, extraId);
-      if(arr) arr.push({id:uid(), recipeId:rec.id, servings: rec.baseServings||4});
+      if(arr) arr.push(item);
       await savePlan();
       renderDayGrid();
       if(arr && rec.partial && slotIncomplete(arr)) showPartialInfo(rec, dayKey, slotType, extraId);
@@ -2711,7 +2739,7 @@ function openRecipeModal(existing, forceNew){
     }));
     setTimeout(()=>{ document.addEventListener('mousedown', ingMenuOutside, true); document.addEventListener('touchstart', ingMenuOutside, true); window.addEventListener('scroll', closeIngMenu, true); },0);
   }
-  const moveBtns = idx=>`<div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół" ${idx===ings.length-1?'disabled':''}>▼</button></div>`;
+  const moveBtns = idx=>`<div class="ing-move"><button type="button" class="ing-up" title="Przesuń w górę (lub przeciągnij wiersz)" ${idx===0?'disabled':''}>▲</button><button type="button" class="ing-down" title="Przesuń w dół (lub przeciągnij wiersz)" ${idx===ings.length-1?'disabled':''}>▼</button></div>`;
   /* układa wg kategorii od razu i zachowuje fokus w tym samym polu tego samego składnika */
   function resortIngs(){
     if(!autoOrder) return;
@@ -2725,6 +2753,46 @@ function openRecipeModal(existing, forceNew){
       const row=overlay.querySelectorAll('.ing-row')[ings.indexOf(ref)], t=row && row.querySelector('.'+cls);
       if(t){ t.focus(); try{ if(t.type==='text'){ const n=t.value.length; t.setSelectionRange(n,n); } }catch(e){} }
     }
+  }
+  /* przeciąganie wiersza palcem lub myszką za kolumnę ze strzałkami (krótkie kliknięcie nadal przesuwa o jedno miejsce) */
+  function attachIngDrag(row, idx){
+    const handle=row.querySelector('.ing-move'); if(!handle) return;
+    handle.addEventListener('pointerdown', e=>{
+      if(e.button!==undefined && e.button!==0) return;
+      const startY=e.clientY, wrap=overlay.querySelector('#ingList'), scroller=overlay.querySelector('.modal');
+      const rows=[...wrap.querySelectorAll('.ing-row')];
+      let dragging=false, target=idx;
+      const marks=()=>rows.forEach(r=>r.classList.remove('drop-before','drop-after'));
+      const onMove=ev=>{
+        const dy=ev.clientY-startY;
+        if(!dragging){ if(Math.abs(dy)<7) return; dragging=true; closeIngSugg(); closeIngMenu(); row.classList.add('dragging'); }
+        if(ev.cancelable) ev.preventDefault();
+        row.style.transform=`translateY(${dy}px)`;
+        const sr=scroller.getBoundingClientRect();
+        if(ev.clientY<sr.top+50) scroller.scrollTop-=12; else if(ev.clientY>sr.bottom-50) scroller.scrollTop+=12;
+        let best=idx, bestD=1e9;
+        rows.forEach((r,i)=>{
+          const rc=r.getBoundingClientRect(), cy=rc.top+rc.height/2-(i===idx?(ev.clientY-startY):0);
+          const d=Math.abs(cy-ev.clientY); if(d<bestD){ bestD=d; best=i; }
+        });
+        target=best; marks();
+        if(target!==idx) rows[target].classList.add(target>idx?'drop-after':'drop-before');
+      };
+      const onUp=()=>{
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        if(!dragging) return;
+        row.style.transform=''; row.classList.remove('dragging'); marks();
+        const swallow=ev=>{ ev.stopPropagation(); ev.preventDefault(); };
+        handle.addEventListener('click', swallow, {capture:true, once:true});
+        setTimeout(()=>handle.removeEventListener('click', swallow, true), 80);
+        if(target!==idx){ const [it]=ings.splice(idx,1); ings.splice(target,0,it); renderIngs(); }
+      };
+      document.addEventListener('pointermove', onMove, {passive:false});
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
   }
   function renderIngs(){
     closeIngMenu();
@@ -2749,6 +2817,7 @@ function openRecipeModal(existing, forceNew){
     const moveIng=(from,to)=>{ if(to<0||to>=ings.length) return; autoOrder=false; updateOrderBtn(); const [it]=ings.splice(from,1); ings.splice(to,0,it); closeIngSugg(); renderIngs(); };
     wrap.querySelectorAll('.ing-row').forEach(row=>{
       const idx=+row.dataset.idx;
+      attachIngDrag(row, idx);
       row.querySelector('.ing-up').addEventListener('click', ()=>moveIng(idx,idx-1));
       row.querySelector('.ing-down').addEventListener('click', ()=>moveIng(idx,idx+1));
       if(ings[idx].recipeRef){
@@ -2978,6 +3047,42 @@ function choiceFor(rec, saved){
   Object.keys(base.opt).forEach(ix=>{ if(sv.opt && sv.opt[ix]!==undefined) base.opt[ix]=!!sv.opt[ix]; });
   return base;
 }
+/* Wybór składników dla pozycji planu. Zwraca {choice} (zapisany wybór), {later:true} (zdecyduj później) albo null (anulowano). */
+function askPlanChoice(rec, servings, current){
+  const saved=loadSavedIngChoices();
+  const ch = current ? choiceFor(rec, {[rec.id]:current}) : choiceFor(rec, saved);
+  const ings=rec.ingredients, base=rec.baseServings||1, f=(servings||base)/base;
+  const lbl=i=>{
+    const q=parseFloat(String(i.qty||'').replace(',','.')); const qq=isNaN(q)?'':Math.round(q*f*100)/100;
+    return escapeHtml(i.name)+((qq!==''||i.unit)?` <span class="sub">— ${qq}${i.unit?' '+escapeHtml(i.unit):''}</span>`:'');
+  };
+  const groups=ingredientGroups(ings);
+  const altHtml=groups.filter(g=>g.alt).map(g=>{
+    const gid=ings[g.idxs[0]].altGroup;
+    return `<div style="margin-bottom:4px;"><div class="sub">Wybierz jedno:</div>${g.idxs.map(ix=>`<label><input type="radio" name="pc-alt-${gid}" data-gid="${gid}" data-ix="${ix}" ${ch.alt[gid]===ix?'checked':''}> <span>${lbl(ings[ix])}</span></label>`).join('')}</div>`;
+  }).join('');
+  const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
+  const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${lbl(ings[ix])}</span></label>`).join('')}</div>`:'';
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div'); overlay.className='modal-overlay';
+    overlay.innerHTML=`<div class="modal" style="max-width:420px;">
+      <h2>Wybierz składniki</h2>
+      <div class="sub" style="margin-bottom:8px;">${escapeHtml(rec.name)} — ${servings||base} porcji. Wybór dotyczy tego posiłku w planie. Możesz też zdecydować później, przy liście zakupów.</div>
+      <div class="choice-group">${altHtml}${optHtml}</div>
+      <div class="modal-actions wrap"><button class="btn btn-ghost" id="pc-cancel">Anuluj</button><button class="btn btn-ghost" id="pc-later">Zdecyduj później</button><button class="btn btn-primary" id="pc-ok">Zapisz wybór</button></div>
+    </div>`;
+    document.body.appendChild(overlay);
+    const done=v=>{ overlay.remove(); resolve(v); };
+    overlay.querySelector('#pc-cancel').addEventListener('click',()=>done(null));
+    overlay.querySelector('#pc-later').addEventListener('click',()=>done({later:true}));
+    overlay.querySelector('#pc-ok').addEventListener('click',()=>{
+      const out=defaultIngChoice(rec);
+      overlay.querySelectorAll('input[type=radio]:checked').forEach(r=>{ out.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
+      overlay.querySelectorAll('input[type=checkbox]').forEach(c=>{ out.opt[c.dataset.opt]=c.checked; });
+      done({choice:out});
+    });
+  });
+}
 /* entries: [{rec, servings}] — zawsze pokazuje okno: liczba porcji do zakupu (np. do mrożenia) + wybór składników opcjonalnych/alternatyw.
    Ten sam przepis wielokrotnie w planie jest sumowany. Zwraca {choices:{recId:choice}, servings:{recId:n}} albo null (anulowano).
    Zmiana porcji dotyczy tylko tej listy zakupów — nie zmienia planu ani przepisu. */
@@ -2986,8 +3091,8 @@ function askIngredientChoices(entries){
   entries.forEach(e=>{
     if(!e.rec) return;
     const sv=e.servings||e.rec.baseServings||1;
-    if(byId[e.rec.id]) byId[e.rec.id].servings+=sv;
-    else { const o={rec:e.rec, servings:sv}; byId[e.rec.id]=o; uniq.push(o); }
+    if(byId[e.rec.id]){ byId[e.rec.id].servings+=sv; if(!byId[e.rec.id].preset && e.choice) byId[e.rec.id].preset=e.choice; }
+    else { const o={rec:e.rec, servings:sv, preset:e.choice||null}; byId[e.rec.id]=o; uniq.push(o); }
   });
   if(uniq.length===0) return Promise.resolve({choices:{}, servings:{}});
   const saved=loadSavedIngChoices();
@@ -3005,7 +3110,7 @@ function askIngredientChoices(entries){
       <h2>Dodaj do listy zakupów</h2>
       <div class="sub" style="margin-bottom:8px;">Porcje i wybór dotyczą tylko tej listy zakupów — nie zmieniają planu ani przepisów. Zwiększ porcje, jeśli gotujesz na zapas (np. do mrożenia).</div>
       ${uniq.map(e=>{
-        const ings=e.rec.ingredients, ch=choiceFor(e.rec, saved);
+        const ings=e.rec.ingredients, ch= e.preset ? choiceFor(e.rec, {[e.rec.id]:e.preset}) : choiceFor(e.rec, saved);
         const groups=ingredientGroups(ings);
         const altHtml=groups.filter(g=>g.alt).map(g=>{
           const gid=ings[g.idxs[0]].altGroup;
@@ -3013,7 +3118,7 @@ function askIngredientChoices(entries){
         }).join('');
         const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
         const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-rid="${e.rec.id}" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${scaled(e,ings[ix])}</span></label>`).join('')}</div>`:'';
-        return `<div class="choice-group" data-rid="${e.rec.id}"><h4>${escapeHtml(e.rec.name)}</h4>
+        return `<div class="choice-group" data-rid="${e.rec.id}"><h4>${escapeHtml(e.rec.name)}${e.preset?' <span class="sub">(wybór z planu)</span>':''}</h4>
           <div class="serv-row"><span class="sub">Porcje do kupienia:</span>
             <button type="button" class="btn btn-ghost sv-minus" aria-label="mniej">−</button>
             <input type="number" min="1" class="ic-serv" value="${e.servings}" data-def="${e.servings}">
@@ -3107,7 +3212,7 @@ async function regenerateFromPlan(){
     const allItems=[...STANDARD_SLOTS.flatMap(s=>day[s.key]||[]), ...((day.extra||[]).flatMap(e=>e.items||[]))];
     allItems.forEach(it=>{
       const rec=recipes.find(r=>r.id===it.recipeId);
-      if(rec) planEntries.push({rec, servings:it.servings});
+      if(rec) planEntries.push({rec, servings:it.servings, choice:it.choice});
     });
   }
   const ask = await askIngredientChoices(planEntries);
@@ -3742,6 +3847,21 @@ document.getElementById('pfReviewAll').addEventListener('click', async ()=>{
 });
 
 /* ============ UNITS MANAGEMENT ============ */
+function renderProdCatManage(){
+  renderCatManager('prodCatManage', shoppingCategories, saveShoppingCategories, ()=>{
+    try{ renderShopping(); }catch(e){}
+    renderProducts((document.getElementById('productSearch')||{}).value||'');
+  }, 'shop');
+}
+document.getElementById('addProdCat').addEventListener('click', async ()=>{
+  const name=prompt('Nazwa nowej kategorii produktów:');
+  if(!name || !name.trim()) return;
+  if(shoppingCategories.some(c=>c.name.toLowerCase()===name.trim().toLowerCase())){ alert('Taka kategoria już istnieje.'); return; }
+  shoppingCategories.push({id:uid(), name:name.trim()});
+  await saveShoppingCategories();
+  renderProdCatManage();
+  renderProducts((document.getElementById('productSearch')||{}).value||'');
+});
 function renderUnitsManage(){
   const wrap=document.getElementById('unitsManage');
   wrap.innerHTML = sortedUnits().map(u=>`<span class="unit-chip" data-u="${escapeHtml(u)}"><input type="text" class="u-name" value="${escapeHtml(u)}" style="width:${Math.max(1.6,u.length+0.9)}ch" title="Dotknij nazwy, aby ją zmienić"> <button type="button" class="u-del">✕</button></span>`).join('') || '<div class="sub">Brak jednostek.</div>';
