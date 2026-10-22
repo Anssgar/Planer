@@ -190,6 +190,22 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .usage-item:hover{background:var(--bg);}
 .ing-row input{width:100%;}
 .partial-badge{font-size:12px;margin-right:4px;}
+.conv-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;}
+.cv-input{display:flex;gap:8px;margin-bottom:8px;}
+.cv-input input{max-width:120px;}
+.cv-state{display:flex;gap:16px;margin-bottom:8px;font-size:14px;}
+.cv-state label{display:flex;align-items:center;gap:6px;cursor:pointer;margin:0;text-transform:none;letter-spacing:0;font-weight:600;font-size:14px;}
+.cv-state input{width:auto;height:auto;}
+.cv-line{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14.5px;}
+.cv-line:last-child{border-bottom:none;}
+.cv-line b{font-variant-numeric:tabular-nums;}
+.cv-line.hi{background:rgba(94,122,62,.1);border-radius:8px;padding-left:8px;padding-right:8px;}
+.cv-base-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center;}
+.cv-fields{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.cv-fields label{display:block;margin:0;text-transform:none;letter-spacing:0;font-size:11px;font-weight:600;color:var(--ink-soft);}
+.cv-fields input{width:100%;padding:6px;font-size:14px;margin-top:2px;}
+.sug-list label{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14.5px;cursor:pointer;}
+.sug-list input{width:18px;height:18px;accent-color:var(--green);}
 .choice-badge{border:none;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(232,163,61,.3);color:#7a5a00;white-space:nowrap;flex:none;}
 .choice-badge.set{background:rgba(94,122,62,.18);color:var(--green-dark);}
 .modal-actions.wrap{flex-wrap:wrap;gap:8px;}
@@ -326,6 +342,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
       <button data-tab="proposals">Propozycje</button>
       <button data-tab="shopping">Lista zakupów</button>
       <button data-tab="products">Produkty</button>
+      <button data-tab="convert">Przeliczniki</button>
       <button data-tab="categories">Kategorie</button>
       <button data-tab="tags">Tagi</button>
       <button data-tab="people">Osoby</button>
@@ -506,6 +523,22 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
     <div id="tagsManage"></div>
   </section>
 
+  <section id="tab-convert" class="tab-panel">
+    <div class="sub" style="margin-bottom:10px;">Szklanki, łyżki, ml i gramy oraz produkty suche na ugotowane. Dane są przypisane do produktów — zmiana nazwy produktu zmienia ją także tutaj.</div>
+    <div class="conv-card" id="convCalc"></div>
+    <details class="cat-manage-section" id="convBaseDetails">
+      <summary style="cursor:pointer;font-weight:700;font-size:15px;">Baza przeliczników <span class="sub" id="convBaseCount" style="font-weight:400;"></span></summary>
+      <div class="add-item-bar" style="margin-top:8px;">
+        <input type="text" id="convAddName" list="convAddList" placeholder="dodaj produkt do przeliczników..." autocomplete="off">
+        <datalist id="convAddList"></datalist>
+        <button class="btn btn-ghost" id="convAddBtn">+</button>
+      </div>
+      <div style="margin:6px 0;"><button class="btn btn-ghost" id="convSuggestBtn">Propozycje produktów</button></div>
+      <div class="add-item-bar" style="max-width:280px;"><input type="text" id="convSearch" placeholder="Szukaj w bazie..."></div>
+      <div id="convBase"></div>
+    </details>
+  </section>
+
   <section id="tab-people" class="tab-panel">
     <div class="sub" style="margin-bottom:10px;">Osoby używane przy Śniadaniach i ocenianiu przepisów.</div>
     <div class="add-item-bar">
@@ -516,7 +549,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 21.10.2026, 09:43</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 22.10.2026, 14:00</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -1122,6 +1155,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     if(btn.dataset.tab==='breakfast'){ renderBfWeekRange(); renderBfDayGrid(); }
     if(btn.dataset.tab==='quick'){ renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value); }
     if(btn.dataset.tab==='people'){ renderPeopleManage(); }
+    if(btn.dataset.tab==='convert'){ renderConvertTab(); }
   });
 });
 
@@ -2197,6 +2231,7 @@ function openRecipePreview(rec){
       <div id="pv-ratings-breakdown" style="display:none;margin-top:8px;">${ratingBreakdownHtml(rec)}</div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="pv-close">Zamknij</button>
+        ${(rec.ingredients||[]).some(i=>!i.recipeRef && (findProduct(i.name)||{}).conv)?'<button class="btn btn-ghost" id="pv-conv">Przelicz produkty</button>':''}
         <button class="btn btn-primary" id="pv-edit">Edytuj</button>
       </div>
     </div>`;
@@ -2204,6 +2239,7 @@ function openRecipePreview(rec){
   overlay.querySelector('#pv-close').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#pv-edit').addEventListener('click', ()=>{ overlay.remove(); openRecipeModal(rec); });
+  const pvConv=overlay.querySelector('#pv-conv'); if(pvConv) pvConv.addEventListener('click', ()=>openRecipeConvertModal(rec));
   const openOther = id=>{ const o=recipes.find(r=>r.id===id); if(o){ overlay.remove(); openRecipePreview(o); } };
   overlay.querySelectorAll('.used-in-btn').forEach(b=>b.addEventListener('click', ()=>openOther(b.dataset.id)));
   overlay.querySelectorAll('li[data-ref]').forEach(li=>li.addEventListener('click', ()=>openOther(li.dataset.ref)));
@@ -2722,6 +2758,8 @@ function openRecipeModal(existing, forceNew){
       <button type="button" data-act="opt"><span class="ck">${kind==='opt'?'✓':''}</span>Opcjonalny</button>
       <button type="button" data-act="alt" ${altOk?'':'disabled'}><span class="ck">${kind==='alt'?'✓':''}</span>Zamiennik poprzedniego</button>
       ${kind==='opt'?`<button type="button" data-act="defon"><span class="ck">${ing.defaultOn?'✓':''}</span>Domyślnie zaznaczony</button>`:''}
+      ${(!ing.recipeRef && (findProduct(ing.name)||{}).conv)?'<button type="button" data-act="conv"><span class="ck"></span>Przelicz…</button>':''}
+      ${(!ing.recipeRef && ((findProduct(ing.name)||{}).conv||{}).cook>0)?`<button type="button" data-act="qcooked"><span class="ck">${!ing.dry?'✓':''}</span>Ilość podana: ugotowana</button><button type="button" data-act="qdry"><span class="ck">${ing.dry?'✓':''}</span>Ilość podana: sucha</button>`:''}
       <hr><button type="button" data-act="rm" class="danger"><span class="ck">✕</span>Usuń składnik</button>`;
     document.body.appendChild(m); ingMenu=m;
     const r=btn.getBoundingClientRect(), mh=m.offsetHeight, mw=m.offsetWidth;
@@ -2730,6 +2768,9 @@ function openRecipeModal(existing, forceNew){
     m.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{
       const act=b.dataset.act, it=ings[idx];
       closeIngMenu();
+      if(act==='conv'){ openConvertModal(findProduct(it.name), it.qty, it.unit, !!it.dry); return; }
+      if(act==='qdry'){ it.dry=true; renderIngs(); return; }
+      if(act==='qcooked'){ delete it.dry; renderIngs(); return; }
       if(act==='rm'){ ings.splice(idx,1); cleanAltGroups(ings); renderIngs(); return; }
       if(act==='defon'){ it.defaultOn=!it.defaultOn; renderIngs(); return; }
       delete it.optional; delete it.defaultOn; delete it.altGroup;
@@ -2927,7 +2968,7 @@ function openRecipeModal(existing, forceNew){
   /* ochrona pracy: kliknięcie obok okna nie zamyka go, gdy są niezapisane zmiany; „Anuluj” pyta o potwierdzenie */
   const snap = ()=>JSON.stringify([
     overlay.querySelector('#m-name').value, overlay.querySelector('#m-servings').value, overlay.querySelector('#m-partial').checked, overlay.querySelector('#m-instr').value,
-    (imageData||'').length, links.map(l=>[l.url,l.label]), ings.map(i=>[i.name,i.qty,i.unit,i.optional,i.defaultOn,i.altGroup,i.recipeRef]),
+    (imageData||'').length, links.map(l=>[l.url,l.label]), ings.map(i=>[i.name,i.qty,i.unit,i.optional,i.defaultOn,i.altGroup,i.recipeRef,i.dry]),
     mealCatsAPI.get(), dishCatsAPI.get(), tagsAPI.get(), ratingsAPI.get()
   ]);
   const snap0 = snap();
@@ -2941,7 +2982,7 @@ function openRecipeModal(existing, forceNew){
     const cleanLinks = links.map(l=>({url:(l.url||'').trim(), label:(l.label||'').trim()})).filter(l=>l.url);
     const sourceUrl = cleanLinks.length ? cleanLinks[0].url : '';
     let cleanIngs = ings.filter(i=> i.recipeRef ? recipes.some(r=>r.id===i.recipeRef) : i.name.trim());
-    cleanIngs.forEach(i=>{ if(i.recipeRef){ const sub=recipes.find(r=>r.id===i.recipeRef); if(sub) i.name=sub.name; i.unit='porcji'; delete i.optional; delete i.defaultOn; delete i.altGroup; } });
+    cleanIngs.forEach(i=>{ if(i.recipeRef){ const sub=recipes.find(r=>r.id===i.recipeRef); if(sub) i.name=sub.name; i.unit='porcji'; delete i.optional; delete i.defaultOn; delete i.altGroup; delete i.dry; } });
     cleanAltGroups(cleanIngs);
     if(autoOrder) cleanIngs = sortIngredientsByCategory(cleanIngs);
     cleanIngs.forEach(i=>{ if(!i.recipeRef) ensureProduct(i.name, i.unit); });
@@ -2981,6 +3022,7 @@ function ingExtras(i){
   if(i && i.optional) o.optional=true;
   if(i && i.optional && i.defaultOn) o.defaultOn=true;
   if(i && i.altGroup) o.altGroup=String(i.altGroup);
+  if(i && i.dry) o.dry=true;
   return o;
 }
 function cleanAltGroups(list){
@@ -3018,11 +3060,26 @@ function ingredientLinesText(list){
     return t+((!g.alt && list[g.idxs[0]].optional)?' (opcjonalnie)':'');
   });
 }
+function unitMl(u){ u=String(u||'').toLowerCase().trim(); if(u==='ml')return 1; if(u==='l')return 1000; if(u.startsWith('szklan'))return 250; if(u.startsWith('łyżecz'))return 5; if(u.startsWith('łyżk'))return 15; return null; }
+const FORM_LABEL={dry:'suche',cooked:'ugotowane'};
+/* składnik z przelicznikiem „po ugotowaniu”: ilość w przepisie jest domyślnie UGOTOWANA, chyba że ing.dry */
+function ingFormInfo(ing){
+  if(!ing||ing.recipeRef) return null;
+  const pr=findProduct(ing.name); if(!pr||!pr.conv||!(pr.conv.cook>0)) return null;
+  const q=parseFloat(String(ing.qty||'').replace(',','.')); if(isNaN(q)||q<=0) return null;
+  const u=String(ing.unit||'').toLowerCase().trim(), src=ing.dry?'dry':'cooked';
+  let g=null;
+  if(u==='g'||u==='gr') g=q; else if(u==='kg') g=q*1000;
+  else if(src==='dry' && pr.conv.gCup>0 && unitMl(u)) g=q*unitMl(u)*pr.conv.gCup/250;
+  if(g==null) return null;
+  const dryG = src==='dry' ? g : g/pr.conv.cook;
+  return {src, prod:pr, grams:{dry:dryG, cooked:dryG*pr.conv.cook}};
+}
 function hasIngredientChoices(rec){
-  return (rec.ingredients||[]).some(i=>i.optional) || ingredientGroups(rec.ingredients).some(g=>g.alt);
+  return (rec.ingredients||[]).some(i=>i.optional) || ingredientGroups(rec.ingredients).some(g=>g.alt) || (rec.ingredients||[]).some(i=>ingFormInfo(i));
 }
 function defaultIngChoice(rec){
-  const ch={alt:{}, opt:{}};
+  const ch={alt:{}, opt:{}, form:{}};
   const ings=rec.ingredients||[];
   ingredientGroups(ings).forEach(g=>{ if(g.alt) ch.alt[ings[g.idxs[0]].altGroup]=g.idxs[0]; });
   ings.forEach((i,ix)=>{ if(i.optional) ch.opt[ix]=!!i.defaultOn; });
@@ -3045,13 +3102,14 @@ function choiceFor(rec, saved){
     if(ix!==undefined && ings[ix] && ings[ix].altGroup===gid) base.alt[gid]=ix;
   });
   Object.keys(base.opt).forEach(ix=>{ if(sv.opt && sv.opt[ix]!==undefined) base.opt[ix]=!!sv.opt[ix]; });
+  Object.keys(sv.form||{}).forEach(ix=>{ if(ings[ix] && ingFormInfo(ings[ix]) && (sv.form[ix]==='dry'||sv.form[ix]==='cooked')) base.form[ix]=sv.form[ix]; });
   return base;
 }
 /* Wybór składników dla pozycji planu. Zwraca {choice} (zapisany wybór), {later:true} (zdecyduj później) albo null (anulowano). */
 function askPlanChoice(rec, servings, current){
   const saved=loadSavedIngChoices();
   const ch = current ? choiceFor(rec, {[rec.id]:current}) : choiceFor(rec, saved);
-  const ings=rec.ingredients, base=rec.baseServings||1, f=(servings||base)/base;
+  const ings=rec.ingredients, base=rec.baseServings||1, f=(servings||base)/base, f_=f;
   const lbl=i=>{
     const q=parseFloat(String(i.qty||'').replace(',','.')); const qq=isNaN(q)?'':Math.round(q*f*100)/100;
     return escapeHtml(i.name)+((qq!==''||i.unit)?` <span class="sub">— ${qq}${i.unit?' '+escapeHtml(i.unit):''}</span>`:'');
@@ -3063,12 +3121,17 @@ function askPlanChoice(rec, servings, current){
   }).join('');
   const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
   const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${lbl(ings[ix])}</span></label>`).join('')}</div>`:'';
+  const formIdx=ings.map((i,ix)=>ingFormInfo(i)?ix:-1).filter(ix=>ix>=0);
+  const formHtml=formIdx.length?`<div><div class="sub">Postać produktu:</div>${formIdx.map(ix=>{
+    const info=ingFormInfo(ings[ix]), cur=ch.form[ix]||info.src;
+    return `<div style="margin-bottom:4px;"><div style="font-size:14px;font-weight:600;">${escapeHtml(ings[ix].name)}</div>${['cooked','dry'].map(f=>`<label><input type="radio" name="pc-form-${ix}" data-form-ix="${ix}" value="${f}" ${cur===f?'checked':''}> <span>${f==='dry'?'sucha':'ugotowana'} <span class="sub">— ${Math.round(info.grams[f]*f_)} g</span></span></label>`).join('')}</div>`;
+  }).join('')}</div>`:'';
   return new Promise(resolve=>{
     const overlay=document.createElement('div'); overlay.className='modal-overlay';
     overlay.innerHTML=`<div class="modal" style="max-width:420px;">
       <h2>Wybierz składniki</h2>
       <div class="sub" style="margin-bottom:8px;">${escapeHtml(rec.name)} — ${servings||base} porcji. Wybór dotyczy tego posiłku w planie. Możesz też zdecydować później, przy liście zakupów.</div>
-      <div class="choice-group">${altHtml}${optHtml}</div>
+      <div class="choice-group">${altHtml}${optHtml}${formHtml}</div>
       <div class="modal-actions wrap"><button class="btn btn-ghost" id="pc-cancel">Anuluj</button><button class="btn btn-ghost" id="pc-later">Zdecyduj później</button><button class="btn btn-primary" id="pc-ok">Zapisz wybór</button></div>
     </div>`;
     document.body.appendChild(overlay);
@@ -3077,8 +3140,9 @@ function askPlanChoice(rec, servings, current){
     overlay.querySelector('#pc-later').addEventListener('click',()=>done({later:true}));
     overlay.querySelector('#pc-ok').addEventListener('click',()=>{
       const out=defaultIngChoice(rec);
-      overlay.querySelectorAll('input[type=radio]:checked').forEach(r=>{ out.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
+      overlay.querySelectorAll('input[type=radio][data-gid]:checked').forEach(r=>{ out.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
       overlay.querySelectorAll('input[type=checkbox]').forEach(c=>{ out.opt[c.dataset.opt]=c.checked; });
+      overlay.querySelectorAll('input[data-form-ix]:checked').forEach(r=>{ out.form[r.dataset.formIx]=r.value; });
       done({choice:out});
     });
   });
@@ -3118,6 +3182,12 @@ function askIngredientChoices(entries){
         }).join('');
         const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
         const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-rid="${e.rec.id}" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${scaled(e,ings[ix])}</span></label>`).join('')}</div>`:'';
+        const baseS=e.rec.baseServings||1;
+        const formIdx=ings.map((i,ix)=>ingFormInfo(i)?ix:-1).filter(ix=>ix>=0);
+        const formHtml=formIdx.length?`<div><div class="sub">Postać produktu:</div>${formIdx.map(ix=>{
+          const info=ingFormInfo(ings[ix]), cur=ch.form[ix]||info.src;
+          return `<div style="margin-bottom:4px;"><div style="font-size:14px;font-weight:600;">${escapeHtml(ings[ix].name)}</div>${['cooked','dry'].map(f=>`<label><input type="radio" name="form-${e.rec.id}-${ix}" data-rid="${e.rec.id}" data-form-ix="${ix}" value="${f}" ${cur===f?'checked':''}> <span>${f==='dry'?'sucha':'ugotowana'} <span class="sub ic-q" data-per="${info.grams[f]/baseS}" data-unit="g">— ${Math.round(info.grams[f]/baseS*e.servings)} g</span></span></label>`).join('')}</div>`;
+        }).join('')}</div>`:'';
         return `<div class="choice-group" data-rid="${e.rec.id}"><h4>${escapeHtml(e.rec.name)}${e.preset?' <span class="sub">(wybór z planu)</span>':''}</h4>
           <div class="serv-row"><span class="sub">Porcje do kupienia:</span>
             <button type="button" class="btn btn-ghost sv-minus" aria-label="mniej">−</button>
@@ -3125,7 +3195,7 @@ function askIngredientChoices(entries){
             <button type="button" class="btn btn-ghost sv-plus" aria-label="więcej">+</button>
             <button type="button" class="btn btn-ghost sv-x2" title="Podwój porcje">×2</button>
             <button type="button" class="btn btn-ghost sv-reset" title="Przywróć domyślne" style="display:none">↺ ${e.servings}</button>
-          </div>${altHtml}${optHtml}</div>`;
+          </div>${altHtml}${optHtml}${formHtml}</div>`;
       }).join('')}
       <div class="modal-actions"><button class="btn btn-ghost" id="ic-cancel">Anuluj</button><button class="btn btn-primary" id="ic-ok">Dodaj do listy</button></div>
     </div>`;
@@ -3157,7 +3227,8 @@ function askIngredientChoices(entries){
       uniq.forEach(e=>{
         const ch=choiceFor(e.rec, saved);
         if(hasIngredientChoices(e.rec)){
-          overlay.querySelectorAll(`input[type=radio][data-rid="${e.rec.id}"]:checked`).forEach(r=>{ ch.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
+          overlay.querySelectorAll(`input[type=radio][data-gid][data-rid="${e.rec.id}"]:checked`).forEach(r=>{ ch.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
+          overlay.querySelectorAll(`input[data-form-ix][data-rid="${e.rec.id}"]:checked`).forEach(r=>{ ch.form[r.dataset.formIx]=r.value; });
           overlay.querySelectorAll(`input[type=checkbox][data-rid="${e.rec.id}"]`).forEach(c=>{ ch.opt[c.dataset.opt]=c.checked; });
           toSave[e.rec.id]=ch;
         }
@@ -3187,6 +3258,12 @@ function scaledIngredients(recipe, servings, choice, _visited){
       out.push(...scaledIngredients(sub, subServ, choiceFor(sub, loadSavedIngChoices()), visited.concat(sub.id)));
       return;
     }
+    const info=ingFormInfo(i);
+    if(info){   // składnik gotowany: zawsze w gramach, z opisem postaci (sucha / ugotowana)
+      const form=(ch.form&&ch.form[ix])||info.src;
+      out.push({name:i.name, suffix:' ('+FORM_LABEL[form]+')', unit:'g', qty:Math.round(info.grams[form]*factor)});
+      return;
+    }
     const q = parseFloat((i.qty||'').toString().replace(',','.'));
     out.push({name:i.name, unit:(i.unit||'').trim(), qty: isNaN(q)? null : Math.round(q*factor*100)/100});
   });
@@ -3195,12 +3272,13 @@ function scaledIngredients(recipe, servings, choice, _visited){
 function mergeIntoShopping(ingredientList, source){
   ingredientList.forEach(ing=>{
     const prod = findProduct(ing.name) || {name:ing.name.trim(), category:guessCategory(ing.name)};
-    let existing = shopping.find(it=> !it.parts && (it.unit||'')===(ing.unit||'') && namesMatch(it.name, ing.name));
+    const fullName = prod.name + (ing.suffix||'');
+    let existing = shopping.find(it=> !it.parts && (it.unit||'')===(ing.unit||'') && namesMatch(it.name, fullName));
     if(existing){
       if(ing.qty!=null && existing.qty!==''){ existing.qty = Math.round(((parseFloat(existing.qty)||0) + ing.qty)*100)/100; }
       else if(ing.qty!=null && existing.qty===''){ existing.qty = ing.qty; }
     } else {
-      shopping.push({id:uid(), name:prod.name, qty: ing.qty!=null? ing.qty : '', unit: ing.unit||'', checked:false, source, category: prod.category});
+      shopping.push({id:uid(), name:fullName, qty: ing.qty!=null? ing.qty : '', unit: ing.unit||'', checked:false, source, category: prod.category});
     }
   });
 }
@@ -3631,6 +3709,206 @@ function openProductUsageModal(p, list){
     renderProducts(document.getElementById('productSearch').value);
   });
 })();
+
+
+/* ============ PRZELICZNIKI (dane w produkcie: product.conv = {gCup, cook, water}) ============ */
+const CONV_UNITS=[{k:'szklanka',label:'szklanka (250 ml)',ml:250},{k:'łyżka',label:'łyżka (15 ml)',ml:15},{k:'łyżeczka',label:'łyżeczka (5 ml)',ml:5},{k:'ml',label:'ml',ml:1},{k:'g',label:'g',ml:null}];
+/* gCup = gramy w szklance 250 ml; cook = ile razy rośnie waga po ugotowaniu; water = ml wody na 100 g suchego. Wartości orientacyjne. */
+const SUGGESTED_CONV=[
+  {name:'Soczewica czerwona',gCup:200,cook:2.3,water:300},{name:'Soczewica zielona',gCup:200,cook:2.5,water:300},{name:'Soczewica brązowa',gCup:200,cook:2.5,water:300},
+  {name:'Ciecierzyca',gCup:190,cook:2.5,water:300},{name:'Fasola',gCup:200,cook:2.5,water:300},
+  {name:'Ryż biały',gCup:190,cook:3,water:200},{name:'Ryż brązowy',gCup:190,cook:3,water:250},
+  {name:'Kasza jaglana',gCup:200,cook:3,water:250},{name:'Kasza gryczana',gCup:180,cook:2.5,water:200},{name:'Bulgur',gCup:160,cook:2.5,water:200},
+  {name:'Kuskus',gCup:180,cook:2.5,water:120},{name:'Quinoa',gCup:170,cook:3,water:200},{name:'Makaron',cook:2.2,water:1000},{name:'Płatki owsiane',gCup:90},
+  {name:'Mąka pszenna',gCup:140},{name:'Mąka ziemniaczana',gCup:160},{name:'Cukier',gCup:200},{name:'Cukier puder',gCup:130},{name:'Sól',gCup:300},
+  {name:'Kakao',gCup:100},{name:'Bułka tarta',gCup:120},{name:'Mak',gCup:140},{name:'Sezam',gCup:150},{name:'Siemię lniane',gCup:170},
+  {name:'Orzechy włoskie',gCup:100},{name:'Migdały',gCup:150},{name:'Rodzynki',gCup:160},
+  {name:'Mleko',gCup:250},{name:'Woda',gCup:250},{name:'Olej',gCup:220},{name:'Oliwa z oliwek',gCup:220},{name:'Masło',gCup:230},{name:'Miód',gCup:340},{name:'Śmietana',gCup:250},{name:'Jogurt',gCup:250}
+];
+function convProducts(){ return products.filter(p=>p.conv && isFoodProduct(p)).sort((a,b)=>a.name.localeCompare(b.name,'pl')); }
+function convNum(x){ if(x==null||!isFinite(x)) return '—'; const a=Math.abs(x), d=a>=100?0:a>=10?1:2; return String(Math.round(x*Math.pow(10,d))/Math.pow(10,d)).replace('.',','); }
+function convCups(x){
+  if(x==null||!isFinite(x)) return '—';
+  const whole=Math.floor(x+0.03), f=x-whole, fr=[[0.25,'¼'],[0.33,'⅓'],[0.5,'½'],[0.67,'⅔'],[0.75,'¾']].find(a=>Math.abs(f-a[0])<0.04);
+  const base=convNum(x);
+  return fr ? `${base} (≈ ${whole?whole+' ':''}${fr[1]})` : base;
+}
+function convParse(v){ const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?null:n; }
+function convCompute(p, amt, unit, state){
+  const c=p.conv||{}, dens=c.gCup>0 ? c.gCup/250 : null;
+  let dryG=null;
+  if(unit==='g') dryG = state==='cooked' ? (c.cook>0 ? amt/c.cook : null) : amt;
+  else if(state!=='cooked' && dens){ dryG = amt*CONV_UNITS.find(u=>u.k===unit).ml*dens; }
+  if(dryG==null) return null;
+  const ml = dens ? dryG/dens : null;
+  return {dryG, ml, cups: ml!=null?ml/250:null, tbsp: ml!=null?ml/15:null, tsp: ml!=null?ml/5:null,
+          cookedG: c.cook>0 ? dryG*c.cook : null, water: c.water>0 ? dryG/100*c.water : null};
+}
+/* kalkulator; preset={productId,amt,unit,state}; opts.fixed — bez wyboru produktu (okno z przepisu) */
+function renderConverter(box, st, opts){
+  opts=opts||{};
+  const list=convProducts();
+  if(!list.length){ box.innerHTML='<div class="sub">Baza przeliczników jest pusta. Rozwiń „Bazę przeliczników” poniżej i dodaj produkty albo użyj „Propozycji”.</div>'; return; }
+  if(!list.some(p=>p.id===st.productId)) st.productId=list[0].id;
+  const prod=list.find(p=>p.id===st.productId), c=prod.conv||{}, hasCook=c.cook>0, hasVol=c.gCup>0;
+  if(st.state==='cooked' && !hasCook) st.state='dry';
+  if(st.state==='cooked') st.unit='g';
+  if(!hasVol && st.unit!=='g') st.unit='g';
+  const uid_='cvs'+Math.random().toString(36).slice(2,7);
+  box.innerHTML=`
+    ${opts.fixed?`<div class="sub" style="margin-bottom:6px;">${escapeHtml(prod.name)}</div>`:`<div class="field"><label>Produkt</label><select class="cv-prod">${list.map(p=>`<option value="${p.id}" ${p.id===prod.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></div>`}
+    <div class="cv-input"><input type="number" inputmode="decimal" step="any" min="0" class="cv-amt" value="${st.amt}">
+      <select class="cv-unit">${CONV_UNITS.map(u=>`<option value="${u.k}" ${u.k===st.unit?'selected':''} ${((!hasVol&&u.k!=='g')||(st.state==='cooked'&&u.k!=='g'))?'disabled':''}>${u.label}</option>`).join('')}</select></div>
+    ${hasCook?`<div class="cv-state"><label><input type="radio" name="${uid_}" value="dry" ${st.state!=='cooked'?'checked':''}> sucha</label><label><input type="radio" name="${uid_}" value="cooked" ${st.state==='cooked'?'checked':''}> ugotowana</label></div>`:''}
+    <div class="cv-out"></div>`;
+  const out=box.querySelector('.cv-out');
+  function calc(){
+    const amt=convParse(box.querySelector('.cv-amt').value);
+    st.amt = amt==null ? '' : amt;
+    if(amt==null){ out.innerHTML=''; return; }
+    const r=convCompute(prod, amt, st.unit, st.state);
+    if(!r){ out.innerHTML='<div class="sub">Brak danych do tego przeliczenia — uzupełnij je w bazie przeliczników.</div>'; return; }
+    const L=(label,val,hi)=>val==null?'':`<div class="cv-line${hi?' hi':''}"><span>${label}</span><b>${val}</b></div>`;
+    const cooked=st.state==='cooked', inG=st.unit==='g', sx=cooked?' (sucha)':'';
+    out.innerHTML = [
+      L('Szklanki (250 ml)'+sx, r.cups!=null?convCups(r.cups):null, st.unit==='szklanka'),
+      L('Łyżki'+sx, r.tbsp!=null?convNum(r.tbsp):null, st.unit==='łyżka'),
+      L('Łyżeczki'+sx, r.tsp!=null?convNum(r.tsp):null, st.unit==='łyżeczka'),
+      L('ml'+sx, r.ml!=null?convNum(r.ml):null, st.unit==='ml'),
+      (inG && !cooked) ? '' : L(hasCook?'Gramy — sucha':'Gramy', convNum(r.dryG)+' g', false),
+      cooked ? '' : L('Gramy — ugotowana', r.cookedG!=null?convNum(r.cookedG)+' g':null, false),
+      cooked ? '' : L('Woda do gotowania', r.water!=null?'ok. '+convNum(r.water)+' ml':null, false)
+    ].join('');
+  }
+  const prodSel=box.querySelector('.cv-prod');
+  if(prodSel) prodSel.addEventListener('change', ()=>{ st.productId=prodSel.value; renderConverter(box, st, opts); });
+  box.querySelector('.cv-amt').addEventListener('input', calc);
+  box.querySelector('.cv-unit').addEventListener('change', e=>{ st.unit=e.target.value; calc(); });
+  box.querySelectorAll(`input[name="${uid_}"]`).forEach(r=>r.addEventListener('change', ()=>{ st.state=r.value; renderConverter(box, st, opts); }));
+  calc();
+}
+const convTabState={productId:null, amt:1, unit:'szklanka', state:'dry'};
+function renderConvertTab(){
+  renderConverter(document.getElementById('convCalc'), convTabState);
+  renderConvBase();
+}
+function renderConvBase(){
+  const box=document.getElementById('convBase'), all=convProducts();
+  const q=(document.getElementById('convSearch').value||'').trim().toLowerCase();
+  const list=q?all.filter(p=>p.name.toLowerCase().includes(q)):all;
+  document.getElementById('convBaseCount').textContent = `— ${all.length} ${all.length===1?'produkt':'produktów'}`;
+  const dl=document.getElementById('convAddList');
+  dl.innerHTML = products.filter(p=>isFoodProduct(p)&&!p.conv).map(p=>`<option value="${escapeHtml(p.name)}"></option>`).join('');
+  const val=v=>v!=null&&v!==''?escapeHtml(String(v)):'';
+  box.innerHTML = list.length ? list.map(p=>`
+    <div class="cv-base-row" data-id="${p.id}">
+      <input type="text" class="cv-name plain-name" value="${escapeHtml(p.name)}" title="Dotknij nazwy, aby ją zmienić (zmienia się też w produktach i przepisach)">
+      <button class="btn-icon cv-del" title="Usuń z przeliczników (produkt zostaje)">✕</button>
+      <div class="cv-fields">
+        <label>g w szklance<input type="number" inputmode="decimal" step="any" min="0" class="cv-gcup" value="${val(p.conv.gCup)}"></label>
+        <label>razy po ugotowaniu<input type="number" inputmode="decimal" step="any" min="0" class="cv-cook" value="${val(p.conv.cook)}"></label>
+        <label>woda ml / 100 g<input type="number" inputmode="decimal" step="any" min="0" class="cv-water" value="${val(p.conv.water)}"></label>
+      </div>
+    </div>`).join('') : `<div class="sub" style="padding:8px 0;">${all.length?'Nic nie znaleziono.':'Brak produktów w bazie przeliczników.'}</div>`;
+  box.querySelectorAll('.cv-base-row').forEach(row=>{
+    const p=products.find(x=>x.id===row.dataset.id);
+    const nameInp=row.querySelector('.cv-name');
+    nameInp.addEventListener('change', async ()=>{
+      const nn=nameInp.value.trim();
+      if(!nn || nn===p.name){ nameInp.value=p.name; return; }
+      const ok=await renameProductEverywhere(p, nn);
+      if(!ok) nameInp.value=p.name;
+      renderConvertTab();
+    });
+    [['cv-gcup','gCup'],['cv-cook','cook'],['cv-water','water']].forEach(([cls,key])=>{
+      const inp=row.querySelector('.'+cls);
+      inp.addEventListener('change', async ()=>{
+        const n=convParse(inp.value);
+        if(n==null||n<=0) delete p.conv[key]; else p.conv[key]=n;
+        await saveProducts();
+        renderConverter(document.getElementById('convCalc'), convTabState);
+      });
+    });
+    row.querySelector('.cv-del').addEventListener('click', async ()=>{
+      if(!confirm(`Usunąć „${p.name}” z przeliczników? Produkt zostanie w bazie produktów.`)) return;
+      delete p.conv; await saveProducts(); renderConvertTab();
+    });
+  });
+}
+document.getElementById('convSearch').addEventListener('input', renderConvBase);
+async function convAddProduct(){
+  const inp=document.getElementById('convAddName'), name=inp.value.trim();
+  if(!name) return;
+  let p=findProduct(name);
+  if(!p){ p=ensureProduct(name,''); p.isNew=false; }
+  if(p.conv){ alert(`„${p.name}” jest już w przelicznikach.`); inp.value=''; return; }
+  p.conv={};
+  await saveProducts();
+  inp.value=''; document.getElementById('convSearch').value='';
+  renderConvertTab();
+}
+document.getElementById('convAddBtn').addEventListener('click', convAddProduct);
+bindEnterSubmit(document.getElementById('convAddName'), convAddProduct);
+document.getElementById('convSuggestBtn').addEventListener('click', ()=>{
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  const items=SUGGESTED_CONV.map((sg,i)=>{ const ex=findProduct(sg.name); return {sg,i,ex,have:!!(ex&&ex.conv)}; }).filter(x=>!x.have);
+  overlay.innerHTML=`<div class="modal" style="max-width:440px;">
+    <h2>Propozycje przeliczników</h2>
+    <div class="sub" style="margin-bottom:8px;">Wartości orientacyjne — po dodaniu możesz je poprawić. Zaznaczone są produkty, które już masz w bazie produktów; pozostałe zostaną dodane jako nowe produkty.</div>
+    ${items.length?`<div class="sug-list">${items.map(x=>`<label><input type="checkbox" data-i="${x.i}" ${x.ex?'checked':''}> <span>${escapeHtml(x.sg.name)}${x.ex?'':' <span class="sub">(nowy produkt)</span>'}</span></label>`).join('')}</div>`:'<div class="sub">Wszystkie propozycje są już w bazie.</div>'}
+    <div class="modal-actions"><button class="btn btn-ghost" id="sg-cancel">Zamknij</button>${items.length?'<button class="btn btn-primary" id="sg-ok">Dodaj zaznaczone</button>':''}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#sg-cancel').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  const ok=overlay.querySelector('#sg-ok');
+  if(ok) ok.addEventListener('click', async ()=>{
+    let n=0;
+    overlay.querySelectorAll('input[type=checkbox]:checked').forEach(cb=>{
+      const sg=SUGGESTED_CONV[+cb.dataset.i];
+      let p=findProduct(sg.name);
+      if(!p){ p=ensureProduct(sg.name,''); p.isNew=false; }
+      if(!p.conv){ p.conv={}; if(sg.gCup) p.conv.gCup=sg.gCup; if(sg.cook) p.conv.cook=sg.cook; if(sg.water) p.conv.water=sg.water; n++; }
+    });
+    await saveProducts(); overlay.remove(); renderConvertTab();
+    document.getElementById('convBaseDetails').open=true;
+  });
+});
+/* okno „Przelicz…” z edytora przepisu */
+function convPreset(prod, qty, unit, dry){
+  let amt=convParse(qty); if(amt==null) amt=1;
+  let u=String(unit||'').toLowerCase().trim();
+  if(u==='kg'){ amt*=1000; u='g'; }
+  if(u==='l'){ amt*=1000; u='ml'; }
+  if(u.startsWith('szklan')) u='szklanka'; else if(u.startsWith('łyżecz')) u='łyżeczka'; else if(u.startsWith('łyżk')) u='łyżka';
+  if(!CONV_UNITS.some(x=>x.k===u)) u='g';
+  const cook=prod.conv && prod.conv.cook>0;
+  const state = (cook && !dry && u==='g') ? 'cooked' : 'dry';
+  return {productId:prod.id, amt, unit:u, state};
+}
+/* okno „Przelicz produkty” w przeglądzie przepisu: wybór składnika z przelicznikiem */
+function openRecipeConvertModal(rec){
+  const items=(rec.ingredients||[]).filter(i=>!i.recipeRef && (findProduct(i.name)||{}).conv);
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:420px;"><h2>Przelicz produkty</h2>
+    <div class="sub" style="margin-bottom:8px;">${escapeHtml(rec.name)} — ilości z przepisu (porcje bazowe: ${rec.baseServings||4}).</div>
+    <div class="field"><label>Składnik</label><select id="rcSel">${items.map((i,ix)=>`<option value="${ix}">${escapeHtml(i.name)}${i.qty?' — '+escapeHtml(String(i.qty))+(i.unit?' '+escapeHtml(i.unit):''):''}</option>`).join('')}</select></div>
+    <div id="rcBox"></div><div class="modal-actions"><button class="btn btn-ghost" id="rc-close">Zamknij</button></div></div>`;
+  document.body.appendChild(overlay);
+  const load=()=>{ const i=items[+overlay.querySelector('#rcSel').value]; const st=convPreset(findProduct(i.name), i.qty, i.unit, !!i.dry); renderConverter(overlay.querySelector('#rcBox'), st, {fixed:true}); };
+  overlay.querySelector('#rcSel').addEventListener('change', load); load();
+  overlay.querySelector('#rc-close').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+}
+function openConvertModal(prod, qty, unit, dry){
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:420px;"><h2>Przelicz</h2><div id="cvModalBox"></div><div class="modal-actions"><button class="btn btn-ghost" id="cvm-close">Zamknij</button></div></div>`;
+  document.body.appendChild(overlay);
+  const st=convPreset(prod, qty, unit, dry);
+  renderConverter(overlay.querySelector('#cvModalBox'), st, {fixed:true});
+  overlay.querySelector('#cvm-close').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+}
 
 /* ============ CATEGORIES TAB (flat, no subcategories) ============ */
 const CAT_KINDS = {
