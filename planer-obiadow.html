@@ -207,6 +207,12 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .sug-list label{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14.5px;cursor:pointer;}
 .sug-list input{width:18px;height:18px;accent-color:var(--green);}
 .choice-badge{border:none;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(232,163,61,.3);color:#7a5a00;white-space:nowrap;flex:none;}
+.choice-group .lrow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.choice-group .lrow>label:first-child{flex:1;min-width:0;}
+.choice-group .lhead{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.choice-group label.later{font-size:12px;padding:0;color:var(--ink-soft);display:inline-flex;gap:4px;flex:none;margin-left:auto;}
+.choice-group label.later input{width:15px;height:15px;}
+.choice-group .is-later label:not(.later){opacity:.4;}
 .choice-badge.set{background:rgba(94,122,62,.18);color:var(--green-dark);}
 .modal-actions.wrap{flex-wrap:wrap;gap:8px;}
 .cat-badge.partial{background:rgba(180,140,20,.16);color:#7a5a00;}
@@ -549,7 +555,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 22.10.2026, 14:00</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 22.10.2026, 22:18</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -1204,7 +1210,7 @@ function mealItemHtml(item, dayKey, slotType, extraId){
   const name = rec ? rec.name : '(usunięty przepis)';
   return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-rid="${item.recipeId}">
     <span class="nm open-prev">${rec&&rec.partial?'<span class="partial-badge" title="Niekompletne danie (baza/dodatek)">🧩</span>':''}${escapeHtml(name)}</span>
-    ${rec&&hasIngredientChoices(rec)?`<button type="button" class="choice-badge${item.choice?' set':''}" title="${item.choice?'Wybór składników zapisany — kliknij, aby zmienić':'Wybór składników jeszcze nie zrobiony — kliknij, aby wybrać'}">${item.choice?'✓ wybór':'wybór?'}</button>`:''}
+    ${rec&&hasIngredientChoices(rec)?(()=>{ const un=item.choice?undecidedCount(rec,item.choice):1, full=item.choice&&un===0; return `<button type="button" class="choice-badge${full?' set':''}" title="${full?'Wybór składników zapisany — kliknij, aby zmienić':(item.choice?'Część wyboru zostawiona na listę zakupów — kliknij, aby uzupełnić':'Wybór składników jeszcze nie zrobiony — kliknij, aby wybrać')}">${full?'✓ wybór':(item.choice?'wybór niepełny':'wybór?')}</button>`; })():''}
     <input type="number" min="1" class="servings" value="${item.servings}" title="liczba porcji">
     <button class="rm">✕</button>
   </div>`;
@@ -3075,6 +3081,19 @@ function ingFormInfo(ing){
   const dryG = src==='dry' ? g : g/pr.conv.cook;
   return {src, prod:pr, grams:{dry:dryG, cooked:dryG*pr.conv.cook}};
 }
+/* decided: które wybory zapadły (reszta „zdecyduj później”). Stary zapis bez decided: opcje/zamienniki uznane za wybrane, postaci produktu jeszcze nie. */
+function choiceDecided(ch, kind, key){
+  if(!ch) return false;
+  if(!ch.decided) return kind!=='form';
+  return !!(ch.decided[kind] && ch.decided[kind][key]);
+}
+function choiceItems(rec){
+  const ings=rec.ingredients||[], out=[];
+  ingredientGroups(ings).forEach(g=>{ if(g.alt) out.push({kind:'alt',key:ings[g.idxs[0]].altGroup}); });
+  ings.forEach((i,ix)=>{ if(i.optional&&!i.altGroup) out.push({kind:'opt',key:String(ix)}); if(ingFormInfo(i)) out.push({kind:'form',key:String(ix)}); });
+  return out;
+}
+function undecidedCount(rec, ch){ return choiceItems(rec).filter(it=>!choiceDecided(ch,it.kind,it.key)).length; }
 function hasIngredientChoices(rec){
   return (rec.ingredients||[]).some(i=>i.optional) || ingredientGroups(rec.ingredients).some(g=>g.alt) || (rec.ingredients||[]).some(i=>ingFormInfo(i));
 }
@@ -3105,11 +3124,13 @@ function choiceFor(rec, saved){
   Object.keys(sv.form||{}).forEach(ix=>{ if(ings[ix] && ingFormInfo(ings[ix]) && (sv.form[ix]==='dry'||sv.form[ix]==='cooked')) base.form[ix]=sv.form[ix]; });
   return base;
 }
-/* Wybór składników dla pozycji planu. Zwraca {choice} (zapisany wybór), {later:true} (zdecyduj później) albo null (anulowano). */
+/* Wybór składników dla pozycji planu. Zwraca {choice} (zapisany wybór; choice.decided = co już wybrano), {later:true} (wszystko na później) albo null (anulowano). */
 function askPlanChoice(rec, servings, current){
   const saved=loadSavedIngChoices();
   const ch = current ? choiceFor(rec, {[rec.id]:current}) : choiceFor(rec, saved);
-  const ings=rec.ingredients, base=rec.baseServings||1, f=(servings||base)/base, f_=f;
+  const ings=rec.ingredients, base=rec.baseServings||1, f=(servings||base)/base;
+  const isLater=(kind,key)=> current ? !choiceDecided(current,kind,String(key)) : false;
+  const laterBox=(kind,key)=>`<label class="later"><input type="checkbox" data-later="${kind}|${key}" ${isLater(kind,key)?'checked':''}> zdecyduj później</label>`;
   const lbl=i=>{
     const q=parseFloat(String(i.qty||'').replace(',','.')); const qq=isNaN(q)?'':Math.round(q*f*100)/100;
     return escapeHtml(i.name)+((qq!==''||i.unit)?` <span class="sub">— ${qq}${i.unit?' '+escapeHtml(i.unit):''}</span>`:'');
@@ -3117,33 +3138,39 @@ function askPlanChoice(rec, servings, current){
   const groups=ingredientGroups(ings);
   const altHtml=groups.filter(g=>g.alt).map(g=>{
     const gid=ings[g.idxs[0]].altGroup;
-    return `<div style="margin-bottom:4px;"><div class="sub">Wybierz jedno:</div>${g.idxs.map(ix=>`<label><input type="radio" name="pc-alt-${gid}" data-gid="${gid}" data-ix="${ix}" ${ch.alt[gid]===ix?'checked':''}> <span>${lbl(ings[ix])}</span></label>`).join('')}</div>`;
+    return `<div class="${isLater('alt',gid)?'is-later':''}" data-lb style="margin-bottom:6px;"><div class="lhead"><span class="sub">Wybierz jedno:</span>${laterBox('alt',gid)}</div>${g.idxs.map(ix=>`<label><input type="radio" name="pc-alt-${gid}" data-gid="${gid}" data-ix="${ix}" ${ch.alt[gid]===ix?'checked':''}> <span>${lbl(ings[ix])}</span></label>`).join('')}</div>`;
   }).join('');
   const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
-  const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${lbl(ings[ix])}</span></label>`).join('')}</div>`:'';
+  const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<div class="lrow ${isLater('opt',ix)?'is-later':''}" data-lb><label><input type="checkbox" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${lbl(ings[ix])}</span></label>${laterBox('opt',ix)}</div>`).join('')}</div>`:'';
   const formIdx=ings.map((i,ix)=>ingFormInfo(i)?ix:-1).filter(ix=>ix>=0);
   const formHtml=formIdx.length?`<div><div class="sub">Postać produktu:</div>${formIdx.map(ix=>{
     const info=ingFormInfo(ings[ix]), cur=ch.form[ix]||info.src;
-    return `<div style="margin-bottom:4px;"><div style="font-size:14px;font-weight:600;">${escapeHtml(ings[ix].name)}</div>${['cooked','dry'].map(f=>`<label><input type="radio" name="pc-form-${ix}" data-form-ix="${ix}" value="${f}" ${cur===f?'checked':''}> <span>${f==='dry'?'sucha':'ugotowana'} <span class="sub">— ${Math.round(info.grams[f]*f_)} g</span></span></label>`).join('')}</div>`;
+    return `<div class="${isLater('form',ix)?'is-later':''}" data-lb style="margin-bottom:6px;"><div class="lhead"><span style="font-size:14px;font-weight:600;">${escapeHtml(ings[ix].name)}</span>${laterBox('form',ix)}</div>${['cooked','dry'].map(fm=>`<label><input type="radio" name="pc-form-${ix}" data-form-ix="${ix}" value="${fm}" ${cur===fm?'checked':''}> <span>${fm==='dry'?'sucha':'ugotowana'} <span class="sub">— ${Math.round(info.grams[fm]*f)} g</span></span></label>`).join('')}</div>`;
   }).join('')}</div>`:'';
   return new Promise(resolve=>{
     const overlay=document.createElement('div'); overlay.className='modal-overlay';
     overlay.innerHTML=`<div class="modal" style="max-width:420px;">
       <h2>Wybierz składniki</h2>
-      <div class="sub" style="margin-bottom:8px;">${escapeHtml(rec.name)} — ${servings||base} porcji. Wybór dotyczy tego posiłku w planie. Możesz też zdecydować później, przy liście zakupów.</div>
+      <div class="sub" style="margin-bottom:8px;">${escapeHtml(rec.name)} — ${servings||base} porcji. Wybór dotyczy tego posiłku w planie. Przy każdej pozycji możesz zaznaczyć „zdecyduj później” — zapytam o nią dopiero przy liście zakupów. Pozycje już wybrane nie będą tam pytane ponownie.</div>
       <div class="choice-group">${altHtml}${optHtml}${formHtml}</div>
-      <div class="modal-actions wrap"><button class="btn btn-ghost" id="pc-cancel">Anuluj</button><button class="btn btn-ghost" id="pc-later">Zdecyduj później</button><button class="btn btn-primary" id="pc-ok">Zapisz wybór</button></div>
+      <div class="modal-actions wrap"><button class="btn btn-ghost" id="pc-cancel">Anuluj</button><button class="btn btn-ghost" id="pc-later">Wszystko na później</button><button class="btn btn-primary" id="pc-ok">Zapisz wybór</button></div>
     </div>`;
     document.body.appendChild(overlay);
     const done=v=>{ overlay.remove(); resolve(v); };
+    overlay.querySelectorAll('input[data-later]').forEach(cb=>cb.addEventListener('change',()=>{ const w=cb.closest('[data-lb]'); if(w) w.classList.toggle('is-later', cb.checked); }));
+    overlay.querySelectorAll('[data-lb] input:not([data-later])').forEach(inp=>inp.addEventListener('change',()=>{   // wybór czegokolwiek = decyzja
+      const w=inp.closest('[data-lb]'), cb=w&&w.querySelector('input[data-later]'); if(cb&&cb.checked){ cb.checked=false; w.classList.remove('is-later'); }
+    }));
     overlay.querySelector('#pc-cancel').addEventListener('click',()=>done(null));
     overlay.querySelector('#pc-later').addEventListener('click',()=>done({later:true}));
     overlay.querySelector('#pc-ok').addEventListener('click',()=>{
-      const out=defaultIngChoice(rec);
-      overlay.querySelectorAll('input[type=radio][data-gid]:checked').forEach(r=>{ out.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
-      overlay.querySelectorAll('input[type=checkbox]').forEach(c=>{ out.opt[c.dataset.opt]=c.checked; });
-      overlay.querySelectorAll('input[data-form-ix]:checked').forEach(r=>{ out.form[r.dataset.formIx]=r.value; });
-      done({choice:out});
+      const out=defaultIngChoice(rec); out.decided={alt:{},opt:{},form:{}};
+      const later=new Set([...overlay.querySelectorAll('input[data-later]:checked')].map(c=>c.dataset.later));
+      overlay.querySelectorAll('input[type=radio][data-gid]:checked').forEach(r=>{ if(later.has('alt|'+r.dataset.gid)) return; out.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); out.decided.alt[r.dataset.gid]=1; });
+      overlay.querySelectorAll('input[type=checkbox][data-opt]').forEach(c=>{ if(later.has('opt|'+c.dataset.opt)) return; out.opt[c.dataset.opt]=c.checked; out.decided.opt[c.dataset.opt]=1; });
+      overlay.querySelectorAll('input[data-form-ix]:checked').forEach(r=>{ if(later.has('form|'+r.dataset.formIx)) return; out.form[r.dataset.formIx]=r.value; out.decided.form[r.dataset.formIx]=1; });
+      const n=Object.keys(out.decided.alt).length+Object.keys(out.decided.opt).length+Object.keys(out.decided.form).length;
+      done(n? {choice:out} : {later:true});
     });
   });
 }
@@ -3176,14 +3203,24 @@ function askIngredientChoices(entries){
       ${uniq.map(e=>{
         const ings=e.rec.ingredients, ch= e.preset ? choiceFor(e.rec, {[e.rec.id]:e.preset}) : choiceFor(e.rec, saved);
         const groups=ingredientGroups(ings);
-        const altHtml=groups.filter(g=>g.alt).map(g=>{
+        const altHtml=groups.filter(g=>g.alt && !choiceDecided(e.preset,'alt',ings[g.idxs[0]].altGroup)).map(g=>{
           const gid=ings[g.idxs[0]].altGroup;
           return `<div style="margin-bottom:4px;"><div class="sub">Wybierz jedno:</div>${g.idxs.map(ix=>`<label><input type="radio" name="alt-${e.rec.id}-${gid}" data-rid="${e.rec.id}" data-gid="${gid}" data-ix="${ix}" ${ch.alt[gid]===ix?'checked':''}> <span>${scaled(e,ings[ix])}</span></label>`).join('')}</div>`;
         }).join('');
-        const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup?ix:-1).filter(ix=>ix>=0);
+        const optIdx=ings.map((i,ix)=>i.optional&&!i.altGroup&&!choiceDecided(e.preset,'opt',String(ix))?ix:-1).filter(ix=>ix>=0);
         const optHtml=optIdx.length?`<div><div class="sub">Opcjonalne:</div>${optIdx.map(ix=>`<label><input type="checkbox" data-rid="${e.rec.id}" data-opt="${ix}" ${ch.opt[ix]?'checked':''}> <span>${scaled(e,ings[ix])}</span></label>`).join('')}</div>`:'';
         const baseS=e.rec.baseServings||1;
-        const formIdx=ings.map((i,ix)=>ingFormInfo(i)?ix:-1).filter(ix=>ix>=0);
+        const formIdx=ings.map((i,ix)=>ingFormInfo(i)&&!choiceDecided(e.preset,'form',String(ix))?ix:-1).filter(ix=>ix>=0);
+        const dtxt=[];
+        if(e.preset){
+          const pc=choiceFor(e.rec,{[e.rec.id]:e.preset});
+          groups.filter(g=>g.alt).forEach(g=>{ const gid=ings[g.idxs[0]].altGroup; if(choiceDecided(e.preset,'alt',gid) && ings[pc.alt[gid]]) dtxt.push(escapeHtml(ings[pc.alt[gid]].name)); });
+          ings.forEach((i,ix)=>{
+            if(i.optional&&!i.altGroup&&choiceDecided(e.preset,'opt',String(ix))) dtxt.push((pc.opt[ix]?'':'bez: ')+escapeHtml(i.name));
+            const inf=ingFormInfo(i); if(inf&&choiceDecided(e.preset,'form',String(ix))) dtxt.push(escapeHtml(i.name)+' ('+FORM_LABEL[pc.form[ix]||inf.src]+')');
+          });
+        }
+        const dtxtHtml=dtxt.length?`<div class="sub" style="margin:0 0 4px;">Wybrane w planie: ${dtxt.join(', ')}</div>`:'';
         const formHtml=formIdx.length?`<div><div class="sub">Postać produktu:</div>${formIdx.map(ix=>{
           const info=ingFormInfo(ings[ix]), cur=ch.form[ix]||info.src;
           return `<div style="margin-bottom:4px;"><div style="font-size:14px;font-weight:600;">${escapeHtml(ings[ix].name)}</div>${['cooked','dry'].map(f=>`<label><input type="radio" name="form-${e.rec.id}-${ix}" data-rid="${e.rec.id}" data-form-ix="${ix}" value="${f}" ${cur===f?'checked':''}> <span>${f==='dry'?'sucha':'ugotowana'} <span class="sub ic-q" data-per="${info.grams[f]/baseS}" data-unit="g">— ${Math.round(info.grams[f]/baseS*e.servings)} g</span></span></label>`).join('')}</div>`;
@@ -3195,7 +3232,7 @@ function askIngredientChoices(entries){
             <button type="button" class="btn btn-ghost sv-plus" aria-label="więcej">+</button>
             <button type="button" class="btn btn-ghost sv-x2" title="Podwój porcje">×2</button>
             <button type="button" class="btn btn-ghost sv-reset" title="Przywróć domyślne" style="display:none">↺ ${e.servings}</button>
-          </div>${altHtml}${optHtml}${formHtml}</div>`;
+          </div>${dtxtHtml}${altHtml}${optHtml}${formHtml}</div>`;
       }).join('')}
       <div class="modal-actions"><button class="btn btn-ghost" id="ic-cancel">Anuluj</button><button class="btn btn-primary" id="ic-ok">Dodaj do listy</button></div>
     </div>`;
@@ -3226,6 +3263,12 @@ function askIngredientChoices(entries){
       const toSave={}, choices={}, servings={};
       uniq.forEach(e=>{
         const ch=choiceFor(e.rec, saved);
+        if(e.preset){   // pozycje wybrane już w planie zostają bez pytania
+          const pc=choiceFor(e.rec,{[e.rec.id]:e.preset});
+          Object.keys(ch.alt).forEach(g=>{ if(choiceDecided(e.preset,'alt',g)) ch.alt[g]=pc.alt[g]; });
+          Object.keys(ch.opt).forEach(ix=>{ if(choiceDecided(e.preset,'opt',ix)) ch.opt[ix]=pc.opt[ix]; });
+          Object.keys(pc.form).forEach(ix=>{ if(choiceDecided(e.preset,'form',ix)) ch.form[ix]=pc.form[ix]; });
+        }
         if(hasIngredientChoices(e.rec)){
           overlay.querySelectorAll(`input[type=radio][data-gid][data-rid="${e.rec.id}"]:checked`).forEach(r=>{ ch.alt[r.dataset.gid]=parseInt(r.dataset.ix,10); });
           overlay.querySelectorAll(`input[data-form-ix][data-rid="${e.rec.id}"]:checked`).forEach(r=>{ ch.form[r.dataset.formIx]=r.value; });
