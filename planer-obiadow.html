@@ -253,6 +253,14 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .shopping-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
 .add-item-bar{display:flex;gap:6px;margin-bottom:16px;max-width:420px;position:relative;}
 .add-item-bar input{flex:1;}
+.add-item-bar.shop-add{max-width:520px;}
+.add-item-bar.shop-add{gap:4px;}
+.add-item-bar.shop-add #newItemName{min-width:0;width:0;}
+.add-item-bar input.qty-in{flex:none;width:54px;min-width:0;padding-left:8px;padding-right:6px;}
+.add-item-bar select.unit-in{flex:none;width:68px;min-width:0;padding-left:6px;padding-right:2px;}
+.add-item-bar.shop-add .btn{flex:none;padding-left:12px;padding-right:12px;}
+.item-row .name.editable,.item-row .qty.editable{cursor:pointer;}
+.item-row .qty.editable{border-bottom:1px dotted var(--ink-soft);}
 .cat-group{margin-bottom:16px;max-width:520px;}
 .cat-group h4{font-family:'Fraunces',serif;font-size:14px;color:var(--green-dark);margin:0 0 6px;padding-bottom:4px;border-bottom:1px dashed var(--line);}
 .item-row{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:14px;border-radius:6px;}
@@ -462,8 +470,11 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
       <button class="btn btn-ghost" id="shopExportBtn">⬇ Eksportuj</button>
       <button class="btn btn-ghost" id="transferToListaBtn" title="Przenieś do głównej listy zakupów">➜ Do głównej listy</button>
     </div>
-    <div class="add-item-bar">
-      <input type="text" id="newItemName" placeholder="dodaj pozycję ręcznie...">
+    <div class="add-item-bar shop-add">
+      <input type="text" id="newItemName" list="newItemList" placeholder="dodaj pozycję ręcznie..." autocomplete="off">
+      <datalist id="newItemList"></datalist>
+      <input type="text" inputmode="decimal" id="newItemQty" class="qty-in" placeholder="ilość">
+      <select id="newItemUnit" class="unit-in"></select>
       <button class="btn btn-ghost" id="addItemBtn">+</button>
     </div>
     <div class="merge-bar" id="mergeBar" style="display:none;">
@@ -563,7 +574,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 28.10.2026, 09:48</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 28.10.2026, 11:10</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -3437,6 +3448,7 @@ async function regenerateFromPlan(){
   renderShopping();
 }
 function renderShopping(){
+  refreshShopAddBar();
   const wrap=document.getElementById('shoppingList');
   if(shopping.length===0){
     wrap.innerHTML=`<div class="empty-shop">Lista jest pusta. Dodaj pozycję ręcznie, ze składników przepisu, albo wygeneruj z planu tygodnia.</div>`;
@@ -3451,8 +3463,8 @@ function renderShopping(){
     html += `<div class="cat-group"><h4>${escapeHtml(cat)}</h4>` + items.map(it=>`
       <div class="item-row ${it.checked?'checked':''} ${mergeMode?'selectable':''}" data-id="${it.id}">
         ${mergeMode?`<input type="checkbox" class="sel" ${selectedForMerge.has(it.id)?'checked':''}>`:`<input type="checkbox" class="buy" ${it.checked?'checked':''}>`}
-        <span class="name">${escapeHtml(it.name)}</span>
-        ${it.qty!==''&&it.qty!=null?`<span class="qty">${it.qty}${it.unit?' '+escapeHtml(it.unit):''}</span>`:(it.unit?`<span class="qty">${escapeHtml(it.unit)}</span>`:'')}
+        <span class="name${mergeMode?'':' editable'}">${escapeHtml(it.name)}</span>
+        ${it.qty!==''&&it.qty!=null?`<span class="qty${mergeMode?'':' editable'}">${it.qty}${it.unit?' '+escapeHtml(it.unit):''}</span>`:(it.unit?`<span class="qty${mergeMode?'':' editable'}">${escapeHtml(it.unit)}</span>`:(mergeMode?'':'<span class="qty editable" title="Dodaj ilość">+ ilość</span>'))}
         ${it.source==='plan'?'<span class="src">plan</span>':it.source==='recipe'?'<span class="src">przepis</span>':''}
         ${it.parts?`<button class="btn-icon split" title="Rozdziel">⇆</button>`:''}
         <button class="rm">✕</button>
@@ -3468,6 +3480,9 @@ function renderShopping(){
   wrap.querySelectorAll('.sel').forEach(cb=>cb.addEventListener('change', e=>{
     const id=e.target.closest('.item-row').dataset.id;
     if(e.target.checked) selectedForMerge.add(id); else selectedForMerge.delete(id);
+  }));
+  wrap.querySelectorAll('.name.editable,.qty.editable').forEach(el=>el.addEventListener('click', e=>{
+    openShopItemEditor(e.target.closest('.item-row').dataset.id);
   }));
   wrap.querySelectorAll('.rm').forEach(b=>b.addEventListener('click', async e=>{
     const id=e.target.closest('.item-row').dataset.id;
@@ -3485,14 +3500,62 @@ function renderShopping(){
 document.getElementById('addItemBtn').addEventListener('click', addManualItem);
 document.getElementById('transferToListaBtn').addEventListener('click', transferToListaZakupowa);
 bindEnterSubmit(document.getElementById('newItemName'), addManualItem);
+function unitOptionsHtml(sel){
+  const list=sortedUnits(); if(sel && !list.includes(sel)) list.push(sel);
+  return `<option value=""${sel?'':' selected'}>j.</option>`+list.map(u=>`<option value="${escapeHtml(u)}"${u===sel?' selected':''}>${escapeHtml(u)}</option>`).join('');
+}
+function refreshShopAddBar(){
+  const sel=document.getElementById('newItemUnit'), cur=sel.value;
+  sel.innerHTML=unitOptionsHtml(cur);
+  document.getElementById('newItemList').innerHTML=products.filter(isFoodProduct).map(p=>`<option value="${escapeHtml(p.name)}"></option>`).join('');
+}
+document.getElementById('newItemName').addEventListener('input', e=>{   // znany produkt: podpowiedz jego jednostkę
+  const pr=findProduct(e.target.value.trim()), us=document.getElementById('newItemUnit');
+  if(pr && pr.unit && !us.dataset.touched){ us.innerHTML=unitOptionsHtml(pr.unit); }
+});
+document.getElementById('newItemUnit').addEventListener('change', e=>{ e.target.dataset.touched='1'; });
 async function addManualItem(){
-  const input=document.getElementById('newItemName');
+  const input=document.getElementById('newItemName'), qtyIn=document.getElementById('newItemQty'), unitSel=document.getElementById('newItemUnit');
   const val=input.value.trim();
   if(!val) return;
-  ensureProduct(val);
-  mergeIntoShopping([{name:val, unit:'', qty:null}], 'manual');
-  input.value='';
+  const qty=convParse(qtyIn.value), unit=unitSel.value||'';
+  const prod=ensureProduct(val, unit);
+  const before=shopping.find(it=>!it.parts && (it.unit||'')===unit && namesMatch(it.name, prod.name));
+  mergeIntoShopping([{name:val, unit, qty: qty==null?null:qty}], 'manual');
+  if(before) before.checked=false;   // dodane ponownie = znowu do kupienia
+  input.value=''; qtyIn.value=''; unitSel.value=''; delete unitSel.dataset.touched;
   await saveProducts(); await saveShopping(); renderShopping();
+  input.focus();
+}
+/* edycja pozycji listy: nazwa, ilość, jednostka, kategoria */
+function openShopItemEditor(id){
+  const it=shopping.find(i=>i.id===id); if(!it) return;
+  const cats=shoppingCategories.map(c=>c.name); const curCat=it.category||'Inne'; if(!cats.includes(curCat)) cats.push(curCat);
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:380px;">
+    <h2>Edytuj pozycję</h2>
+    <div class="field"><label>Nazwa</label><input type="text" id="se-name" value="${escapeHtml(it.name)}"></div>
+    <div class="field" style="display:flex;gap:8px;">
+      <div style="flex:1;"><label>Ilość</label><input type="text" inputmode="decimal" id="se-qty" value="${it.qty!==''&&it.qty!=null?escapeHtml(String(it.qty)):''}"></div>
+      <div style="flex:1;"><label>Jednostka</label><select id="se-unit">${unitOptionsHtml(it.unit||'')}</select></div>
+    </div>
+    <div class="field"><label>Kategoria</label><select id="se-cat">${cats.map(c=>`<option value="${escapeHtml(c)}"${c===curCat?' selected':''}>${escapeHtml(c)}</option>`).join('')}</select></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="se-cancel">Anuluj</button><button class="btn btn-primary" id="se-ok">Zapisz</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close=()=>overlay.remove();
+  overlay.querySelector('#se-cancel').addEventListener('click',close);
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) close(); });
+  const save=async()=>{
+    const name=overlay.querySelector('#se-name').value.trim(); if(!name){ overlay.querySelector('#se-name').focus(); return; }
+    const q=convParse(overlay.querySelector('#se-qty').value);
+    it.name=name; it.qty = q==null ? '' : q; it.unit=overlay.querySelector('#se-unit').value||''; it.category=overlay.querySelector('#se-cat').value;
+    close(); await saveShopping(); renderShopping();
+  };
+  overlay.querySelector('#se-ok').addEventListener('click',save);
+  bindEnterSubmit(overlay.querySelector('#se-qty'), save);
+  bindEnterSubmit(overlay.querySelector('#se-name'), save);
+  setTimeout(()=>{ const f=overlay.querySelector('#se-qty'); f.focus(); f.select(); },50);
 }
 document.getElementById('clearChecked').addEventListener('click', async ()=>{
   shopping = shopping.filter(i=>!i.checked);
