@@ -239,7 +239,15 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 
 .preview-hero{width:calc(100% + 44px);margin:-22px -22px 14px;display:block;max-height:280px;object-fit:cover;}
 .preview-ing-list{margin:0 0 14px;padding-left:18px;font-size:13.5px;}
-.preview-instr{font-size:13.5px;white-space:pre-wrap;line-height:1.5;}
+.preview-instr{font-size:13.5px;line-height:1.5;}
+.ins-li{display:flex;gap:8px;margin:3px 0;}
+.ins-n{flex:none;min-width:1.4em;font-weight:700;color:var(--green-dark);}
+.ins-h{font-weight:700;font-size:14.5px;margin:12px 0 3px;}
+.ins-p{margin:3px 0;}
+.ins-gap{height:6px;}
+.instr-bar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+.instr-bar button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 12px;font-size:14px;cursor:pointer;min-width:40px;color:var(--ink);}
+.instr-bar button:active{background:var(--bg);}
 
 /* ---- SHOPPING ---- */
 .shopping-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
@@ -555,7 +563,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 22.10.2026, 22:18</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 28.10.2026, 09:48</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -631,6 +639,25 @@ function getMonday(d){const date=new Date(d);const day=date.getDay();const diff=
 function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
 function isSameDay(a,b){return fmtDate(a)===fmtDate(b);}
 function escapeHtml(s){return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+/* Instrukcje: zwykły tekst ze znacznikami: „1. ” lista numerowana, „• ” punkty, „## ” nagłówek, **pogrubienie** */
+function instrInline(t){ return escapeHtml(String(t).trim()).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+function instrHtml(text){
+  return String(text||'').split(/\r\n|\r|\n/).map(line=>{
+    let m;
+    if((m=line.match(/^\s*(\d+)[.)]\s+(.*)$/))) return `<div class="ins-li"><span class="ins-n">${m[1]}.</span><span>${instrInline(m[2])}</span></div>`;
+    if((m=line.match(/^\s*[•\-]\s+(.*)$/))) return `<div class="ins-li"><span class="ins-n">•</span><span>${instrInline(m[1])}</span></div>`;
+    if((m=line.match(/^\s*##\s+(.*)$/))) return `<div class="ins-h">${instrInline(m[1])}</div>`;
+    if(!line.trim()) return '<div class="ins-gap"></div>';
+    return `<div class="ins-p">${instrInline(line)}</div>`;
+  }).join('');
+}
+function plainInstr(t){ return String(t||'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^\s*##\s+/gm,''); }
+/* tekst z importu bez żadnych znaczników, ale kilkuwierszowy -> lista numerowana */
+function autoNumberInstr(t){
+  const lines=String(t||'').split(/\r\n|\r|\n/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2 || lines.some(l=>/^(\d+[.)]|[•\-]|##)\s/.test(l))) return String(t||'');
+  return lines.map((l,i)=>(i+1)+'. '+l).join('\n');
+}
 function nl2br(s){ return escapeHtml(s).replace(/\r\n|\r|\n/g,'<br>'); }
 /* Mobile keyboards (Gboard, Samsung Keyboard etc.) often send Enter as an
    "insert line break" composition event rather than a plain keydown, so a
@@ -1676,7 +1703,7 @@ function renderRecipes(filter){
       </div>
       <div class="servings-line">Porcje: ${r.baseServings||4}</div>
       <div class="rating-line">${ratingSummaryHtml(r)}</div>
-      <div class="desc-clamp">${escapeHtml(r.instructions||'')}</div>
+      <div class="desc-clamp">${escapeHtml(plainInstr(r.instructions))}</div>
       <div class="actions">
         <span class="spacer"></span>
         <button class="btn-icon edit-r" title="Edytuj">✎</button>
@@ -2038,7 +2065,7 @@ function exportRecipesPdf(){
       <h2>${escapeHtml(r.name)}</h2>
       <div class="print-meta">${cats.map(escapeHtml).join(' · ')}${cats.length?' · ':''}Porcje: ${r.baseServings||4}${recipeLinks(r).map(l=>' · '+escapeHtml(l.url)).join('')}</div>
       <div><b>Składniki:</b> ${ingredientLinesText(r.ingredients||[]).map(t=>escapeHtml(t)).join(', ')}</div>
-      ${r.instructions?`<div class="print-instr"><b>Instrukcje:</b><br>${nl2br(r.instructions)}</div>`:''}
+      ${r.instructions?`<div class="print-instr"><b>Instrukcje:</b><br>${nl2br(plainInstr(r.instructions))}</div>`:''}
     </div>`;
   });
   const div=document.createElement('div');
@@ -2228,7 +2255,7 @@ function openRecipePreview(rec){
       <h3 class="section">Składniki</h3>
       <ul class="preview-ing-list">${ingredientLinesHtml(rec.ingredients)}</ul>
       ${recipesUsing(rec.id).length?`<h3 class="section">Używany w</h3><div class="used-in">${recipesUsing(rec.id).map(r=>`<button type="button" class="btn btn-ghost used-in-btn" data-id="${r.id}">${escapeHtml(r.name)}</button>`).join('')}</div>`:''}
-      ${rec.instructions?`<h3 class="section">Instrukcje</h3><div class="preview-instr">${nl2br(rec.instructions)}</div>`:''}
+      ${rec.instructions?`<h3 class="section">Instrukcje</h3><div class="preview-instr">${instrHtml(rec.instructions)}</div>`:''}
       <h3 class="section">Oceny</h3>
       <div style="display:flex;align-items:center;justify-content:space-between;">
         ${ratingSummaryHtml(rec)}
@@ -2632,7 +2659,7 @@ function openRecipeModal(existing, forceNew){
         <div id="ingList"></div>
         <div class="add-ing-row"><button class="add-ing" id="addIng">+ Składnik</button><button class="add-ing" id="addIngRef" title="Użyj innego przepisu (np. sosu) jako składnika">📎 Przepis jako składnik</button></div>
       </div>
-      <div class="field"><label>Instrukcje</label><textarea id="m-instr" rows="1" style="overflow-y:auto;resize:none;" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
+      <div class="field"><label>Instrukcje</label><div class="instr-bar"><button type="button" data-fmt="ol" title="Lista numerowana">1.</button><button type="button" data-fmt="ul" title="Lista punktowana">•</button><button type="button" data-fmt="b" title="Pogrubienie"><b>B</b></button><button type="button" data-fmt="h" title="Nagłówek części przepisu">Nagłówek</button></div><textarea id="m-instr" rows="1" style="overflow-y:auto;resize:none;" placeholder="Krótki opis przygotowania...">${escapeHtml(rec.instructions||'')}</textarea></div>
       <div class="field"><label>Oceny</label><div id="m-ratings"></div></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="m-cancel">Anuluj</button>
@@ -2950,7 +2977,7 @@ function openRecipeModal(existing, forceNew){
         ings = imported.ingredients.map(normalizeImportedIng);
         renderIngs();
       }
-      if(imported.instructions){ overlay.querySelector('#m-instr').value = imported.instructions; autoGrowInstr(); }
+      if(imported.instructions){ overlay.querySelector('#m-instr').value = autoNumberInstr(imported.instructions); autoGrowInstr(); }
       statusEl.textContent = 'Zaimportowano — sprawdź i popraw dane poniżej przed zapisem.';
     } catch(e){
       console.error(e);
@@ -2969,6 +2996,59 @@ function openRecipeModal(existing, forceNew){
     instrTa.style.height = Math.min(instrTa.scrollHeight + (parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0), max)+'px';
   }
   instrTa.addEventListener('input', autoGrowInstr);
+  /* formatowanie instrukcji */
+  let instrBusy=false;
+  const stripMk=l=>l.replace(/^\s*(\d+[.)]|[•\-]|##)\s+/,'');
+  function replRange(a,b,text){
+    instrTa.focus(); instrTa.setSelectionRange(a,b);
+    instrBusy=true;
+    try{ if(!document.execCommand || !document.execCommand('insertText',false,text)){ instrTa.setRangeText(text,a,b,'end'); } }finally{ instrBusy=false; }
+    instrTa.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  function fmtInstr(kind){
+    const v=instrTa.value; let a=instrTa.selectionStart, b=instrTa.selectionEnd;
+    if(kind==='b'){
+      const t=v.slice(a,b);
+      if(a===b){ replRange(a,b,'****'); instrTa.setSelectionRange(a+2,a+2); return; }
+      if(t.length>4 && t.startsWith('**') && t.endsWith('**')){ replRange(a,b,t.slice(2,-2)); instrTa.setSelectionRange(a,a+t.length-4); }
+      else { replRange(a,b,'**'+t+'**'); instrTa.setSelectionRange(a,a+t.length+4); }
+      return;
+    }
+    const ls=v.lastIndexOf('\n',a-1)+1;
+    const eEff=(b>a && v[b-1]==='\n')?b-1:b, le0=v.indexOf('\n',eEff), le=le0<0?v.length:le0;
+    const lines=v.slice(ls,le).split('\n');
+    const test={ol:l=>/^\s*\d+[.)]\s/.test(l), ul:l=>/^\s*[•\-]\s/.test(l), h:l=>/^\s*##\s/.test(l)}[kind];
+    const allOn=lines.every(l=>!l.trim()||test(l)) && lines.some(l=>l.trim());
+    let out;
+    if(allOn) out=lines.map(stripMk);
+    else if(kind==='ol'){
+      let n=1;
+      if(lines.length===1 && ls>0){ const pm=v.slice(0,ls-1).split('\n').pop().match(/^\s*(\d+)[.)]\s/); if(pm) n=parseInt(pm[1],10)+1; }
+      out=lines.map(l=> (l.trim()||lines.length===1) ? (n++)+'. '+stripMk(l) : l);
+    }
+    else if(kind==='ul') out=lines.map(l=> (l.trim()||lines.length===1) ? '• '+stripMk(l) : l);
+    else out=lines.map(l=> (l.trim()||lines.length===1) ? '## '+stripMk(l) : l);
+    const text=out.join('\n');
+    replRange(ls,le,text);
+    if(lines.length>1) instrTa.setSelectionRange(ls,ls+text.length); else instrTa.setSelectionRange(ls+text.length,ls+text.length);
+  }
+  overlay.querySelectorAll('.instr-bar button').forEach(bt=>{
+    bt.addEventListener('mousedown',e=>e.preventDefault());
+    bt.addEventListener('click',()=>fmtInstr(bt.dataset.fmt));
+  });
+  /* Enter w liście: kolejny numer / punkt (puste pozycje zostają; listę kończy ponowne kliknięcie przycisku) */
+  instrTa.addEventListener('beforeinput', e=>{
+    if(instrBusy || (e.inputType!=='insertLineBreak' && e.inputType!=='insertParagraph')) return;
+    const v=instrTa.value, a=instrTa.selectionStart, b=instrTa.selectionEnd;
+    const ls=v.lastIndexOf('\n',a-1)+1, le0=v.indexOf('\n',a), le=le0<0?v.length:le0, line=v.slice(ls,le);
+    let m=line.match(/^(\d+)\.\s(.*)$/), mk, len;
+    if(m){ mk=(parseInt(m[1],10)+1)+'. '; len=m[1].length+2; }
+    else if((m=line.match(/^•\s(.*)$/))){ mk='• '; len=2; }
+    else return;
+    if(a-ls<len) return;
+    e.preventDefault();
+    replRange(a,b,'\n'+mk);
+  });
   autoGrowInstr(); setTimeout(autoGrowInstr, 50);
 
   /* ochrona pracy: kliknięcie obok okna nie zamyka go, gdy są niezapisane zmiany; „Anuluj” pyta o potwierdzenie */
