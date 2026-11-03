@@ -190,6 +190,42 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .usage-item:hover{background:var(--bg);}
 .ing-row input{width:100%;}
 .partial-badge{font-size:12px;margin-right:4px;}
+.qi-wrap{margin-bottom:6px;}
+.qi-row{display:grid;grid-template-columns:minmax(0,1fr) 54px 76px 32px;gap:4px;align-items:center;}
+.qi-row input,.qi-row select{padding:8px 6px;font-size:14px;width:100%;min-width:0;}
+.qi-row input.qi-name{padding-left:10px;}
+.qi-tag{font-size:11px;color:var(--ink-soft);margin:2px 0 0 6px;}
+.qi-add{margin-top:2px;}
+.sg-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.sg-serv{display:flex;align-items:center;gap:6px;}
+.sg-serv input{width:54px;text-align:center;padding:6px;font-size:16px;}
+.sg-serv .btn{padding:4px 10px;min-width:34px;}
+.sg-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.sg-group{background:var(--bg);border-radius:10px;padding:8px 10px;margin:8px 0;}
+.sg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;font-size:14px;}
+.sg-head label{font-size:12px;font-weight:600;color:var(--ink-soft);display:inline-flex;gap:4px;align-items:center;text-transform:none;letter-spacing:0;cursor:pointer;margin:0;}
+.sg-head input{width:15px;height:15px;accent-color:var(--green);}
+.sg-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.sg-chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:13.5px;cursor:pointer;color:var(--ink);}
+.sg-chip.on{background:var(--green);color:#fff;border-color:var(--green);}
+.sg-sum{margin-top:10px;}
+.sg-sumh{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+.sg-line{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:14px;}
+.sg-line input{width:62px;padding:5px 6px;font-size:14px;}
+.sv-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
+.sv-top{display:flex;justify-content:space-between;align-items:center;}
+.sv-fav{border:none;background:none;font-size:20px;cursor:pointer;color:var(--mustard);}
+.sv-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.sv-actions .btn{padding:5px 12px;font-size:13px;}
+.sb-ghead{display:flex;gap:8px;align-items:center;margin:4px 0 8px;}
+.sb-ghead input.plain-name{flex:1;min-width:0;}
+.sb-ghead label{font-size:11px;color:var(--ink-soft);display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;margin:0;white-space:nowrap;}
+.sb-ghead label input{width:46px;padding:5px;}
+.sb-row{display:grid;grid-template-columns:minmax(0,1fr) 54px 74px 30px;gap:4px;align-items:center;margin-bottom:5px;}
+.sb-row input,.sb-row select{padding:7px 6px;font-size:14px;width:100%;min-width:0;}
+.sb-group{border-bottom:1px solid var(--line);padding:2px 0 8px;}
+.rpm-salads .filter-caption,.rpm-salads #rpm-meal-filters,.rpm-salads #rpm-more-toggle,.rpm-salads #rpm-more{display:none !important;}
+
 .conv-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;}
 .cv-input{display:flex;gap:8px;margin-bottom:8px;}
 .cv-input input{max-width:120px;}
@@ -365,6 +401,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
       <button data-tab="shopping">Lista zakupów</button>
       <button data-tab="products">Produkty</button>
       <button data-tab="convert">Przeliczniki</button>
+      <button data-tab="salads">Sałatki</button>
       <button data-tab="categories">Kategorie</button>
       <button data-tab="tags">Tagi</button>
       <button data-tab="people">Osoby</button>
@@ -564,6 +601,10 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
     </details>
   </section>
 
+  <section id="tab-salads" class="tab-panel">
+    <div id="saladsRoot"></div>
+  </section>
+
   <section id="tab-people" class="tab-panel">
     <div class="sub" style="margin-bottom:10px;">Osoby używane przy Śniadaniach i ocenianiu przepisów.</div>
     <div class="add-item-bar">
@@ -574,7 +615,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 28.10.2026, 11:10</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 03.11.2026, 12:56</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -633,7 +674,7 @@ const CATEGORY_KEYWORDS = {
 };
 
 /* ============ STATE ============ */
-let recipes=[], plan={}, shopping=[], products=[], tags=[], proposals=[], breakfastPlan={}, people=[], quickRecipes=[];
+let recipes=[], plan={}, shopping=[], products=[], tags=[], proposals=[], breakfastPlan={}, people=[], quickRecipes=[], salads=normSalads(null);
 let mealCategories=[], recipeCategories=[], shoppingCategories=[], units=[];
 let currentWeekStart=getMonday(new Date());
 let bfWeekStart=getMonday(new Date());
@@ -868,7 +909,7 @@ async function remoteLoad(){
 }
 function currentState(){
   return {
-    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes,
+    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes, salads,
     mealCategories, recipeCategories, shoppingCategories, units, catOrderV3
   };
 }
@@ -963,6 +1004,7 @@ function applyData(data){
   breakfastPlan = data.breakfastPlan || {};
   people = data.people || [];
   quickRecipes = data.quickRecipes || [];
+quickRecipes.forEach(normQuick); salads = normSalads(data.salads);
   // migrations
   quickRecipes.forEach(q=>{
     if(!Array.isArray(q.mealCategories)) q.mealCategories=[];
@@ -1200,6 +1242,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     if(btn.dataset.tab==='quick'){ renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow(); renderQuickRecipes(document.getElementById('quickSearch').value); }
     if(btn.dataset.tab==='people'){ renderPeopleManage(); }
     if(btn.dataset.tab==='convert'){ renderConvertTab(); }
+    if(btn.dataset.tab==='salads'){ renderSaladsTab(); }
   });
 });
 
@@ -1229,7 +1272,18 @@ function renderRecentBar(){
   const bar = document.getElementById('recentBar');
   bar.innerHTML = top.length ? `Najczęściej planowane: ` + top.map(r=>`<b>${escapeHtml(r.name)}</b>`).join(', ') : '';
 }
+function choiceBadgeHtml(rec,item){
+  const un=item.choice?undecidedCount(rec,item.choice):1, full=item.choice&&un===0;
+  return `<button type="button" class="choice-badge${full?' set':''}" title="${full?'Wybór składników zapisany — kliknij, aby zmienić':(item.choice?'Część wyboru zostawiona na listę zakupów — kliknij, aby uzupełnić':'Wybór składników jeszcze nie zrobiony — kliknij, aby wybrać')}">${full?'✓ wybór':(item.choice?'wybór niepełny':'wybór?')}</button>`;
+}
 function mealItemHtml(item, dayKey, slotType, extraId){
+  if(item.salad){
+    return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-sid="1">
+      <span class="nm open-prev">🥗 ${escapeHtml(item.salad.name)}</span>
+      <input type="number" min="1" class="servings" value="${item.servings||1}" title="liczba porcji">
+      <button class="rm">✕</button>
+    </div>`;
+  }
   if(item.text!==undefined && item.recipeId===undefined && item.quickRecipeId===undefined){
     return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}">
       <span class="nm">📝 ${escapeHtml(item.text)}</span>
@@ -1239,8 +1293,11 @@ function mealItemHtml(item, dayKey, slotType, extraId){
   if(item.quickRecipeId!==undefined){
     const qr = quickRecipes.find(q=>q.id===item.quickRecipeId);
     const qname = qr ? qr.name : '(usunięty szybki przepis)';
+    const qHasIng = !!(qr && (qr.ingredients||[]).length);
     return `<div class="meal-chip" data-day="${dayKey}" data-slot="${slotType}" data-extra="${extraId||''}" data-item="${item.id}" data-qid="${item.quickRecipeId}">
       <span class="nm open-prev">⚡ ${escapeHtml(qname)}</span>
+      ${qHasIng&&hasIngredientChoices(qr)?choiceBadgeHtml(qr,item):''}
+      ${qHasIng?`<input type="number" min="1" class="servings" value="${item.servings||qr.baseServings||2}" title="liczba porcji">`:''}
       <button class="rm">✕</button>
     </div>`;
   }
@@ -1258,6 +1315,11 @@ function wirePreviewClicks(root){
     const chip=el.closest('.meal-chip');
     if(chip.dataset.rid){ const r=recipes.find(x=>x.id===chip.dataset.rid); if(r) openRecipePreview(r); }
     else if(chip.dataset.qid){ const q=quickRecipes.find(x=>x.id===chip.dataset.qid); if(q) openQuickRecipePreview(q); }
+    else if(chip.dataset.sid){
+      const arr=findItemArray(chip.dataset.day, chip.dataset.slot, chip.dataset.extra||null);
+      const it=arr && arr.find(x=>x.id===chip.dataset.item);
+      if(it && it.salad) openSaladPreview(it.salad, it.servings||1);
+    }
   }));
 }
 function setupAutoGrow(ta, maxRows){
@@ -1322,7 +1384,7 @@ function renderDayGrid(){
   grid.querySelectorAll('.choice-badge').forEach(b=>b.addEventListener('click', async e=>{
     const chip=e.target.closest('.meal-chip');
     const arr=findItemArray(chip.dataset.day, chip.dataset.slot, chip.dataset.extra||null);
-    const it=arr && arr.find(x=>x.id===chip.dataset.item), rec=it && recipes.find(r=>r.id===it.recipeId);
+    const it=arr && arr.find(x=>x.id===chip.dataset.item), rec=it && (it.quickRecipeId ? quickRecipes.find(r=>r.id===it.quickRecipeId) : recipes.find(r=>r.id===it.recipeId));
     if(!it||!rec) return;
     const r=await askPlanChoice(rec, it.servings, it.choice||null);
     if(r===null) return;
@@ -1409,7 +1471,7 @@ function openMealTypeChooser(anchorEl, dayKey){
   setTimeout(()=>document.addEventListener('click', outsideClickClose),0);
 }
 function openRecipePickerModal(opts){
-  const { title='Wybierz przepis', matchMealLabel=null, defaultSub='recipes', onSelectRecipe, onSelectQuick, recipesOnly=false, excludeIds=[], startMeal=null } = opts;
+  const { title='Wybierz przepis', matchMealLabel=null, defaultSub='recipes', onSelectRecipe, onSelectQuick, onSelectSalad, recipesOnly=false, excludeIds=[], startMeal=null } = opts;
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.innerHTML=`
@@ -1418,6 +1480,7 @@ function openRecipePickerModal(opts){
       <div class="filter-row" id="rpm-subtabs" style="margin-bottom:12px;${recipesOnly?'display:none;':''}">
         <span class="filter-pill${defaultSub==='recipes'?' active':''}" id="rpm-subtab-recipes">Przepisy</span>
         <span class="filter-pill${defaultSub==='quick'?' active':''}" id="rpm-subtab-quick">Szybkie</span>
+        ${onSelectSalad?'<span class="filter-pill" id="rpm-subtab-salads">Sałatki</span>':''}
       </div>
       <div class="field" id="rpm-quickadd-wrap" style="display:${defaultSub==='quick'?'block':'none'};">
         <div style="display:flex;gap:6px;">
@@ -1457,9 +1520,31 @@ function openRecipePickerModal(opts){
   function renderDishPills(){ renderPillRow('rpm-dish-filters', recipeCategories.map(c=>c.name), activeDish, v=>{ activeDish=v; renderDishPills(); renderList(); }); }
   function renderTagPills(){ renderPillRow('rpm-tag-filters', tags, activeTag, v=>{ activeTag=v; renderTagPills(); renderList(); }); }
 
+  let saladPickFilter='all';
+  function renderSaladPick(){
+    const listEl=overlay.querySelector('#rpm-list');
+    const q=(overlay.querySelector('#rpm-search').value||'').trim().toLowerCase();
+    listEl.innerHTML=`<div style="padding:10px 0 6px;"><button type="button" class="btn btn-primary" id="rpm-gen-salad">Generuj sałatkę</button></div>
+      <div class="filter-row" id="rpm-sal-f" style="margin-bottom:6px;"></div><div id="rpm-sal-l"></div>`;
+    const fr=listEl.querySelector('#rpm-sal-f');
+    fr.innerHTML=`<span class="filter-pill${saladPickFilter==='all'?' active':''}" data-f="all">Wszystkie</span><span class="filter-pill${saladPickFilter==='fav'?' active':''}" data-f="fav">Ulubione</span>`+salads.cats.map(c=>`<span class="filter-pill${saladPickFilter===c.id?' active':''}" data-f="${c.id}">${escapeHtml(c.name)}</span>`).join('');
+    fr.querySelectorAll('.filter-pill').forEach(pl=>pl.addEventListener('click',()=>{ saladPickFilter=pl.dataset.f; renderSaladPick(); }));
+    const list=salads.saved.filter(sv=>(saladPickFilter==='all'||(saladPickFilter==='fav'?sv.fav:sv.catId===saladPickFilter)) && (!q || sv.name.toLowerCase().includes(q)));
+    const L=listEl.querySelector('#rpm-sal-l');
+    L.innerHTML=list.length?list.map(sv=>`<div class="rpm-item" data-id="${sv.id}"><div><div>${sv.fav?'★ ':''}${escapeHtml(sv.name)}</div></div><span class="cat">${escapeHtml(((salads.cats.find(c=>c.id===sv.catId)||{}).name)||'')}</span></div>`).join(''):'<div class="empty-state">Brak zapisanych sałatek w tym widoku.</div>';
+    L.querySelectorAll('.rpm-item').forEach(o=>o.addEventListener('click',()=>{
+      const sv=salads.saved.find(x=>x.id===o.dataset.id); overlay.remove();
+      onSelectSalad(saladSnapFromSaved(sv), sv.servings||2);
+    }));
+    listEl.querySelector('#rpm-gen-salad').addEventListener('click',()=>{
+      overlay.remove();
+      openSaladGenerator({mode:'plan', servings:2, onPlan:(snap,serv)=>onSelectSalad(snap,serv)});
+    });
+  }
   function renderList(){
     const q=(overlay.querySelector('#rpm-search').value||'').trim();
     const listEl = overlay.querySelector('#rpm-list');
+    if(activeSub==='salads'){ renderSaladPick(); return; }
     if(activeSub==='recipes'){
       let list = recipes.filter(r=>{
         if(excludeIds.includes(r.id)) return false;
@@ -1517,11 +1602,14 @@ function openRecipePickerModal(opts){
     activeSub = sub;
     overlay.querySelector('#rpm-subtab-recipes').classList.toggle('active', sub==='recipes');
     overlay.querySelector('#rpm-subtab-quick').classList.toggle('active', sub==='quick');
+    const sbt=overlay.querySelector('#rpm-subtab-salads'); if(sbt) sbt.classList.toggle('active', sub==='salads');
+    overlay.classList.toggle('rpm-salads', sub==='salads');
     overlay.querySelector('#rpm-quickadd-wrap').style.display = sub==='quick' ? 'block' : 'none';
     renderList();
   }
   overlay.querySelector('#rpm-subtab-recipes').addEventListener('click', ()=>setSubTab('recipes'));
   overlay.querySelector('#rpm-subtab-quick').addEventListener('click', ()=>setSubTab('quick'));
+  { const sbt=overlay.querySelector('#rpm-subtab-salads'); if(sbt) sbt.addEventListener('click', ()=>setSubTab('salads')); }
   overlay.querySelector('#rpm-search').addEventListener('input', renderList);
   overlay.querySelector('#rpm-more-toggle').addEventListener('click', e=>{
     const box=overlay.querySelector('#rpm-more'), open=box.style.display==='none';
@@ -1536,7 +1624,7 @@ function openRecipePickerModal(opts){
     const newQ = {
       id:uid(), name:val, description:'',
       mealCategories: matchMealLabel ? [matchMealLabel] : [],
-      categories:[], tags:[], ratings:[], imageData:''
+      categories:[], tags:[], ratings:[], imageData:'', ingredients:[], baseServings:2
     };
     quickRecipes.push(newQ);
     await saveQuickRecipes();
@@ -1566,7 +1654,22 @@ function openRecipePicker(anchorEl, dayKey, slotType, extraId){
     },
     onSelectQuick: async (qr)=>{
       const arr = findItemArray(dayKey, slotType, extraId);
-      if(arr) arr.push({id:uid(), quickRecipeId:qr.id});
+      const item = {id:uid(), quickRecipeId:qr.id};
+      if((qr.ingredients||[]).length){
+        item.servings = qr.baseServings||2;
+        if(hasIngredientChoices(qr)){
+          const r = await askPlanChoice(qr, item.servings, null);
+          if(r===null) return;
+          if(r.choice) item.choice = r.choice;
+        }
+      }
+      if(arr) arr.push(item);
+      await savePlan();
+      renderDayGrid();
+    },
+    onSelectSalad: async (snap, servings)=>{
+      const arr = findItemArray(dayKey, slotType, extraId);
+      if(arr) arr.push({id:uid(), salad:snap, servings:servings||1});
       await savePlan();
       renderDayGrid();
     }
@@ -1717,6 +1820,7 @@ function renderRecipes(filter){
       <div class="desc-clamp">${escapeHtml(plainInstr(r.instructions))}</div>
       <div class="actions">
         <span class="spacer"></span>
+        <button class="btn-icon shop-r" title="Do listy zakupów">🛒</button>
         <button class="btn-icon edit-r" title="Edytuj">✎</button>
         <button class="btn-icon del-r" title="Usuń">🗑</button>
       </div>
@@ -1728,6 +1832,10 @@ function renderRecipes(filter){
       openRecipePreview(recipes.find(r=>r.id===card.dataset.id));
     });
   });
+  grid.querySelectorAll('.shop-r').forEach(b=>b.addEventListener('click', e=>{
+    e.stopPropagation();
+    addRecipeToShopping(recipes.find(r=>r.id===e.target.closest('.recipe-card').dataset.id));
+  }));
   grid.querySelectorAll('.edit-r').forEach(b=>b.addEventListener('click', e=>{
     e.stopPropagation();
     const id=e.target.closest('.recipe-card').dataset.id;
@@ -1827,11 +1935,16 @@ function renderQuickRecipes(filter){
       <div class="desc-clamp">${escapeHtml(q.description||'')}</div>
       <div class="actions">
         <span class="spacer"></span>
+        ${(q.ingredients||[]).length?'<button class="btn-icon shop-q" title="Do listy zakupów">🛒</button>':''}
         <button class="btn-icon edit-q" title="Edytuj">✎</button>
         <button class="btn-icon del-q" title="Usuń">🗑</button>
       </div>
     </div>
   `).join('');
+  grid.querySelectorAll('.shop-q').forEach(b=>b.addEventListener('click', e=>{
+    e.stopPropagation();
+    addRecipeToShopping(quickRecipes.find(q=>q.id===e.target.closest('.recipe-card').dataset.id));
+  }));
   grid.querySelectorAll('.edit-q').forEach(b=>b.addEventListener('click', e=>{
     e.stopPropagation();
     const id=e.target.closest('.recipe-card').dataset.id;
@@ -1867,6 +1980,7 @@ function openQuickRecipePreview(q){
         ${(q.tags||[]).map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}
       </div>
       ${q.description?`<p>${escapeHtml(q.description)}</p>`:''}
+      ${(q.ingredients||[]).length?`<h3 class="section">Składniki (porcje: ${q.baseServings||2})</h3><ul class="preview-ing-list">${ingredientLinesHtml(q.ingredients)}</ul>`:''}
       <h3 class="section">Oceny</h3>
       <div style="display:flex;align-items:center;justify-content:space-between;">
         ${ratingSummaryHtml(q)}
@@ -1875,6 +1989,7 @@ function openQuickRecipePreview(q){
       <div id="qpv-ratings-breakdown" style="display:none;margin-top:8px;">${ratingBreakdownHtml(q)}</div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="qpv-close">Zamknij</button>
+        ${(q.ingredients||[]).length?'<button class="btn btn-ghost" id="qpv-shop">Do listy zakupów</button>':''}
         <button class="btn btn-primary" id="qpv-edit">Edytuj</button>
       </div>
     </div>`;
@@ -1882,6 +1997,7 @@ function openQuickRecipePreview(q){
   overlay.querySelector('#qpv-close').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#qpv-edit').addEventListener('click', ()=>{ overlay.remove(); openQuickRecipeModal(q); });
+  { const sb=overlay.querySelector('#qpv-shop'); if(sb) sb.addEventListener('click',()=>addRecipeToShopping(q, sb)); }
   overlay.querySelector('#qpv-toggle-ratings').addEventListener('click', e=>{
     const box=overlay.querySelector('#qpv-ratings-breakdown');
     const show = box.style.display==='none';
@@ -1925,12 +2041,14 @@ function openQuickRecipeModal(existing){
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   const isEdit=!!existing;
-  const q = existing || {id:uid(), name:'', description:'', mealCategories:[], categories:[], tags:[], ratings:[], imageData:''};
+  const q = existing || {id:uid(), name:'', description:'', mealCategories:[], categories:[], tags:[], ratings:[], imageData:'', ingredients:[], baseServings:2};
   overlay.innerHTML = `
     <div class="modal">
       <h2>${isEdit?'Edytuj szybki przepis':'Nowy szybki przepis'}</h2>
       <div class="field"><label>Tytuł</label><input type="text" id="qm-name" value="${escapeHtml(q.name)}" placeholder="np. Kanapka z pasztetem"></div>
       <div class="field"><label>Opis</label><textarea id="qm-desc" rows="3" placeholder="np. pasztet, ogórek kiszony, pieczywo razowe">${escapeHtml(q.description||'')}</textarea></div>
+      <div class="field"><label>Porcje bazowe</label><input type="number" min="1" id="qm-servings" value="${q.baseServings||2}" style="max-width:90px;"></div>
+      <div class="field"><label>Składniki (opcjonalnie — dla listy zakupów)</label><div id="qm-ings"></div></div>
       <div class="field"><label>Kategorie posiłków</label>
         <div class="chips-input orange" id="qmMealCatsInput"><input type="text" id="qmMealCatInput" placeholder="np. Śniadanie..."></div>
       </div>
@@ -1956,6 +2074,8 @@ function openQuickRecipeModal(existing){
   `;
   document.body.appendChild(overlay);
   setupAutoGrow(overlay.querySelector('#qm-desc'), 8);
+  const qIngs=(q.ingredients||[]).map(i=>({...i}));
+  mountIngEditor(overlay.querySelector('#qm-ings'), qIngs);
 
   let imageData = q.imageData || '';
   const fileInput = overlay.querySelector('#qm-image-file');
@@ -1998,7 +2118,7 @@ function openQuickRecipeModal(existing){
     skip: [...dishCatsAPI.get(), ...mealCatsAPI.get()]
   }));
 
-  const qsnap = ()=>JSON.stringify([overlay.querySelector('#qm-name').value, overlay.querySelector('#qm-desc').value, mealCatsAPI.get(), dishCatsAPI.get(), tagsAPI.get(), qRatingsAPI.get()]);
+  const qsnap = ()=>JSON.stringify([overlay.querySelector('#qm-name').value, overlay.querySelector('#qm-desc').value, overlay.querySelector('#qm-servings').value, qIngs.map(i=>[i.name,i.qty,i.unit,i.optional,i.defaultOn,i.altGroup]), mealCatsAPI.get(), dishCatsAPI.get(), tagsAPI.get(), qRatingsAPI.get()]);
   const qsnap0 = qsnap();
   guardModalClose(overlay, ()=>qsnap()!==qsnap0, 'Masz niezapisane zmiany. Zamknąć bez zapisywania?', '#qm-cancel');
   overlay.querySelector('#qm-save').addEventListener('click', async ()=>{
@@ -2007,10 +2127,14 @@ function openQuickRecipeModal(existing){
     const description = overlay.querySelector('#qm-desc').value.trim();
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newQ = {id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, ratings:qRatingsAPI.get(), imageData};
+    const cleanIngs = qIngs.filter(i=>(i.name||'').trim()).map(i=>({...i, name:i.name.trim()}));
+    cleanAltGroups(cleanIngs);
+    cleanIngs.forEach(i=>ensureProduct(i.name, i.unit));
+    const baseServings = Math.max(1, parseInt(overlay.querySelector('#qm-servings').value,10)||2);
+    const newQ = {id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, ratings:qRatingsAPI.get(), imageData, ingredients:cleanIngs, baseServings};
     const idx = quickRecipes.findIndex(x=>x.id===q.id);
     if(idx>=0) quickRecipes[idx]=newQ; else quickRecipes.push(newQ);
-    await Promise.all([saveQuickRecipes(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
+    await Promise.all([saveQuickRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
     renderQuickRecipes(document.getElementById('quickSearch').value);
     renderQuickMealFilterRow(); renderQuickCatFilterRow(); renderQuickTagFilterRow();
     overlay.remove();
@@ -2276,6 +2400,7 @@ function openRecipePreview(rec){
       <div class="modal-actions">
         <button class="btn btn-ghost" id="pv-close">Zamknij</button>
         ${(rec.ingredients||[]).some(i=>!i.recipeRef && (findProduct(i.name)||{}).conv)?'<button class="btn btn-ghost" id="pv-conv">Przelicz produkty</button>':''}
+        ${(rec.ingredients||[]).length?'<button class="btn btn-ghost" id="pv-shop">Do listy zakupów</button>':''}
         <button class="btn btn-primary" id="pv-edit">Edytuj</button>
       </div>
     </div>`;
@@ -2283,6 +2408,7 @@ function openRecipePreview(rec){
   overlay.querySelector('#pv-close').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#pv-edit').addEventListener('click', ()=>{ overlay.remove(); openRecipeModal(rec); });
+  { const sb=overlay.querySelector('#pv-shop'); if(sb) sb.addEventListener('click',()=>addRecipeToShopping(rec, sb)); }
   const pvConv=overlay.querySelector('#pv-conv'); if(pvConv) pvConv.addEventListener('click', ()=>openRecipeConvertModal(rec));
   const openOther = id=>{ const o=recipes.find(r=>r.id===id); if(o){ overlay.remove(); openRecipePreview(o); } };
   overlay.querySelectorAll('.used-in-btn').forEach(b=>b.addEventListener('click', ()=>openOther(b.dataset.id)));
@@ -3417,7 +3543,7 @@ function mergeIntoShopping(ingredientList, source){
   });
 }
 async function regenerateFromPlan(){
-  const planEntries=[];
+  const planEntries=[], saladPlanItems=[];
   for(let i=0;i<7;i++){
     const key=fmtDate(addDays(currentWeekStart,i));
     const day=getDay(key);
@@ -3425,6 +3551,8 @@ async function regenerateFromPlan(){
     allItems.forEach(it=>{
       const rec=recipes.find(r=>r.id===it.recipeId);
       if(rec) planEntries.push({rec, servings:it.servings, choice:it.choice});
+      else if(it.quickRecipeId){ const qr=quickRecipes.find(r=>r.id===it.quickRecipeId); if(qr && (qr.ingredients||[]).length) planEntries.push({rec:qr, servings:it.servings||qr.baseServings||2, choice:it.choice}); }
+      else if(it.salad) saladPlanItems.push(it);
     });
   }
   const ask = await askIngredientChoices(planEntries);
@@ -3435,7 +3563,8 @@ async function regenerateFromPlan(){
   const preservedChecked = {};
   planItems.forEach(i=> preservedChecked[normalizeName(i.name)+'|'+i.unit] = i.checked);
   const toMerge=[];
-  Object.keys(ask.servings).forEach(rid=>{ const rec=recipes.find(r=>r.id===rid); if(rec) toMerge.push(...scaledIngredients(rec, ask.servings[rid], choices[rid])); });
+  Object.keys(ask.servings).forEach(rid=>{ const rec=recipes.find(r=>r.id===rid)||quickRecipes.find(r=>r.id===rid); if(rec) toMerge.push(...scaledIngredients(rec, ask.servings[rid], choices[rid])); });
+  saladPlanItems.forEach(it=>toMerge.push(...saladSnapToShopping(it.salad, it.servings||1)));
   mergeIntoShopping(toMerge, 'plan');
   shopping.forEach(i=>{
     if(i.source==='plan'){
@@ -3697,28 +3826,29 @@ document.getElementById('doMerge').addEventListener('click', async ()=>{
   await saveShopping(); renderShopping();
 });
 document.getElementById('addFromRecipeBtn').addEventListener('click', ()=>{
+  const rpPool=[...recipes, ...quickRecipes.filter(q=>(q.ingredients||[]).length)];
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.innerHTML=`
     <div class="modal">
       <h2>Dodaj składniki z przepisu</h2>
       <div class="field"><label>Przepis</label>
-        <select id="rp-recipe">${recipes.map(r=>`<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('')}</select>
+        <select id="rp-recipe">${rpPool.map(r=>`<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('')}</select>
       </div>
-      <div class="field"><label>Liczba porcji</label><input type="number" min="1" id="rp-servings" value="${recipes[0]?recipes[0].baseServings:4}"></div>
+      <div class="field"><label>Liczba porcji</label><input type="number" min="1" id="rp-servings" value="${rpPool[0]?rpPool[0].baseServings:4}"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="rp-cancel">Anuluj</button>
-        <button class="btn btn-primary" id="rp-add" ${recipes.length===0?'disabled':''}>Dodaj do listy</button>
+        <button class="btn btn-primary" id="rp-add" ${rpPool.length===0?'disabled':''}>Dodaj do listy</button>
       </div>
       ${recipes.length===0?'<div class="sub">Brak przepisów — dodaj najpierw jakiś w zakładce „Przepisy”.</div>':''}
     </div>`;
   document.body.appendChild(overlay);
   const sel=overlay.querySelector('#rp-recipe'), servEl=overlay.querySelector('#rp-servings');
-  sel.addEventListener('change', ()=>{ const r=recipes.find(x=>x.id===sel.value); servEl.value = r? r.baseServings:4; });
+  sel.addEventListener('change', ()=>{ const r=rpPool.find(x=>x.id===sel.value); servEl.value = r? r.baseServings:4; });
   overlay.querySelector('#rp-cancel').addEventListener('click', ()=>overlay.remove());
   overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rp-add').addEventListener('click', async ()=>{
-    const rec = recipes.find(r=>r.id===sel.value);
+    const rec = rpPool.find(r=>r.id===sel.value);
     if(!rec) return;
     const servings = Math.max(1, parseInt(servEl.value)||rec.baseServings||1);
     const ask = await askIngredientChoices([{rec, servings}]);
@@ -3855,14 +3985,17 @@ async function renameProductEverywhere(prod, newName){
   if(clash){ alert(`Produkt "${clash.name}" już istnieje. Wybierz inną nazwę.`); return false; }
   const recs = recipes.filter(r=>(r.ingredients||[]).some(i=>!i.recipeRef && namesMatch(i.name,old)));
   const shop = shopping.filter(it=>namesMatch(it.name,old));
-  if(recs.length || shop.length){
-    const parts=[]; if(recs.length) parts.push(plItems(recs.length)); if(shop.length) parts.push(shop.length+' poz. na liście zakupów');
+  const quicks = quickRecipes.filter(r=>(r.ingredients||[]).some(i=>namesMatch(i.name,old)));
+  if(recs.length || quicks.length || shop.length){
+    const parts=[]; if(recs.length) parts.push(plItems(recs.length)); if(quicks.length) parts.push(quicks.length+' szybkich przepisów'); if(shop.length) parts.push(shop.length+' poz. na liście zakupów');
     if(!confirm(`Zmienić nazwę "${old}" na "${newName}" także w: ${parts.join(' i ')}?`)) return false;
   }
   recs.forEach(r=>r.ingredients.forEach(i=>{ if(!i.recipeRef && namesMatch(i.name,old)) i.name=newName; }));
+  quicks.forEach(r=>r.ingredients.forEach(i=>{ if(namesMatch(i.name,old)) i.name=newName; }));
+  renameInSalads(old, newName);
   shop.forEach(it=>{ it.name=newName; });
   prod.name = newName;
-  await Promise.all([saveProducts(), saveRecipes(), saveShopping()]);
+  await Promise.all([saveProducts(), saveRecipes(), saveQuickRecipes(), saveShopping(), saveSalads()]);
   return true;
 }
 function openProductUsageModal(p, list){
@@ -3896,6 +4029,478 @@ function openProductUsageModal(p, list){
   });
 })();
 
+
+/* ============ EDYTOR SKŁADNIKÓW (szybkie przepisy, sosy) ============ */
+function mountIngEditor(box, ings, opts){
+  opts=opts||{};
+  const fire=()=>{ if(opts.onChange) opts.onChange(); };
+  let menu=null;
+  function outside(e){ if(menu && !menu.contains(e.target)) closeMenu(); }
+  function closeMenu(){ if(menu){ menu.remove(); menu=null; document.removeEventListener('mousedown',outside,true); document.removeEventListener('touchstart',outside,true); } }
+  const kindOf=(g,i)=> g.altGroup ? (ings.findIndex(x=>x.altGroup===g.altGroup)!==i?'alt':'') : (g.optional?'opt':'');
+  function openMenu(btn,i){
+    closeMenu();
+    const g=ings[i], k=kindOf(g,i);
+    menu=document.createElement('div'); menu.className='ing-menu';
+    menu.innerHTML=`
+      <button type="button" data-act="plain"><span class="ck">${k===''&&!g.altGroup?'✓':''}</span>Zwykły składnik</button>
+      <button type="button" data-act="opt"><span class="ck">${k==='opt'?'✓':''}</span>Opcjonalny</button>
+      <button type="button" data-act="alt" ${i>0?'':'disabled'}><span class="ck">${k==='alt'?'✓':''}</span>Zamiennik poprzedniego</button>
+      ${k==='opt'?`<button type="button" data-act="defon"><span class="ck">${g.defaultOn?'✓':''}</span>Domyślnie zaznaczony</button>`:''}
+      <hr><button type="button" data-act="rm" class="danger"><span class="ck">✕</span>Usuń składnik</button>`;
+    document.body.appendChild(menu);
+    const r=btn.getBoundingClientRect(), mh=menu.offsetHeight, mw=menu.offsetWidth;
+    menu.style.left=Math.max(8, Math.min(window.innerWidth-mw-8, r.right-mw))+'px';
+    menu.style.top=((r.bottom+4+mh>window.innerHeight-8) ? Math.max(8, r.top-mh-4) : r.bottom+4)+'px';
+    menu.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+      const act=b.dataset.act, it=ings[i];
+      closeMenu();
+      if(act==='rm'){ ings.splice(i,1); }
+      else if(act==='defon'){ it.defaultOn=!it.defaultOn; }
+      else {
+        delete it.optional; delete it.defaultOn; delete it.altGroup;
+        if(act==='opt') it.optional=true;
+        else if(act==='alt' && i>0){ const prev=ings[i-1]; prev.altGroup=prev.altGroup||uid(); it.altGroup=prev.altGroup; }
+      }
+      cleanAltGroups(ings); render(); fire();
+    }));
+    setTimeout(()=>{ document.addEventListener('mousedown',outside,true); document.addEventListener('touchstart',outside,true); },0);
+  }
+  function render(){
+    const dl=document.getElementById('prodDL');
+    if(dl) dl.innerHTML=products.filter(isFoodProduct).map(p=>`<option value="${escapeHtml(p.name)}"></option>`).join('');
+    box.innerHTML = ings.map((g,i)=>{
+      const k=kindOf(g,i);
+      const tag = k==='opt' ? 'opcjonalny'+(g.defaultOn?' · domyślnie zaznaczony':'') : k==='alt' ? 'zamiennik poprzedniego' : (g.altGroup ? 'ma zamiennik poniżej' : '');
+      return `<div class="qi-wrap" data-i="${i}"><div class="qi-row">
+        <input class="qi-name" list="prodDL" placeholder="składnik" autocomplete="off" value="${escapeHtml(g.name||'')}">
+        <input class="qi-qty" inputmode="decimal" placeholder="ilość" value="${escapeHtml(String(g.qty==null?'':g.qty))}">
+        <select class="qi-unit">${unitOptionsHtml(g.unit||'')}</select>
+        ${opts.simple?'<button type="button" class="ing-more qi-rm" title="Usuń">✕</button>':'<button type="button" class="ing-more qi-more" title="Opcje">⋯</button>'}
+      </div>${tag?`<div class="qi-tag">${tag}</div>`:''}</div>`;
+    }).join('') + '<button type="button" class="btn btn-ghost qi-add">+ Składnik</button>';
+    box.querySelectorAll('.qi-wrap').forEach(w=>{
+      const i=+w.dataset.i, g=ings[i];
+      const nameI=w.querySelector('.qi-name'), qtyI=w.querySelector('.qi-qty'), unitS=w.querySelector('.qi-unit');
+      nameI.addEventListener('input',()=>{ g.name=nameI.value; });
+      nameI.addEventListener('change',()=>{
+        const pr=findProduct(nameI.value.trim());
+        if(pr && pr.unit && !g.unit){ g.unit=pr.unit; unitS.innerHTML=unitOptionsHtml(g.unit); }
+        fire();
+      });
+      qtyI.addEventListener('input',()=>{ g.qty=qtyI.value; });
+      qtyI.addEventListener('change',fire);
+      unitS.addEventListener('change',()=>{ g.unit=unitS.value; fire(); });
+      const more=w.querySelector('.qi-more'); if(more) more.addEventListener('click',()=>openMenu(more,i));
+      const rm=w.querySelector('.qi-rm'); if(rm) rm.addEventListener('click',()=>{ ings.splice(i,1); cleanAltGroups(ings); render(); fire(); });
+    });
+    box.querySelector('.qi-add').addEventListener('click',()=>{
+      ings.push({name:'',qty:'',unit:''}); render();
+      const ins=box.querySelectorAll('.qi-name'); if(ins.length) ins[ins.length-1].focus();
+    });
+  }
+  render();
+  return {render};
+}
+
+/* ============ SAŁATKI ============ */
+function normSalads(d){
+  d=d||{}; const A=x=>Array.isArray(x)?x:[];
+  return {groups:A(d.groups), items:A(d.items), sauces:A(d.sauces), cats:A(d.cats), saved:A(d.saved), seeded:!!d.seeded};
+}
+function normQuick(q){
+  if(!Array.isArray(q.ingredients)) q.ingredients=[];
+  if(!(q.baseServings>0)) q.baseServings=2;
+}
+async function saveSalads(){ schedulePersist(); }
+const SALAD_SEED={
+  groups:[['Sałata',1],['Białko',1],['Warzywa',3],['Dodatki',2]],
+  items:{
+    'Sałata':[['Rukola',40,'g'],['Roszponka',40,'g'],['Sałata rzymska',60,'g'],['Sałata lodowa',60,'g'],['Mix sałat',60,'g'],['Szpinak baby',40,'g'],['Sałata masłowa',50,'g'],['Kapusta pekińska',60,'g']],
+    'Białko':[['Jajko',1,'szt'],['Pierś z kurczaka',100,'g'],['Tofu naturalne',80,'g'],['Tofu wędzone',80,'g'],['Ciecierzyca',60,'g'],['Fasola czerwona',60,'g'],['Ser feta',40,'g'],['Mozzarella',50,'g'],['Halloumi',60,'g'],['Tuńczyk',60,'g'],['Łosoś wędzony',50,'g']],
+    'Warzywa':[['Pomidor',80,'g'],['Pomidorki koktajlowe',80,'g'],['Ogórek',60,'g'],['Papryka',60,'g'],['Cebula czerwona',20,'g'],['Awokado',0.5,'szt'],['Marchew',40,'g'],['Rzodkiewka',30,'g'],['Burak',60,'g'],['Kukurydza',40,'g'],['Seler naciowy',30,'g'],['Brokuł',50,'g'],['Oliwki',20,'g']],
+    'Dodatki':[['Orzechy włoskie',15,'g'],['Pestki słonecznika',10,'g'],['Pestki dyni',10,'g'],['Grzanki',20,'g'],['Suszone pomidory',15,'g'],['Żurawina suszona',15,'g'],['Parmezan',15,'g'],['Sezam',5,'g'],['Kasza bulgur',40,'g'],['Quinoa',40,'g']]
+  },
+  sauces:[
+    {name:'Oliwa z cytryną',servings:2,ing:[['Oliwa z oliwek',2,'łyżka'],['Sok z cytryny',1,'łyżka'],['Sól',0.25,'łyżeczka'],['Pieprz',0.25,'łyżeczka']],text:'Wymieszaj wszystkie składniki.'},
+    {name:'Vinaigrette',servings:2,ing:[['Oliwa z oliwek',3,'łyżka'],['Ocet winny',1,'łyżka'],['Musztarda',1,'łyżeczka'],['Miód',1,'łyżeczka']],text:'Wstrząśnij w słoiczku lub wymieszaj trzepaczką, dopraw solą i pieprzem.'},
+    {name:'Sos jogurtowy',servings:2,ing:[['Jogurt naturalny',4,'łyżka'],['Czosnek',0.5,'ząbek'],['Sok z cytryny',1,'łyżeczka'],['Sól',0.25,'łyżeczka']],text:'Czosnek przeciśnij, wymieszaj z jogurtem i cytryną.'},
+    {name:'Sos musztardowo-miodowy',servings:2,ing:[['Oliwa z oliwek',2,'łyżka'],['Musztarda',1,'łyżka'],['Miód',1,'łyżeczka'],['Sok z cytryny',1,'łyżeczka']],text:'Wymieszaj do uzyskania gładkiego sosu.'},
+    {name:'Sos balsamiczny',servings:2,ing:[['Oliwa z oliwek',3,'łyżka'],['Ocet balsamiczny',1,'łyżka'],['Miód',1,'łyżeczka']],text:'Wymieszaj składniki.'},
+    {name:'Sos tahini',servings:2,ing:[['Pasta tahini',2,'łyżka'],['Sok z cytryny',1,'łyżka'],['Woda',2,'łyżka'],['Czosnek',0.5,'ząbek']],text:'Rozmieszaj tahini z wodą i cytryną na gładki sos.'}
+  ],
+  cats:['Lekkie','Sycące']
+};
+async function seedSaladsOnce(){
+  if(salads.seeded) return;
+  if(salads.groups.length || salads.items.length || salads.sauces.length){ salads.seeded=true; return; }
+  const gid={};
+  SALAD_SEED.groups.forEach(([n,r])=>{ const g={id:uid(),name:n,rand:r}; salads.groups.push(g); gid[n]=g.id; });
+  Object.keys(SALAD_SEED.items).forEach(gn=>SALAD_SEED.items[gn].forEach(([name,qty,unit])=>{
+    const p=ensureProduct(name,unit); p.isNew=false;
+    salads.items.push({id:uid(),group:gid[gn],name:p.name,qty,unit});
+  }));
+  SALAD_SEED.sauces.forEach(sc=>{
+    salads.sauces.push({id:uid(),name:sc.name,baseServings:sc.servings,instructions:sc.text,
+      ingredients:sc.ing.map(([name,qty,unit])=>{ const p=ensureProduct(name,unit); p.isNew=false; return {name:p.name,qty:String(qty),unit}; })});
+  });
+  SALAD_SEED.cats.forEach(n=>salads.cats.push({id:uid(),name:n}));
+  salads.seeded=true;
+  await saveProducts(); await saveSalads();
+}
+function renameInSalads(old,nn){
+  const fix=i=>{ if(i && i.name && namesMatch(i.name,old)) i.name=nn; };
+  salads.items.forEach(fix);
+  salads.sauces.forEach(s=>(s.ingredients||[]).forEach(fix));
+  salads.saved.forEach(s=>(s.items||[]).forEach(fix));
+  Object.keys(plan).forEach(k=>{
+    const day=plan[k]||{};
+    const all=[...STANDARD_SLOTS.flatMap(s=>day[s.key]||[]), ...((day.extra||[]).flatMap(e=>e.items||[]))];
+    all.forEach(it=>{ if(it.salad) (it.salad.items||[]).forEach(fix); });
+  });
+}
+function shuffledArr(a){ const r=a.slice(); for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
+function saladSelItems(sel){
+  const out=[];
+  salads.groups.forEach(g=>(sel.picks[g.id]||[]).forEach(pk=>{
+    const it=salads.items.find(x=>x.id===pk.id); if(!it) return;
+    out.push({name:it.name, qty:pk.qty, unit:it.unit||'', group:g.name});
+  }));
+  const sc=sel.sauce && salads.sauces.find(x=>x.id===sel.sauce);
+  if(sc){
+    const bs=sc.baseServings>0?sc.baseServings:1;
+    (sc.ingredients||[]).forEach(i=>{
+      if(!(i.name||'').trim()) return;
+      const q=convParse(i.qty);
+      out.push({name:i.name, qty:q==null?null:Math.round(q/bs*1000)/1000, unit:i.unit||'', group:'Sos: '+sc.name});
+    });
+  }
+  return out;
+}
+function saladAutoName(sel){
+  const parts=[];
+  salads.groups.slice(0,2).forEach(g=>{ const pk=(sel.picks[g.id]||[])[0]; const it=pk&&salads.items.find(x=>x.id===pk.id); if(it) parts.push(it.name); });
+  return parts.length ? 'Sałatka: '+parts.join(', ') : 'Sałatka';
+}
+function saladSnap(sel,name){
+  return {name:name||saladAutoName(sel), items:saladSelItems(sel).map(i=>({name:i.name,qty:i.qty,unit:i.unit})), sel:JSON.parse(JSON.stringify(sel))};
+}
+function saladSnapFromSaved(sv){
+  const items = sv.sel ? saladSelItems(sv.sel).map(i=>({name:i.name,qty:i.qty,unit:i.unit})) : [];
+  return {name:sv.name, items: items.length?items:(sv.items||[]), sel:sv.sel?JSON.parse(JSON.stringify(sv.sel)):null, saladId:sv.id};
+}
+function saladSnapToShopping(snap,servings){
+  return (snap.items||[]).map(i=>({name:i.name, unit:i.unit||'', qty:(i.qty===null||i.qty===undefined||i.qty==='')?null:Math.round(Number(i.qty)*servings*100)/100}));
+}
+function askNumberModal(title,def,label){
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div'); overlay.className='modal-overlay';
+    overlay.innerHTML=`<div class="modal" style="max-width:340px;"><h2>${escapeHtml(title)}</h2><div class="field"><label>${escapeHtml(label||'Liczba porcji')}</label><input type="number" min="1" id="an-v" value="${def}"></div><div class="modal-actions"><button class="btn btn-ghost" id="an-c">Anuluj</button><button class="btn btn-primary" id="an-ok">OK</button></div></div>`;
+    document.body.appendChild(overlay);
+    const done=v=>{ overlay.remove(); resolve(v); };
+    overlay.querySelector('#an-c').addEventListener('click',()=>done(null));
+    const ok=()=>done(Math.max(1,parseInt(overlay.querySelector('#an-v').value,10)||def));
+    overlay.querySelector('#an-ok').addEventListener('click',ok);
+    bindEnterSubmit(overlay.querySelector('#an-v'),ok);
+  });
+}
+function openSaladSaveDialog(snap, servings, existing, done){
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:380px;"><h2>Zapisz sałatkę</h2>
+    <div class="field"><label>Nazwa</label><input type="text" id="ss-name" value="${escapeHtml(existing?existing.name:snap.name)}"></div>
+    <div class="field"><label>Kategoria</label><select id="ss-cat"><option value="">Bez kategorii</option>${salads.cats.map(c=>`<option value="${c.id}"${existing&&existing.catId===c.id?' selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>lub nowa kategoria</label><input type="text" id="ss-newcat" placeholder="np. Fit"></div>
+    <div class="field"><label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;"><input type="checkbox" id="ss-fav" style="width:18px;height:18px;" ${existing&&existing.fav?'checked':''}> Ulubiona</label></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="ss-c">Anuluj</button><button class="btn btn-primary" id="ss-ok">Zapisz</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ss-c').addEventListener('click',()=>overlay.remove());
+  overlay.querySelector('#ss-ok').addEventListener('click', async ()=>{
+    const name=overlay.querySelector('#ss-name').value.trim(); if(!name){ overlay.querySelector('#ss-name').focus(); return; }
+    let catId=overlay.querySelector('#ss-cat').value||null;
+    const nc=overlay.querySelector('#ss-newcat').value.trim();
+    if(nc){ let c=salads.cats.find(x=>normalizeName(x.name)===normalizeName(nc)); if(!c){ c={id:uid(),name:nc}; salads.cats.push(c); } catId=c.id; }
+    const obj={id:existing?existing.id:uid(), name, catId, fav:overlay.querySelector('#ss-fav').checked, servings, sel:snap.sel, items:snap.items};
+    const idx=salads.saved.findIndex(x=>x.id===obj.id);
+    if(idx>=0) salads.saved[idx]=obj; else salads.saved.push(obj);
+    await saveSalads(); overlay.remove();
+    if(document.getElementById('tab-salads').classList.contains('active')) renderSaladsTab();
+    if(done) done(obj);
+  });
+}
+/* dodanie składników przepisu / szybkiego przepisu do listy zakupów (z wyborem porcji i opcji) */
+async function addRecipeToShopping(rec, btn){
+  if(!rec || !(rec.ingredients||[]).length){ alert('Ten przepis nie ma składników.'); return; }
+  const ask=await askIngredientChoices([{rec, servings:rec.baseServings||4}]);
+  if(!ask) return;
+  mergeIntoShopping(scaledIngredients(rec, ask.servings[rec.id], ask.choices[rec.id]),'recipe');
+  await saveProducts(); await saveShopping(); renderShopping();
+  if(btn){ const o=btn.textContent; btn.textContent='Dodano do listy'; btn.disabled=true; setTimeout(()=>{ btn.textContent=o; btn.disabled=false; },1600); }
+}
+function openSaladPreview(snap, servings){
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  const items=saladSnapToShopping(snap,servings);
+  overlay.innerHTML=`<div class="modal" style="max-width:400px;"><h2>${escapeHtml(snap.name)}</h2>
+    <div class="sub" style="margin-bottom:8px;">Porcje: ${servings}</div>
+    <ul class="preview-ing-list">${items.map(i=>`<li>${escapeHtml(i.name)}${i.qty!=null?' — '+i.qty+(i.unit?' '+escapeHtml(i.unit):''):''}</li>`).join('')}</ul>
+    <div class="modal-actions"><button class="btn btn-ghost" id="sp-close">Zamknij</button><button class="btn btn-primary" id="sp-save">Zapisz w sałatkach</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#sp-close').addEventListener('click',()=>overlay.remove());
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#sp-save').addEventListener('click',()=>{
+    const ex=snap.saladId && salads.saved.find(x=>x.id===snap.saladId);
+    openSaladSaveDialog(snap,servings,ex||null,()=>overlay.remove());
+  });
+}
+
+/* generator (okno): opts {mode:'plan'|'tab', sel, saved, servings, onPlan(snap,servings)} */
+async function openSaladGenerator(opts){
+  opts=opts||{};
+  await seedSaladsOnce();
+  const sel = opts.sel ? JSON.parse(JSON.stringify(opts.sel)) : {servings:opts.servings||2, picks:{}, sauce:null};
+  if(!sel.picks) sel.picks={};
+  if(opts.servings) sel.servings=opts.servings;
+  salads.groups.forEach(g=>{ sel.picks[g.id]=(sel.picks[g.id]||[]).filter(pk=>salads.items.some(i=>i.id===pk.id)); });
+  if(sel.sauce && !salads.sauces.some(s=>s.id===sel.sauce)) sel.sauce=null;
+  const locks={g:{}, sauce:false}, hist=[];
+  let editing=opts.saved||null, dirty=false;
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML='<div class="modal" style="max-width:480px;"><div id="sg-body"></div></div>';
+  document.body.appendChild(overlay);
+  const modal=overlay.querySelector('.modal'), body=overlay.querySelector('#sg-body');
+  const pushHist=()=>{ hist.push(JSON.stringify({picks:sel.picks,sauce:sel.sauce})); if(hist.length>30) hist.shift(); };
+  function randomize(){
+    pushHist(); dirty=true;
+    salads.groups.forEach(g=>{
+      if(locks.g[g.id]) return;
+      const pool=salads.items.filter(i=>i.group===g.id), n=Math.min(pool.length, Math.max(0,parseInt(g.rand,10)||0));
+      sel.picks[g.id]=shuffledArr(pool).slice(0,n).map(i=>({id:i.id,qty:i.qty}));
+    });
+    if(!locks.sauce && salads.sauces.length) sel.sauce=salads.sauces[Math.floor(Math.random()*salads.sauces.length)].id;
+  }
+  function draw(){
+    const st=modal.scrollTop;
+    const items=saladSelItems(sel);
+    const groupsHtml=salads.groups.map(g=>{
+      const pool=salads.items.filter(i=>i.group===g.id), on=new Set((sel.picks[g.id]||[]).map(p=>p.id));
+      return `<div class="sg-group" data-g="${g.id}"><div class="sg-head"><span>${escapeHtml(g.name)}</span><label><input type="checkbox" class="sg-lock" ${locks.g[g.id]?'checked':''}> zablokuj</label></div>
+        <div class="sg-chips">${pool.length?pool.map(i=>`<button type="button" class="sg-chip${on.has(i.id)?' on':''}" data-i="${i.id}">${escapeHtml(i.name)}</button>`).join(''):'<span class="sub">Brak elementów — dodaj je w zakładce Sałatki.</span>'}</div></div>`;
+    }).join('');
+    const sauceHtml=`<div class="sg-group"><div class="sg-head"><span>Sos</span><label><input type="checkbox" class="sg-lock-sauce" ${locks.sauce?'checked':''}> zablokuj</label></div>
+      <div class="sg-chips"><button type="button" class="sg-chip${!sel.sauce?' on':''}" data-s="">bez sosu</button>${salads.sauces.map(s=>`<button type="button" class="sg-chip${sel.sauce===s.id?' on':''}" data-s="${s.id}">${escapeHtml(s.name)}</button>`).join('')}</div></div>`;
+    const sumHtml = salads.groups.map(g=>(sel.picks[g.id]||[]).map(pk=>{
+      const it=salads.items.find(x=>x.id===pk.id); if(!it) return '';
+      return `<div class="sg-line" data-g="${g.id}" data-i="${pk.id}"><span style="flex:1;min-width:0;">${escapeHtml(it.name)}</span><input inputmode="decimal" class="sg-qty" value="${escapeHtml(String(pk.qty==null?'':pk.qty))}"><span class="sub" style="width:64px;">${escapeHtml(it.unit||'')} / porcję</span></div>`;
+    }).join('')).join('') + items.filter(i=>i.group.startsWith('Sos:')).map(i=>`<div class="sg-line"><span style="flex:1;min-width:0;">${escapeHtml(i.name)} <span class="sub">(${escapeHtml(i.group)})</span></span><span class="sub">${i.qty==null?'':i.qty+' '}${escapeHtml(i.unit||'')} / porcję</span></div>`).join('');
+    body.innerHTML=`<h2>Generator sałatek</h2>
+      <div class="sg-top">
+        <div class="sg-serv"><span class="sub">Porcje:</span><button type="button" class="btn btn-ghost" id="sg-minus">−</button><input type="number" min="1" id="sg-serv" value="${sel.servings}"><button type="button" class="btn btn-ghost" id="sg-plus">+</button></div>
+        <div class="sg-btns"><button type="button" class="btn btn-primary" id="sg-rand">Losuj</button><button type="button" class="btn btn-ghost" id="sg-undo" ${hist.length?'':'disabled'}>Cofnij</button><button type="button" class="btn btn-ghost" id="sg-clear">Wyczyść</button></div>
+      </div>
+      ${groupsHtml}${sauceHtml}
+      <div class="sg-sum"><div class="sg-sumh">Skład (ilości na jedną porcję — możesz je zmienić tylko dla tej sałatki)</div>${sumHtml||'<div class="sub">Nic nie wybrano — kliknij elementy albo „Losuj”.</div>'}</div>
+      <div class="modal-actions wrap">
+        <button class="btn btn-ghost" id="sg-close">Zamknij</button>
+        <button class="btn btn-ghost" id="sg-save">Zapisz sałatkę</button>
+        ${opts.mode==='plan'?'<button class="btn btn-primary" id="sg-plan">Dodaj do planu</button>':'<button class="btn btn-primary" id="sg-shop">Do listy zakupów</button>'}
+      </div>`;
+    modal.scrollTop=st;
+    bind();
+  }
+  function bind(){
+    const servI=body.querySelector('#sg-serv');
+    const setServ=v=>{ sel.servings=Math.max(1,Math.round(v)||1); servI.value=sel.servings; dirty=true; };
+    servI.addEventListener('change',()=>setServ(parseInt(servI.value,10)));
+    body.querySelector('#sg-minus').addEventListener('click',()=>setServ(sel.servings-1));
+    body.querySelector('#sg-plus').addEventListener('click',()=>setServ(sel.servings+1));
+    body.querySelector('#sg-rand').addEventListener('click',()=>{ randomize(); draw(); });
+    body.querySelector('#sg-undo').addEventListener('click',()=>{ const h=hist.pop(); if(!h) return; const p=JSON.parse(h); sel.picks=p.picks; sel.sauce=p.sauce; draw(); });
+    body.querySelector('#sg-clear').addEventListener('click',()=>{
+      pushHist(); dirty=true;
+      salads.groups.forEach(g=>{ if(!locks.g[g.id]) sel.picks[g.id]=[]; });
+      if(!locks.sauce) sel.sauce=null;
+      draw();
+    });
+    body.querySelectorAll('.sg-group[data-g]').forEach(grp=>{
+      const gid=grp.dataset.g;
+      grp.querySelector('.sg-lock').addEventListener('change',e=>{ locks.g[gid]=e.target.checked; });
+      grp.querySelectorAll('.sg-chip').forEach(ch=>ch.addEventListener('click',()=>{
+        const arr=sel.picks[gid]||(sel.picks[gid]=[]), k=arr.findIndex(p=>p.id===ch.dataset.i);
+        if(k>=0) arr.splice(k,1); else { const it=salads.items.find(i=>i.id===ch.dataset.i); arr.push({id:it.id,qty:it.qty}); }
+        dirty=true; draw();
+      }));
+    });
+    body.querySelector('.sg-lock-sauce').addEventListener('change',e=>{ locks.sauce=e.target.checked; });
+    body.querySelectorAll('.sg-chip[data-s]').forEach(ch=>ch.addEventListener('click',()=>{ sel.sauce=ch.dataset.s||null; dirty=true; draw(); }));
+    body.querySelectorAll('.sg-line[data-i] .sg-qty').forEach(inp=>inp.addEventListener('change',()=>{
+      const ln=inp.closest('.sg-line'), pk=(sel.picks[ln.dataset.g]||[]).find(p=>p.id===ln.dataset.i); if(!pk) return;
+      const q=convParse(inp.value); if(q!=null&&q>0){ pk.qty=q; dirty=true; } else inp.value=pk.qty;
+    }));
+    const hasAny=()=>saladSelItems(sel).length>0;
+    body.querySelector('#sg-close').addEventListener('click',()=>{ if(dirty && hasAny() && !confirm('Masz niezapisaną sałatkę. Zamknąć bez zapisywania?')) return; overlay.remove(); });
+    body.querySelector('#sg-save').addEventListener('click',()=>{
+      if(!hasAny()){ alert('Wybierz przynajmniej jeden składnik.'); return; }
+      openSaladSaveDialog(saladSnap(sel), sel.servings, editing, obj=>{ editing=obj; dirty=false; const b=body.querySelector('#sg-save'); if(b) b.textContent='Zapisano'; });
+    });
+    const plan=body.querySelector('#sg-plan');
+    if(plan) plan.addEventListener('click',()=>{
+      if(!hasAny()){ alert('Wybierz przynajmniej jeden składnik.'); return; }
+      const snap=saladSnap(sel); if(editing){ snap.saladId=editing.id; snap.name=editing.name; }
+      overlay.remove(); if(opts.onPlan) opts.onPlan(snap, sel.servings);
+    });
+    const shop=body.querySelector('#sg-shop');
+    if(shop) shop.addEventListener('click', async ()=>{
+      if(!hasAny()){ alert('Wybierz przynajmniej jeden składnik.'); return; }
+      mergeIntoShopping(saladSnapToShopping(saladSnap(sel),sel.servings),'recipe');
+      await saveProducts(); await saveShopping(); renderShopping();
+      shop.textContent='Dodano do listy'; shop.disabled=true; setTimeout(()=>{ shop.textContent='Do listy zakupów'; shop.disabled=false; },1600);
+    });
+  }
+  draw();
+}
+
+/* zakładka Sałatki */
+const saladUi={filter:'all', open:{}};
+async function renderSaladsTab(){
+  await seedSaladsOnce();
+  const root=document.getElementById('saladsRoot');
+  const sf=saladUi.filter;
+  const list=salads.saved.filter(s=> sf==='all' || (sf==='fav'?s.fav:s.catId===sf));
+  const catName=id=>{ const c=salads.cats.find(x=>x.id===id); return c?c.name:''; };
+  const opened=k=>saladUi.open[k]?' open':'';
+  root.innerHTML=`
+    <div class="sub" style="margin-bottom:10px;">Sałatki są tylko tutaj — nie trafiają do przepisów. Elementy to zwykłe produkty z bazy produktów.</div>
+    <div style="margin-bottom:12px;"><button class="btn btn-primary" id="salGen">Generuj sałatkę</button></div>
+    <div class="filter-row" id="salFilters" style="margin-bottom:10px;">
+      <span class="filter-pill${sf==='all'?' active':''}" data-f="all">Wszystkie</span><span class="filter-pill${sf==='fav'?' active':''}" data-f="fav">Ulubione</span>
+      ${salads.cats.map(c=>`<span class="filter-pill${sf===c.id?' active':''}" data-f="${c.id}">${escapeHtml(c.name)}</span>`).join('')}
+    </div>
+    <div id="salSaved">${list.length?list.map(s=>`
+      <div class="sv-card" data-id="${s.id}">
+        <div class="sv-top"><b>${escapeHtml(s.name)}</b><button class="sv-fav" title="Ulubiona">${s.fav?'★':'☆'}</button></div>
+        <div class="sub">${[catName(s.catId),(s.servings||2)+' porcji'].filter(Boolean).join(' · ')}</div>
+        <div class="sub" style="margin:3px 0 6px;">${escapeHtml((saladSnapFromSaved(s).items||[]).map(i=>i.name).join(', '))}</div>
+        <div class="sv-actions"><button class="btn btn-ghost sv-edit">Edytuj</button><button class="btn btn-ghost sv-shop">Do zakupów</button><button class="btn btn-ghost sv-del">Usuń</button></div>
+      </div>`).join(''):'<div class="empty-state">Brak zapisanych sałatek. Kliknij „Generuj sałatkę”, złóż jedną i zapisz.</div>'}</div>
+    <details class="cat-manage-section" data-k="base"${opened('base')}><summary style="cursor:pointer;font-weight:700;font-size:15px;">Baza elementów <span class="sub" style="font-weight:400;">(${salads.items.length})</span></summary><div id="salBase"></div></details>
+    <details class="cat-manage-section" data-k="sauces"${opened('sauces')}><summary style="cursor:pointer;font-weight:700;font-size:15px;">Sosy <span class="sub" style="font-weight:400;">(${salads.sauces.length})</span></summary><div id="salSauces"></div></details>
+    <details class="cat-manage-section" data-k="cats"${opened('cats')}><summary style="cursor:pointer;font-weight:700;font-size:15px;">Kategorie sałatek <span class="sub" style="font-weight:400;">(${salads.cats.length})</span></summary><div id="salCats"></div></details>`;
+  root.querySelectorAll('details[data-k]').forEach(d=>d.addEventListener('toggle',()=>{ saladUi.open[d.dataset.k]=d.open; }));
+  root.querySelector('#salGen').addEventListener('click',()=>openSaladGenerator({mode:'tab'}));
+  root.querySelectorAll('#salFilters .filter-pill').forEach(p=>p.addEventListener('click',()=>{ saladUi.filter=p.dataset.f; renderSaladsTab(); }));
+  root.querySelectorAll('.sv-card').forEach(card=>{
+    const s=salads.saved.find(x=>x.id===card.dataset.id);
+    card.querySelector('.sv-fav').addEventListener('click', async ()=>{ s.fav=!s.fav; await saveSalads(); renderSaladsTab(); });
+    card.querySelector('.sv-edit').addEventListener('click',()=>openSaladGenerator({mode:'tab', sel:s.sel||undefined, saved:s, servings:s.servings}));
+    card.querySelector('.sv-shop').addEventListener('click', async ()=>{
+      const n=await askNumberModal('Do listy zakupów', s.servings||2); if(n==null) return;
+      mergeIntoShopping(saladSnapToShopping(saladSnapFromSaved(s),n),'recipe');
+      await saveProducts(); await saveShopping(); renderShopping();
+    });
+    card.querySelector('.sv-del').addEventListener('click', async ()=>{
+      if(!confirm(`Usunąć sałatkę „${s.name}”?`)) return;
+      salads.saved=salads.saved.filter(x=>x.id!==s.id); await saveSalads(); renderSaladsTab();
+    });
+  });
+  renderSaladBase(root.querySelector('#salBase'));
+  renderSaladSauces(root.querySelector('#salSauces'));
+  renderSaladCats(root.querySelector('#salCats'));
+}
+function renderSaladBase(box){
+  const dlOpts=products.filter(isFoodProduct).map(p=>`<option value="${escapeHtml(p.name)}"></option>`).join('');
+  box.innerHTML=`<datalist id="salDL">${dlOpts}</datalist>` + salads.groups.map(g=>{
+    const items=salads.items.filter(i=>i.group===g.id);
+    return `<details class="sb-group" data-g="${g.id}"${saladUi.open['g'+g.id]?' open':''}><summary style="cursor:pointer;font-weight:600;padding:6px 0;">${escapeHtml(g.name)} <span class="sub" style="font-weight:400;">(${items.length})</span></summary>
+      <div class="sb-ghead"><input type="text" class="sb-gname plain-name" value="${escapeHtml(g.name)}" title="Nazwa grupy"><label>losuj ile<input type="number" min="0" class="sb-rand" value="${g.rand==null?1:g.rand}"></label><button class="btn-icon sb-gdel" title="Usuń grupę wraz z elementami">✕</button></div>
+      ${items.map(i=>`<div class="sb-row" data-i="${i.id}"><input type="text" class="sb-name plain-name" value="${escapeHtml(i.name)}" title="Zmiana nazwy zmienia produkt w całej aplikacji"><input inputmode="decimal" class="sb-qty" value="${escapeHtml(String(i.qty==null?'':i.qty))}" placeholder="ilość"><select class="sb-unit">${unitOptionsHtml(i.unit||'')}</select><button class="btn-icon sb-del" title="Usuń z bazy sałatek (produkt zostaje)">✕</button></div>`).join('')}
+      <div class="sb-row sb-add" data-g="${g.id}"><input type="text" class="sb-aname" list="salDL" placeholder="dodaj produkt..." autocomplete="off"><input inputmode="decimal" class="sb-aqty" placeholder="ilość"><select class="sb-aunit">${unitOptionsHtml('')}</select><button class="btn btn-ghost sb-aadd">+</button></div>
+    </details>`;
+  }).join('') + `<div class="add-item-bar" style="margin-top:10px;max-width:320px;"><input type="text" id="salNewGroup" placeholder="nowa grupa, np. Zboża"><button class="btn btn-ghost" id="salNewGroupBtn">+</button></div>`;
+  box.querySelectorAll('.sb-group').forEach(d=>{
+    const gid=d.dataset.g, g=salads.groups.find(x=>x.id===gid);
+    d.addEventListener('toggle',()=>{ saladUi.open['g'+gid]=d.open; });
+    d.querySelector('.sb-gname').addEventListener('change', async e=>{ const n=e.target.value.trim(); if(!n){ e.target.value=g.name; return; } g.name=n; await saveSalads(); renderSaladsTab(); });
+    d.querySelector('.sb-rand').addEventListener('change', async e=>{ g.rand=Math.max(0,parseInt(e.target.value,10)||0); await saveSalads(); });
+    d.querySelector('.sb-gdel').addEventListener('click', async ()=>{
+      if(!confirm(`Usunąć grupę „${g.name}” i jej elementy z generatora? Produkty zostaną w bazie produktów.`)) return;
+      salads.groups=salads.groups.filter(x=>x.id!==gid); salads.items=salads.items.filter(i=>i.group!==gid);
+      await saveSalads(); renderSaladsTab();
+    });
+    d.querySelectorAll('.sb-row[data-i]').forEach(row=>{
+      const it=salads.items.find(x=>x.id===row.dataset.i);
+      const nameI=row.querySelector('.sb-name');
+      nameI.addEventListener('change', async ()=>{
+        const nn=nameI.value.trim(); if(!nn||nn===it.name){ nameI.value=it.name; return; }
+        const pr=findProduct(it.name);
+        if(pr){ const ok=await renameProductEverywhere(pr,nn); if(!ok){ nameI.value=it.name; return; } }
+        else it.name=nn;
+        renderSaladsTab();
+      });
+      row.querySelector('.sb-qty').addEventListener('change', async e=>{ const q=convParse(e.target.value); if(q!=null&&q>0) it.qty=q; else e.target.value=it.qty; await saveSalads(); });
+      row.querySelector('.sb-unit').addEventListener('change', async e=>{ it.unit=e.target.value; await saveSalads(); });
+      row.querySelector('.sb-del').addEventListener('click', async ()=>{ salads.items=salads.items.filter(x=>x.id!==it.id); await saveSalads(); renderSaladsTab(); });
+    });
+    const add=d.querySelector('.sb-add');
+    const doAdd=async ()=>{
+      const name=add.querySelector('.sb-aname').value.trim(); if(!name) return;
+      const unit=add.querySelector('.sb-aunit').value||'', q=convParse(add.querySelector('.sb-aqty').value);
+      const p=ensureProduct(name,unit);
+      if(salads.items.some(i=>i.group===gid && namesMatch(i.name,p.name))){ alert(`„${p.name}” jest już w tej grupie.`); return; }
+      salads.items.push({id:uid(),group:gid,name:p.name,qty:q==null?50:q,unit:unit||p.unit||'g'});
+      saladUi.open['g'+gid]=true; saladUi.open.base=true;
+      await saveProducts(); await saveSalads(); renderSaladsTab();
+    };
+    add.querySelector('.sb-aadd').addEventListener('click',doAdd);
+    bindEnterSubmit(add.querySelector('.sb-aname'),doAdd);
+    add.querySelector('.sb-aname').addEventListener('input',e=>{ const pr=findProduct(e.target.value.trim()); if(pr&&pr.unit) add.querySelector('.sb-aunit').innerHTML=unitOptionsHtml(pr.unit); });
+  });
+  const addG=async ()=>{ const inp=box.querySelector('#salNewGroup'), n=inp.value.trim(); if(!n) return; salads.groups.push({id:uid(),name:n,rand:1}); saladUi.open.base=true; await saveSalads(); renderSaladsTab(); };
+  box.querySelector('#salNewGroupBtn').addEventListener('click',addG);
+  bindEnterSubmit(box.querySelector('#salNewGroup'),addG);
+}
+function renderSaladSauces(box){
+  box.innerHTML=salads.sauces.map(s=>`<details class="sb-group" data-s="${s.id}"${saladUi.open['s'+s.id]?' open':''}><summary style="cursor:pointer;font-weight:600;padding:6px 0;">${escapeHtml(s.name)}</summary>
+    <div class="sb-ghead"><input type="text" class="ss-sname plain-name" value="${escapeHtml(s.name)}"><label>porcje<input type="number" min="1" class="ss-sserv" value="${s.baseServings||2}"></label><button class="btn-icon ss-sdel" title="Usuń sos">✕</button></div>
+    <div class="sub" style="margin:2px 0 4px;">Składniki na podane porcje (tak jak dodatki w przepisach):</div>
+    <div class="ss-ings"></div>
+    <div class="field" style="margin-top:6px;"><label>Przygotowanie</label><textarea class="ss-stext" rows="2">${escapeHtml(s.instructions||'')}</textarea></div>
+  </details>`).join('') + `<div class="add-item-bar" style="margin-top:10px;max-width:320px;"><input type="text" id="salNewSauce" placeholder="nowy sos"><button class="btn btn-ghost" id="salNewSauceBtn">+</button></div>`;
+  box.querySelectorAll('details[data-s]').forEach(d=>{
+    const s=salads.sauces.find(x=>x.id===d.dataset.s);
+    d.addEventListener('toggle',()=>{ saladUi.open['s'+s.id]=d.open; });
+    d.querySelector('.ss-sname').addEventListener('change', async e=>{ const n=e.target.value.trim(); if(!n){ e.target.value=s.name; return; } s.name=n; await saveSalads(); renderSaladsTab(); });
+    d.querySelector('.ss-sserv').addEventListener('change', async e=>{ s.baseServings=Math.max(1,parseInt(e.target.value,10)||1); await saveSalads(); });
+    d.querySelector('.ss-stext').addEventListener('change', async e=>{ s.instructions=e.target.value; await saveSalads(); });
+    d.querySelector('.ss-sdel').addEventListener('click', async ()=>{
+      if(!confirm(`Usunąć sos „${s.name}”?`)) return;
+      salads.sauces=salads.sauces.filter(x=>x.id!==s.id); await saveSalads(); renderSaladsTab();
+    });
+    if(!Array.isArray(s.ingredients)) s.ingredients=[];
+    mountIngEditor(d.querySelector('.ss-ings'), s.ingredients, {simple:true, onChange: async ()=>{
+      s.ingredients.forEach(i=>{ if((i.name||'').trim()){ const p=ensureProduct(i.name.trim(), i.unit); } });
+      await saveProducts(); await saveSalads();
+    }});
+  });
+  const addS=async ()=>{ const inp=box.querySelector('#salNewSauce'), n=inp.value.trim(); if(!n) return; const s={id:uid(),name:n,baseServings:2,ingredients:[],instructions:''}; salads.sauces.push(s); saladUi.open.sauces=true; saladUi.open['s'+s.id]=true; await saveSalads(); renderSaladsTab(); };
+  box.querySelector('#salNewSauceBtn').addEventListener('click',addS);
+  bindEnterSubmit(box.querySelector('#salNewSauce'),addS);
+}
+function renderSaladCats(box){
+  box.innerHTML=salads.cats.map(c=>`<div class="sb-row sc-row" data-c="${c.id}" style="grid-template-columns:minmax(0,1fr) 32px;"><input type="text" class="sc-name plain-name" value="${escapeHtml(c.name)}"><button class="btn-icon sc-del" title="Usuń kategorię">✕</button></div>`).join('')
+    + `<div class="add-item-bar" style="margin-top:10px;max-width:320px;"><input type="text" id="salNewCat" placeholder="nowa kategoria"><button class="btn btn-ghost" id="salNewCatBtn">+</button></div>`;
+  box.querySelectorAll('.sc-row').forEach(row=>{
+    const c=salads.cats.find(x=>x.id===row.dataset.c);
+    row.querySelector('.sc-name').addEventListener('change', async e=>{ const n=e.target.value.trim(); if(!n){ e.target.value=c.name; return; } c.name=n; await saveSalads(); renderSaladsTab(); });
+    row.querySelector('.sc-del').addEventListener('click', async ()=>{
+      if(!confirm(`Usunąć kategorię „${c.name}”? Sałatki z tej kategorii zostaną bez kategorii.`)) return;
+      salads.cats=salads.cats.filter(x=>x.id!==c.id); salads.saved.forEach(s=>{ if(s.catId===c.id) s.catId=null; });
+      if(saladUi.filter===c.id) saladUi.filter='all';
+      await saveSalads(); renderSaladsTab();
+    });
+  });
+  const addC=async ()=>{ const inp=box.querySelector('#salNewCat'), n=inp.value.trim(); if(!n) return; if(!salads.cats.some(c=>normalizeName(c.name)===normalizeName(n))) salads.cats.push({id:uid(),name:n}); saladUi.open.cats=true; await saveSalads(); renderSaladsTab(); };
+  box.querySelector('#salNewCatBtn').addEventListener('click',addC);
+  bindEnterSubmit(box.querySelector('#salNewCat'),addC);
+}
 
 /* ============ PRZELICZNIKI (dane w produkcie: product.conv = {gCup, cook, water}) ============ */
 const CONV_UNITS=[{k:'szklanka',label:'szklanka (250 ml)',ml:250},{k:'łyżka',label:'łyżka (15 ml)',ml:15},{k:'łyżeczka',label:'łyżeczka (5 ml)',ml:5},{k:'ml',label:'ml',ml:1},{k:'g',label:'g',ml:null}];
@@ -4587,7 +5192,7 @@ function exportFullBackup(){
     version: 1,
     app: 'planer-obiadow',
     exportedAt: new Date().toISOString(),
-    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes,
+    recipes, plan, shopping, products, tags, proposals, breakfastPlan, people, quickRecipes, salads,
     mealCategories, recipeCategories, shoppingCategories, units
   };
   downloadBlob(JSON.stringify(backup, null, 2), 'planer-obiadow-backup.json', 'application/json;charset=utf-8');
@@ -4610,6 +5215,7 @@ document.getElementById('fullRestoreFile').addEventListener('change', async e=>{
     breakfastPlan = data.breakfastPlan || {};
     people = data.people || [];
     quickRecipes = data.quickRecipes || [];
+quickRecipes.forEach(normQuick); salads = normSalads(data.salads);
     quickRecipes.forEach(q=>{
       if(!Array.isArray(q.mealCategories)) q.mealCategories=[];
       if(!Array.isArray(q.categories)) q.categories=[];
