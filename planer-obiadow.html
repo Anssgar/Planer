@@ -272,6 +272,16 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .img-preview-wrap{display:flex;align-items:center;gap:10px;margin-top:8px;}
 .img-preview-wrap img{width:90px;height:66px;object-fit:cover;border-radius:8px;border:1px solid var(--line);}
 .img-preview-wrap button{font-size:11.5px;}
+.img-preview-wrap.cr-wrap{flex-direction:column;align-items:stretch;gap:6px;}
+.cr-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:var(--bg);touch-action:none;cursor:grab;}
+.cr-frame:active{cursor:grabbing;}
+.cr-frame img,.cr-card img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+.cr-card{width:100%;aspect-ratio:2.52/1;overflow:hidden;border-radius:8px;border:1px solid var(--line);background:var(--bg);}
+.cr-zoom{display:flex;align-items:center;gap:10px;margin:0;text-transform:none;letter-spacing:0;}
+.cr-zoom input{flex:1;height:auto;padding:0;}
+.crop-thumb{width:calc(100% + 32px);margin:-16px -16px 10px;height:130px;overflow:hidden;background:var(--bg);}
+.crop-hero{width:calc(100% + 44px);margin:-22px -22px 14px;height:min(56vw,280px);overflow:hidden;background:var(--bg);}
+.crop-thumb img,.crop-hero img{width:100%;height:100%;object-fit:cover;display:block;}
 
 .preview-hero{width:calc(100% + 44px);margin:-22px -22px 14px;display:block;max-height:280px;object-fit:cover;}
 .preview-ing-list{margin:0 0 14px;padding-left:18px;font-size:13.5px;}
@@ -615,7 +625,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 03.11.2026, 12:56</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 09.11.2026, 13:25</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -795,6 +805,50 @@ function migrateCategoryList(arr, defaults){
   if(typeof arr[0]==='string') return arr.map(n=>({id:uid(), name:n}));
   return arr.map(c=>({id:c.id||uid(), name:c.name}));
 }
+/* kadr zdjęcia: imageFocus = {x,y (0..1 — punkt kadru), zoom (1..3)}, wspólny dla karty i podglądu */
+function cropFocusStyle(o){
+  const f=(o&&o.imageFocus)||{};
+  const x=Math.round((f.x==null?0.5:f.x)*100), y=Math.round((f.y==null?0.5:f.y)*100), z=f.zoom>1?f.zoom:1;
+  return `object-position:${x}% ${y}%;transform-origin:${x}% ${y}%;${z>1?'transform:scale('+z+');':''}`;
+}
+function cropImgHtml(o,kind){ return `<div class="crop-${kind}"><img src="${o.imageData}" alt="" style="${cropFocusStyle(o)}"></div>`; }
+function focusProp(f,img){
+  if(!img || !f) return undefined;
+  if(f.x===0.5 && f.y===0.5 && f.zoom===1) return undefined;
+  const r=v=>Math.round(v*1000)/1000;
+  return {x:r(f.x), y:r(f.y), zoom:r(f.zoom)};
+}
+function setupImageCropper(wrap, thumb, focus){
+  thumb.style.display='none'; wrap.classList.add('cr-wrap');
+  const box=document.createElement('div');
+  box.innerHTML=`<div class="cr-frame"><img alt=""></div>
+    <div class="sub" style="margin:4px 0;">Przeciągnij zdjęcie, aby ustawić kadr. To samo ustawienie jest na karcie i w podglądzie.</div>
+    <label class="cr-zoom"><span class="sub">Powiększenie</span><input type="range" min="1" max="3" step="0.05"></label>
+    <div class="sub" style="margin:8px 0 3px;">Tak będzie wyglądać na karcie:</div>
+    <div class="cr-card"><img alt=""></div>`;
+  wrap.insertBefore(box, wrap.firstChild);
+  const frame=box.querySelector('.cr-frame'), fImg=frame.querySelector('img'), cImg=box.querySelector('.cr-card img'), range=box.querySelector('input');
+  function apply(){
+    const st=cropFocusStyle({imageFocus:focus});
+    fImg.style.cssText=st; cImg.style.cssText=st; range.value=focus.zoom;
+  }
+  const clamp=v=>Math.max(0,Math.min(1,v));
+  let drag=null;
+  frame.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,fx:focus.x,fy:focus.y}; try{ frame.setPointerCapture(e.pointerId); }catch(_e){} });
+  frame.addEventListener('pointermove',e=>{
+    if(!drag) return;
+    const r=frame.getBoundingClientRect(), nw=fImg.naturalWidth, nh=fImg.naturalHeight; if(!nw||!nh) return;
+    const sc=Math.max(r.width/nw, r.height/nh), ox=focus.zoom*nw*sc-r.width, oy=focus.zoom*nh*sc-r.height;
+    if(ox>0.5) focus.x=clamp(drag.fx-(e.clientX-drag.x)/ox);
+    if(oy>0.5) focus.y=clamp(drag.fy-(e.clientY-drag.y)/oy);
+    apply();
+  });
+  ['pointerup','pointercancel'].forEach(n=>frame.addEventListener(n,()=>{ drag=null; }));
+  range.addEventListener('input',()=>{ focus.zoom=parseFloat(range.value)||1; apply(); });
+  function setSrc(src){ fImg.src=src; cImg.src=src; apply(); }
+  if(thumb.getAttribute('src')) setSrc(thumb.getAttribute('src')); else apply();
+  return {setSrc};
+}
 function resizeImageFile(file, maxDim, quality){
   maxDim = maxDim || 900; quality = quality || 0.8;
   return new Promise((resolve,reject)=>{
@@ -821,8 +875,8 @@ function resizeImageFile(file, maxDim, quality){
 
 /* ===== SyncGuard: wskaźnik zapisu, ostrzeżenie przy wyjściu, kopia lokalna niezapisanych zmian ===== */
 const SyncGuard = (function(){
-  const states = {};   // źródło -> 'saving' | 'pending' | 'notloaded' | 'saved'
-  let pill = null, hideT = null;
+  const states = {};   // źródło -> 'saving' | 'pending' | 'notloaded' | 'saved' | 'cache'
+  let pill = null, hideT = null, cacheText = '';
   function ensure(){
     if(pill) return pill;
     pill = document.createElement('div');
@@ -836,7 +890,8 @@ const SyncGuard = (function(){
     const p = ensure();
     clearTimeout(hideT);
     let text, bg, fg, auto = false;
-    if(vals.includes('notloaded')){ text='⚠ Brak połączenia — dane niewczytane, zmiany się nie zapiszą. Odśwież stronę, gdy będzie internet.'; bg='#C1440E'; fg='#fff'; }
+    if(vals.includes('cache')){ text='⏳ '+cacheText; bg='#FFF3CD'; fg='#6B5200'; }
+    else if(vals.includes('notloaded')){ text='⚠ Brak połączenia — dane niewczytane, zmiany się nie zapiszą. Odśwież stronę, gdy będzie internet.'; bg='#C1440E'; fg='#fff'; }
     else if(vals.includes('pending')){ text='⚠ Niezapisane zmiany — ponawiam, gdy wróci internet'; bg='#C1440E'; fg='#fff'; }
     else if(vals.includes('saving')){ text='⏳ Zapisuję…'; bg='#FFF3CD'; fg='#6B5200'; }
     else if(vals.length){ text='✓ Zapisano'; bg='#DDEEDD'; fg='#2F5A2F'; auto=true; }
@@ -853,6 +908,8 @@ const SyncGuard = (function(){
     saved: src=>set(src||'main','saved'),
     pending: src=>set(src||'main','pending'),
     notLoaded: src=>set(src||'main','notloaded'),
+    cache: t=>{ cacheText=t; set('main','cache'); },
+    clear: src=>{ delete states[src||'main']; render(); },
     loaded: src=>{ if(states[src||'main']==='notloaded'){ states[src||'main']='saved'; delete states[src||'main']; render(); } },
     isDirty: ()=>Object.values(states).some(v=>v==='saving' || v==='pending')
   };
@@ -881,18 +938,33 @@ const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b/';
 let storageReady = JSONBIN_BIN_ID !== 'TWOJ_BIN_ID' && JSONBIN_API_KEY !== 'TWOJ_X_MASTER_KEY';
 let persistTimer=null;
 
+/* kopia lokalna (bez zdjęć) — szybki start i praca przy słabym internecie */
+const LocalCache = {
+  _k: id => 'planerCache:' + id,
+  strip(st){
+    const o = Object.assign({}, st);
+    const noImg = arr => (arr||[]).map(x=> (x && x.imageData) ? Object.assign({}, x, {imageData:''}) : x);
+    o.recipes = noImg(st.recipes); o.quickRecipes = noImg(st.quickRecipes); o.proposals = noImg(st.proposals);
+    return o;
+  },
+  save(id, st, shopDirty){ try{ localStorage.setItem(this._k(id), JSON.stringify({at:Date.now(), shopDirty:!!shopDirty, data:this.strip(st)})); return true; }catch(e){ return false; } },
+  load(id){ try{ const t=localStorage.getItem(this._k(id)); return t?JSON.parse(t):null; }catch(e){ return null; } }
+};
+let cacheMode=false, shopDirty=false, syncing=false, syncTimer=null, shopSaveFlag=false;
 function fetchWithTimeout(url, options, ms){
   ms = ms || 8000;
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(), ms);
   return fetch(url, {...options, signal: controller.signal}).finally(()=>clearTimeout(timer));
 }
-async function remoteLoad(){
+async function remoteLoad(opts){
+  opts = opts || {};
+  const ms = opts.ms || 8000;
   if(!storageReady) return null;
   try{
     const res = await fetchWithTimeout(JSONBIN_BASE + JSONBIN_BIN_ID + '/latest', {
       headers: { 'X-Master-Key': JSONBIN_API_KEY }
-    }, 8000);
+    }, ms);
     if(!res.ok){
       let bodyText='';
       try{ bodyText = await res.text(); }catch(_e){}
@@ -901,9 +973,9 @@ async function remoteLoad(){
     const data = await res.json();
     return data.record || {};
   }catch(e){
-    const reason = e.name==='AbortError' ? 'Przekroczono limit czasu (8s) — brak odpowiedzi z jsonbin.io.' : (e.message || String(e));
+    const reason = e.name==='AbortError' ? 'Przekroczono limit czasu ('+Math.round(ms/1000)+'s) — brak odpowiedzi z jsonbin.io.' : (e.message || String(e));
     console.error('Błąd wczytywania z jsonbin.io', e);
-    showStorageWarning('Nie udało się wczytać danych z jsonbin.io. Szczegóły: ' + reason, true);
+    if(!opts.quiet) showStorageWarning('Nie udało się wczytać danych z jsonbin.io. Szczegóły: ' + reason, true);
     return null;
   }
 }
@@ -933,6 +1005,7 @@ async function remoteSaveNow(){
     if(v === persistVersion){
       persistDirty = false;
       PendingBackup.clear(JSONBIN_BIN_ID);
+      LocalCache.save(JSONBIN_BIN_ID, currentState(), false);
       SyncGuard.saved();
     } else {
       persistTimer = setTimeout(remoteSaveNow, 300);   // w trakcie zapisu były nowe zmiany
@@ -946,7 +1019,14 @@ async function remoteSaveNow(){
 }
 function schedulePersist(){
   if(!storageReady) return;
-  if(!remoteLoaded){ SyncGuard.notLoaded(); return; }
+  if(!remoteLoaded){
+    if(cacheMode){   // praca z kopii: do synchronizacji zapisujemy tylko lokalnie (lista zakupów); reszta nie zostanie wysłana
+      if(!shopSaveFlag) showStorageWarning('Tryb offline: ta zmiana nie zostanie zapisana. Do czasu synchronizacji można edytować tylko listę zakupów.', false);
+      LocalCache.save(JSONBIN_BIN_ID, currentState(), shopDirty);
+      return;
+    }
+    SyncGuard.notLoaded(); return;
+  }
   persistVersion++; persistDirty = true;
   PendingBackup.save(JSONBIN_BIN_ID, currentState());
   SyncGuard.saving();
@@ -954,6 +1034,7 @@ function schedulePersist(){
   persistTimer = setTimeout(remoteSaveNow, 600);
 }
 window.addEventListener('online', ()=>{
+  if(cacheMode){ backgroundSync(); return; }
   if(!remoteLoaded && storageReady){ location.reload(); return; }
   if(persistDirty) remoteSaveNow();
 });
@@ -974,12 +1055,32 @@ function showStorageWarning(msg, persistent){
 }
 
 /* ============ STORAGE ============ */
+function renderEverything(){
+  const run=f=>{ try{ f(); }catch(e){ console.error(e); } };
+  run(renderWeekRange); run(renderDayGrid); run(renderBfWeekRange); run(renderBfDayGrid);
+  run(renderMealFilterRow); run(renderCatFilterRow); run(renderTagFilterRow); run(()=>renderRecipes(''));
+  run(renderQuickMealFilterRow); run(renderQuickCatFilterRow); run(renderQuickTagFilterRow); run(()=>renderQuickRecipes(''));
+  run(renderShopping); run(renderProposals); run(()=>renderProducts());
+  run(renderPeopleManage);
+  run(()=>{ const t=document.querySelector('nav.tabs button.active'); if(t&&t.dataset.tab==='salads') renderSaladsTab(); if(t&&t.dataset.tab==='convert') renderConvertTab(); });
+}
 async function loadAll(){
   if(!storageReady){
     showStorageWarning('Magazyn danych nie jest skonfigurowany (BIN_ID / API_KEY na górze pliku) — aplikacja działa tylko lokalnie w tej karcie, dane nie będą zapisane ani współdzielone.', true);
     return;
   }
-  const data = await remoteLoad();
+  const cache = LocalCache.load(JSONBIN_BIN_ID);
+  if(cache && cache.data && (cache.data.recipes || cache.data.plan)){
+    // szybki start z kopii lokalnej, świeże dane dociągamy w tle
+    cacheMode = true; shopDirty = !!cache.shopDirty;
+    applyData(cache.data);
+    const d=new Date(cache.at), today=new Date().toDateString()===d.toDateString();
+    window.__cacheWhen = (today?'':d.toLocaleDateString('pl-PL',{day:'numeric',month:'numeric'})+' ') + d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+    SyncGuard.cache('Dane z kopii z '+window.__cacheWhen+' — synchronizuję…');
+    setTimeout(backgroundSync, 50);
+    return;
+  }
+  const data = await remoteLoad({ms:20000});
   if(!data){ SyncGuard.notLoaded(); return; }
   remoteLoaded = true;
   applyData(data);
@@ -988,6 +1089,37 @@ async function loadAll(){
     if(askRestorePending(pend)){ applyData(pend.data); schedulePersist(); }
     else PendingBackup.clear(JSONBIN_BIN_ID);
   }
+  LocalCache.save(JSONBIN_BIN_ID, currentState(), false);
+}
+async function backgroundSync(){
+  if(syncing || !cacheMode) return;
+  syncing = true; clearTimeout(syncTimer);
+  const data = await remoteLoad({ms:40000, quiet:true});
+  syncing = false;
+  if(!data){
+    SyncGuard.cache('Dane z kopii z '+window.__cacheWhen+' — brak połączenia, ponawiam…');
+    syncTimer = setTimeout(backgroundSync, 15000);
+    return;
+  }
+  finishSync(data);
+}
+function finishSync(data){
+  const ae=document.activeElement, typing = ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA' || ae.tagName==='SELECT');
+  if(document.querySelector('.modal-overlay') || typing){ syncTimer = setTimeout(()=>finishSync(data), 2500); return; }   // nie przerywamy pracy
+  const keepShop = shopDirty ? shopping : null;
+  applyData(data);
+  if(keepShop) shopping = keepShop;
+  remoteLoaded = true; cacheMode = false;
+  const hadShop = shopDirty; shopDirty = false;
+  SyncGuard.clear();
+  const pend = PendingBackup.load(JSONBIN_BIN_ID);
+  if(pend && pend.data){
+    if(askRestorePending(pend)){ applyData(pend.data); schedulePersist(); }
+    else PendingBackup.clear(JSONBIN_BIN_ID);
+  }
+  LocalCache.save(JSONBIN_BIN_ID, currentState(), false);
+  if(hadShop) schedulePersist();
+  renderEverything();
 }
 function applyData(data){
   recipes = data.recipes || [];
@@ -1027,7 +1159,7 @@ quickRecipes.forEach(normQuick); salads = normSalads(data.salads);
 }
 async function saveRecipes(){ schedulePersist(); }
 async function savePlan(){ schedulePersist(); }
-async function saveShopping(){ schedulePersist(); }
+async function saveShopping(){ if(cacheMode) shopDirty=true; shopSaveFlag=true; try{ schedulePersist(); }finally{ shopSaveFlag=false; } }
 async function saveProducts(){ schedulePersist(); try{ updateProductsBadge(); }catch(e){} }
 function newProductsCount(){ return products.filter(p=>p.isNew && isFoodProduct(p)).length; }
 function updateProductsBadge(){
@@ -1807,7 +1939,7 @@ function renderRecipes(filter){
   }
   grid.innerHTML = list.map(r=>`
     <div class="recipe-card" data-id="${r.id}">
-      ${r.imageData?`<img class="recipe-thumb" src="${r.imageData}" alt="">`:''}
+      ${r.imageData?cropImgHtml(r,'thumb'):''}
       <h3>${escapeHtml(r.name)}</h3>
       <div class="meta">
         ${r.partial?'<span class="cat-badge partial">🧩 Baza / dodatek</span>':''}
@@ -1924,7 +2056,7 @@ function renderQuickRecipes(filter){
   }
   grid.innerHTML = list.map(q=>`
     <div class="recipe-card" data-id="${q.id}">
-      ${q.imageData?`<img class="recipe-thumb" src="${q.imageData}" alt="">`:''}
+      ${q.imageData?cropImgHtml(q,'thumb'):''}
       <h3>${escapeHtml(q.name)}</h3>
       <div class="meta">
         ${(q.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
@@ -1972,7 +2104,7 @@ function openQuickRecipePreview(q){
   overlay.className='modal-overlay';
   overlay.innerHTML=`
     <div class="modal">
-      ${q.imageData?`<img class="preview-hero" src="${q.imageData}" alt="">`:''}
+      ${q.imageData?cropImgHtml(q,'hero'):''}
       <h2>${escapeHtml(q.name)}</h2>
       <div class="meta" style="margin-bottom:8px;">
         ${(q.mealCategories||[]).map(c=>`<span class="cat-badge">${escapeHtml(c)}</span>`).join('')}
@@ -2081,12 +2213,14 @@ function openQuickRecipeModal(existing){
   const fileInput = overlay.querySelector('#qm-image-file');
   const imgPreviewWrap = overlay.querySelector('#qm-image-preview');
   const imgThumb = overlay.querySelector('#qm-image-thumb');
+  const focus = Object.assign({x:0.5,y:0.5,zoom:1}, q.imageFocus||{});
+  const cropper = setupImageCropper(imgPreviewWrap, imgThumb, focus);
   fileInput.addEventListener('change', async ()=>{
     const file = fileInput.files[0];
     if(!file) return;
     try{
       imageData = await resizeImageFile(file, 900, 0.8);
-      imgThumb.src = imageData;
+      imgThumb.src = imageData; Object.assign(focus,{x:0.5,y:0.5,zoom:1}); cropper.setSrc(imageData);
       imgPreviewWrap.style.display='flex';
     }catch(err){ console.error(err); alert('Nie udało się wczytać zdjęcia.'); }
   });
@@ -2131,7 +2265,7 @@ function openQuickRecipeModal(existing){
     cleanAltGroups(cleanIngs);
     cleanIngs.forEach(i=>ensureProduct(i.name, i.unit));
     const baseServings = Math.max(1, parseInt(overlay.querySelector('#qm-servings').value,10)||2);
-    const newQ = {id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, ratings:qRatingsAPI.get(), imageData, ingredients:cleanIngs, baseServings};
+    const newQ = {imageFocus: focusProp(focus,imageData), id:q.id, name, description, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, ratings:qRatingsAPI.get(), imageData, ingredients:cleanIngs, baseServings};
     const idx = quickRecipes.findIndex(x=>x.id===q.id);
     if(idx>=0) quickRecipes[idx]=newQ; else quickRecipes.push(newQ);
     await Promise.all([saveQuickRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -2377,7 +2511,7 @@ function openRecipePreview(rec){
   overlay.className='modal-overlay';
   overlay.innerHTML=`
     <div class="modal">
-      ${rec.imageData?`<img class="preview-hero" src="${rec.imageData}" alt="">`:''}
+      ${rec.imageData?cropImgHtml(rec,'hero'):''}
       <h2>${escapeHtml(rec.name)}</h2>
       <div class="meta" style="margin-bottom:8px;">
         ${rec.partial?'<span class="cat-badge partial">🧩 Baza / dodatek</span>':''}
@@ -2811,12 +2945,14 @@ function openRecipeModal(existing, forceNew){
   const fileInput = overlay.querySelector('#m-image-file');
   const imgPreviewWrap = overlay.querySelector('#m-image-preview');
   const imgThumb = overlay.querySelector('#m-image-thumb');
+  const focus = Object.assign({x:0.5,y:0.5,zoom:1}, rec.imageFocus||{});
+  const cropper = setupImageCropper(imgPreviewWrap, imgThumb, focus);
   fileInput.addEventListener('change', async ()=>{
     const file = fileInput.files[0];
     if(!file) return;
     try{
       imageData = await resizeImageFile(file, 900, 0.8);
-      imgThumb.src = imageData;
+      imgThumb.src = imageData; Object.assign(focus,{x:0.5,y:0.5,zoom:1}); cropper.setSrc(imageData);
       imgPreviewWrap.style.display='flex';
     }catch(err){ console.error(err); alert('Nie udało się wczytać zdjęcia.'); }
   });
@@ -3133,6 +3269,32 @@ function openRecipeModal(existing, forceNew){
     instrTa.style.height = Math.min(instrTa.scrollHeight + (parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0), max)+'px';
   }
   instrTa.addEventListener('input', autoGrowInstr);
+  /* automatyczne przenumerowanie list (1. 2. 3.) po dodaniu/usunięciu kroku */
+  function renumberInstr(text, caret){
+    const lines=text.split('\n'); let n=0, pos=0, shift=0, within=0, newLine=false; const out=[];
+    for(const line of lines){
+      const m=line.match(/^(\s*)(\d+)([.)])(\s.*)$/); let nl=line;
+      if(m){ n++; nl=m[1]+n+m[3]+m[4]; }
+      else if(line.trim()===''){ /* pusta linia nie przerywa listy */ }
+      else if(/^\s/.test(line)){ /* wcięta kontynuacja kroku */ }
+      else n=0;
+      const start=pos, end=pos+line.length, delta=nl.length-line.length;
+      if(delta!==0){
+        if(end<caret) shift+=delta;
+        else if(caret>=start){
+          const oldPre=m[1].length+m[2].length+1, newPre=m[1].length+String(n).length+1;
+          within = (caret-start>=oldPre) ? delta : Math.min(caret-start,newPre)-(caret-start);
+        }
+      }
+      out.push(nl); pos=end+1;
+    }
+    return {text:out.join('\n'), caret:caret+shift+within};
+  }
+  instrTa.addEventListener('input', e=>{
+    if(e.isComposing || instrTa.selectionStart!==instrTa.selectionEnd) return;
+    const r=renumberInstr(instrTa.value, instrTa.selectionStart);
+    if(r.text!==instrTa.value){ instrTa.value=r.text; instrTa.setSelectionRange(r.caret,r.caret); autoGrowInstr(); }
+  });
   /* formatowanie instrukcji */
   let instrBusy=false;
   const stripMk=l=>l.replace(/^\s*(\d+[.)]|[•\-]|##)\s+/,'');
@@ -3191,7 +3353,7 @@ function openRecipeModal(existing, forceNew){
   /* ochrona pracy: kliknięcie obok okna nie zamyka go, gdy są niezapisane zmiany; „Anuluj” pyta o potwierdzenie */
   const snap = ()=>JSON.stringify([
     overlay.querySelector('#m-name').value, overlay.querySelector('#m-servings').value, overlay.querySelector('#m-partial').checked, overlay.querySelector('#m-instr').value,
-    (imageData||'').length, links.map(l=>[l.url,l.label]), ings.map(i=>[i.name,i.qty,i.unit,i.optional,i.defaultOn,i.altGroup,i.recipeRef,i.dry]),
+    (imageData||'').length, JSON.stringify(focus), links.map(l=>[l.url,l.label]), ings.map(i=>[i.name,i.qty,i.unit,i.optional,i.defaultOn,i.altGroup,i.recipeRef,i.dry]),
     mealCatsAPI.get(), dishCatsAPI.get(), tagsAPI.get(), ratingsAPI.get()
   ]);
   const snap0 = snap();
@@ -3211,7 +3373,7 @@ function openRecipeModal(existing, forceNew){
     cleanIngs.forEach(i=>{ if(!i.recipeRef) ensureProduct(i.name, i.unit); });
     const selTags = tagsAPI.get();
     selTags.forEach(t=>{ if(!tags.includes(t)) tags.push(t); });
-    const newRec = {id:rec.id, name, partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
+    const newRec = {imageFocus: focusProp(focus,imageData), id:rec.id, name, partial: overlay.querySelector('#m-partial').checked, mealCategories:mealCatsAPI.get(), categories:dishCatsAPI.get(), tags:selTags, baseServings, instructions, ingredients:cleanIngs, ratings:ratingsAPI.get(), imageData, sourceUrl, links:cleanLinks};
     const idx = recipes.findIndex(r=>r.id===rec.id);
     if(idx>=0) recipes[idx]=newRec; else recipes.push(newRec);
     await Promise.all([saveRecipes(), saveProducts(), saveTags(), saveMealCategories(), saveRecipeCategories()]);
@@ -4980,7 +5142,7 @@ function renderProposals(){
   }
   grid.innerHTML = [...proposals].sort((a,b)=>b.createdAt-a.createdAt).map(p=>`
     <div class="recipe-card" data-id="${p.id}" style="cursor:default;">
-      ${p.imageData?`<img class="recipe-thumb" src="${p.imageData}" alt="">`:''}
+      ${p.imageData?cropImgHtml(p,'thumb'):''}
       ${p.text?`<div class="desc-clamp" style="-webkit-line-clamp:4;">${escapeHtml(p.text)}</div>`:'<div class="sub">(bez opisu)</div>'}
       ${p.link?`<a class="recipe-link" href="${escapeHtml(p.link)}" target="_blank" rel="noopener">🔗 ${escapeHtml(p.link)}</a>`:''}
       <div class="sub" style="font-size:11px;margin-top:8px;">${p.createdAt?new Date(p.createdAt).toLocaleDateString('pl-PL'):''}</div>
@@ -5021,10 +5183,12 @@ function openProposalModal(existing){
   const fileInput=overlay.querySelector('#pr-image-file');
   const previewWrap=overlay.querySelector('#pr-image-preview');
   const thumb=overlay.querySelector('#pr-image-thumb');
+  const focus = Object.assign({x:0.5,y:0.5,zoom:1}, p.imageFocus||{});
+  const cropper = setupImageCropper(previewWrap, thumb, focus);
   fileInput.addEventListener('change', async ()=>{
     const file=fileInput.files[0];
     if(!file) return;
-    try{ imageData = await resizeImageFile(file, 900, 0.8); thumb.src=imageData; previewWrap.style.display='flex'; }
+    try{ imageData = await resizeImageFile(file, 900, 0.8); thumb.src=imageData; Object.assign(focus,{x:0.5,y:0.5,zoom:1}); cropper.setSrc(imageData); previewWrap.style.display='flex'; }
     catch(err){ console.error(err); alert('Nie udało się wczytać zdjęcia.'); }
   });
   overlay.querySelector('#pr-image-remove').addEventListener('click', ()=>{ imageData=''; fileInput.value=''; previewWrap.style.display='none'; });
@@ -5034,7 +5198,7 @@ function openProposalModal(existing){
     const text = overlay.querySelector('#pr-text').value.trim();
     const link = overlay.querySelector('#pr-link').value.trim();
     if(!text && !link && !imageData){ alert('Dodaj chociaż jedną rzecz: tekst, link albo zdjęcie.'); return; }
-    const newP = {id:p.id, text, link, imageData, createdAt: p.createdAt||Date.now()};
+    const newP = {imageFocus: focusProp(focus,imageData), id:p.id, text, link, imageData, createdAt: p.createdAt||Date.now()};
     const idx = proposals.findIndex(x=>x.id===p.id);
     if(idx>=0) proposals[idx]=newP; else proposals.push(newP);
     await saveProposals();
