@@ -273,14 +273,15 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
 .img-preview-wrap img{width:90px;height:66px;object-fit:cover;border-radius:8px;border:1px solid var(--line);}
 .img-preview-wrap button{font-size:11.5px;}
 .img-preview-wrap.cr-wrap{flex-direction:column;align-items:stretch;gap:6px;}
-.cr-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:var(--bg);touch-action:none;cursor:grab;}
+.cr-frame{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:repeating-conic-gradient(var(--line) 0 25%,transparent 0 50%) 0 0/16px 16px;touch-action:none;cursor:grab;}
 .cr-frame:active{cursor:grabbing;}
 .cr-frame img,.cr-card img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none;}
-.cr-card{width:100%;aspect-ratio:2.52/1;overflow:hidden;border-radius:8px;border:1px solid var(--line);background:var(--bg);}
+.cr-card{width:100%;aspect-ratio:2.52/1;overflow:hidden;border-radius:8px;border:1px solid var(--line);}
+.cr-frame-box{display:none;}.cr-frame-box.open{display:block;}
 .cr-zoom{display:flex;align-items:center;gap:10px;margin:0;text-transform:none;letter-spacing:0;}
 .cr-zoom input{flex:1;height:auto;padding:0;}
-.crop-thumb{width:calc(100% + 32px);margin:-16px -16px 10px;height:130px;overflow:hidden;background:var(--bg);}
-.crop-hero{width:calc(100% + 44px);margin:-22px -22px 14px;height:min(56vw,280px);overflow:hidden;background:var(--bg);}
+.crop-thumb{width:calc(100% + 32px);margin:-16px -16px 10px;height:130px;overflow:hidden;}
+.crop-hero{width:calc(100% + 44px);margin:-22px -22px 14px;height:min(56vw,280px);overflow:hidden;}
 .crop-thumb img,.crop-hero img{width:100%;height:100%;object-fit:cover;display:block;}
 
 .preview-hero{width:calc(100% + 44px);margin:-22px -22px 14px;display:block;max-height:280px;object-fit:cover;}
@@ -625,7 +626,7 @@ tr.prod-group td{background:#E4E9D8;font-family:'Fraunces',serif;font-weight:700
   </section>
 </div>
 
-<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 09.11.2026, 13:25</div>
+<div id="lastUpdate" class="last-update">Ostatnia aktualizacja: 09.11.2026, 19:55</div>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
@@ -808,8 +809,9 @@ function migrateCategoryList(arr, defaults){
 /* kadr zdjęcia: imageFocus = {x,y (0..1 — punkt kadru), zoom (1..3)}, wspólny dla karty i podglądu */
 function cropFocusStyle(o){
   const f=(o&&o.imageFocus)||{};
-  const x=Math.round((f.x==null?0.5:f.x)*100), y=Math.round((f.y==null?0.5:f.y)*100), z=f.zoom>1?f.zoom:1;
-  return `object-position:${x}% ${y}%;transform-origin:${x}% ${y}%;${z>1?'transform:scale('+z+');':''}`;
+  const x=Math.round((f.x==null?0.5:f.x)*100), y=Math.round((f.y==null?0.5:f.y)*100), z=f.zoom>0?f.zoom:1;
+  const og=z<1?'50% 50%':x+'% '+y+'%';
+  return `object-position:${x}% ${y}%;transform-origin:${og};${z!==1?'transform:scale('+z+');':''}`;
 }
 function cropImgHtml(o,kind){ return `<div class="crop-${kind}"><img src="${o.imageData}" alt="" style="${cropFocusStyle(o)}"></div>`; }
 function focusProp(f,img){
@@ -821,12 +823,17 @@ function focusProp(f,img){
 function setupImageCropper(wrap, thumb, focus){
   thumb.style.display='none'; wrap.classList.add('cr-wrap');
   const box=document.createElement('div');
-  box.innerHTML=`<div class="cr-frame"><img alt=""></div>
-    <div class="sub" style="margin:4px 0;">Przeciągnij zdjęcie, aby ustawić kadr. To samo ustawienie jest na karcie i w podglądzie.</div>
-    <label class="cr-zoom"><span class="sub">Powiększenie</span><input type="range" min="1" max="3" step="0.05"></label>
-    <div class="sub" style="margin:8px 0 3px;">Tak będzie wyglądać na karcie:</div>
-    <div class="cr-card"><img alt=""></div>`;
+  box.innerHTML=`<div class="sub" style="margin:0 0 3px;">Tak będzie wyglądać na karcie:</div>
+    <div class="cr-card"><img alt=""></div>
+    <button type="button" class="btn small cr-toggle" style="margin-top:6px;">✂ Ustaw kadr</button>
+    <div class="cr-frame-box">
+    <div class="cr-frame"><img alt=""></div>
+    <div class="sub" style="margin:4px 0;">Przeciągnij zdjęcie, aby ustawić kadr. Suwakiem możesz też oddalić — wtedy po bokach zostanie puste tło. Ustawienie jest wspólne dla karty i podglądu.</div>
+    <label class="cr-zoom"><span class="sub">Rozmiar</span><input type="range" min="0.4" max="3" step="0.05"></label>
+    </div>`;
   wrap.insertBefore(box, wrap.firstChild);
+  const tgl=box.querySelector('.cr-toggle'), fbox=box.querySelector('.cr-frame-box');
+  tgl.addEventListener('click',()=>{ const o=fbox.classList.toggle('open'); tgl.textContent=o?'✓ Gotowe':'✂ Ustaw kadr'; });
   const frame=box.querySelector('.cr-frame'), fImg=frame.querySelector('img'), cImg=box.querySelector('.cr-card img'), range=box.querySelector('input');
   function apply(){
     const st=cropFocusStyle({imageFocus:focus});
@@ -838,7 +845,7 @@ function setupImageCropper(wrap, thumb, focus){
   frame.addEventListener('pointermove',e=>{
     if(!drag) return;
     const r=frame.getBoundingClientRect(), nw=fImg.naturalWidth, nh=fImg.naturalHeight; if(!nw||!nh) return;
-    const sc=Math.max(r.width/nw, r.height/nh), ox=focus.zoom*nw*sc-r.width, oy=focus.zoom*nh*sc-r.height;
+    const sc=Math.max(r.width/nw, r.height/nh), z=focus.zoom, ox=z>=1?z*nw*sc-r.width:z*(nw*sc-r.width), oy=z>=1?z*nh*sc-r.height:z*(nh*sc-r.height);
     if(ox>0.5) focus.x=clamp(drag.fx-(e.clientX-drag.x)/ox);
     if(oy>0.5) focus.y=clamp(drag.fy-(e.clientY-drag.y)/oy);
     apply();
