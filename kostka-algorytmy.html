@@ -731,6 +731,7 @@ function sheetAlg(){
 function detailHTML(){
   var sh=UI.sheet,alg=sheetAlg();
   if(!alg)return '<div class="sh-head"><button class="icon" data-act="close" aria-label="Wróć">←</button><h2>Nie znaleziono</h2></div>';
+  if(sh.type==='detail')alg=Object.assign({},alg,{view:sh.pview||alg.view,mask:sh.pmask||alg.mask});
   var real=sh.type==='detail',vs=variantsOf(alg),vi=Math.min(sh.vi||0,vs.length-1),info=variantInfo(alg,vi),h='';
   h+='<div class="sh-head"><button class="icon" data-act="close" aria-label="Wróć">←</button><h2>'+esc(alg.name||'Bez nazwy')+'</h2>';
   if(real)h+='<button class="icon star'+(alg.fav?' on':'')+'" data-act="fav" data-id="'+alg.id+'" aria-label="Ulubiony">★</button><button class="icon" data-act="edit" data-id="'+alg.id+'" aria-label="Edytuj">✎</button>';
@@ -739,6 +740,11 @@ function detailHTML(){
     h+='<div class="chips" style="padding-top:0">'+vs.map(function(x,i){return '<button class="chip" data-act="variant" data-v="'+i+'" aria-pressed="'+(i===vi)+'">'+(i===0?'★ ':'')+esc(x.label)+'</button>';}).join('')+'</div>';
   }
   if(real&&vi>0)h+='<div class="row" style="margin:0 0 12px"><button class="btn sm primary" data-act="makemain">★ Ustaw jako ulubiony (główny)</button></div>';
+  if(real){
+    var pseg=function(act,val,items){return '<div class="seg wide" style="margin-bottom:8px">'+items.map(function(it){return '<button type="button" data-act="'+act+'" data-v="'+it[0]+'" aria-pressed="'+(val===it[0])+'">'+it[1]+'</button>';}).join('')+'</div>';};
+    h+=pseg('pview',alg.view,[['face','Ścianka'],['ud','Góra i dół'],['3d','Kostka 3D']]);
+    h+=pseg('pmask',alg.mask,[['full','Wszystkie'],['orient','Orientacja'],['ll','Ostatnia warstwa']]);
+  }
   var as3d=alg.view==='3d'||sh.show3d||!real;
   if(as3d){
     h+='<div id="plMount"></div>';
@@ -916,6 +922,7 @@ function mountSheet(){
   if(sh.type==='detail'||sh.type==='sandbox'){
     var m=$('#plMount'),alg=sheetAlg();
     if(m&&alg){
+      if(sh.type==='detail'&&sh.pmask)alg=Object.assign({},alg,{mask:sh.pmask});
       var info=variantInfo(alg,sh.vi||0);
       player=createPlayer({size:cubeSize(alg.cube),topY:topY(),setup:info.setup,paint:alg.paint,moves:info.moves,mask:alg.mask});
       m.appendChild(player.el);
@@ -1012,6 +1019,8 @@ function handle(act,t){
         UI.sheet.vi=0;save();render();toast('Ustawiono jako ulubiony algorytm');
       }
       break;
+    case 'pview':UI.sheet.pview=v;UI.sheet.show3d=false;renderSheet(true);break;
+    case 'pmask':UI.sheet.pmask=v;renderSheet(true);break;
     case 'variant':UI.sheet.vi=+v;renderSheet(true);break;
     case 'pmode':UI.sheet.paintMode=v;renderPaint();updatePaint();break;
     case 'pcolor':UI.sheet.paintColor=+v;renderPaint();updatePaint();break;
